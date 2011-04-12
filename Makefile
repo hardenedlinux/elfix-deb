@@ -1,12 +1,29 @@
 
-SRCS = parse_elf get_gnu_stack test
+CC = gcc
+LIBS += -lelf
+
+SRCS = $(wildcard *.c)
+OBJS = $(patsubst %.c,%.o,$(SRCS))
+BINS = $(patsubst %.c,%,$(SRCS))
+
 
 .PHONY: all
-all: $(SRCS)
+#all: $(BINS)
+all: $(OBJS) $(BINS)
 
 .PHONY: clean
 clean:
-	rm -f $(SRCS)
+	rm -f $(BINS) *.o
 
-%: %.c
-	gcc -o $@ $^ -lelf
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<
+
+%.o: %.asm
+	yasm -f elf -m amd64 $<
+
+test_asm: test_asm.o test_bad.o
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+%: %.o
+	$(CC) $(LDFLAGS) -o $@ $< $(LIBS)
+
