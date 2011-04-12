@@ -1,5 +1,5 @@
 
-SRCS = parse_elf test
+SRCS = parse_elf get_gnu_stack test
 
 .PHONY: all
 all: $(SRCS)
