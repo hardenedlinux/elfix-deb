@@ -27,10 +27,10 @@ int main( int argc, char *argv[])
 	if(argc != 2)
 		error(EXIT_FAILURE, 0, "Usage: %s <filename>", argv[0]);
 
-	if((fd = open(argv[1], O_RDWR)) == -1)
+	if((fd = open(argv[1], O_RDWR)) < 0)
 		error(EXIT_FAILURE, 0, "open() fail.");
 
-	if((elf = elf_begin(fd, ELF_C_RDWR, (Elf *)0)) == NULL)
+	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
 		error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(-1));
 
 	if(elf_kind(elf) != ELF_K_ELF)
@@ -40,7 +40,7 @@ int main( int argc, char *argv[])
 		error(EXIT_FAILURE, 0, "gelf_getehdr() fail: %s", elf_errmsg(-1));
 
 	elf_getphdrnum(elf, &phnum);
-	for (i=0; i<phnum; ++i)
+	for(i=0; i<phnum; ++i)
 	{
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
 			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(-1));
@@ -59,12 +59,11 @@ int main( int argc, char *argv[])
 				nflags = phdr.p_flags ^ PF_X; 
 				printf("oflags=%u PF_X=%d nflags=%u\n", phdr.p_flags, PF_X, nflags);
 
-				//if(elf_update(elf, ELF_C_NULL ) < 0)
-				//	error (EXIT_FAILURE, 0, "elf_update(ELF_C_NULL) failed: %s.", elf_errmsg(-1));
 				phdr.p_flags = nflags ;
-				if(elf_flagphdr(elf, ELF_C_SET, ELF_F_DIRTY) == 0)
-					error(EXIT_FAILURE, 0, "gelf_flagphdr() fail: %s", elf_errmsg(-1));
-				if(elf_update(elf, ELF_C_WRITE) < 0)
+				gelf_update_phdr(elf, i, &phdr);
+				//if(elf_flagphdr(elf, ELF_C_SET, ELF_F_DIRTY) == 0)
+				//	error(EXIT_FAILURE, 0, "elf_flagphdr() fail: %s", elf_errmsg(-1));
+				if(elf_update(elf, ELF_C_WRITE_MMAP) < 0)
 					error (EXIT_FAILURE, 0, "elf_update(ELF_C_WRITE) failed: %s.", elf_errmsg(-1));
 			}
 		}
