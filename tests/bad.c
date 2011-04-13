@@ -1,7 +1,7 @@
 
 #include <stdlib.h>
 
-extern int badness();
+//extern int badness();
 
 int main()
 {

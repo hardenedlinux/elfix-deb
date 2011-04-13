@@ -61,10 +61,6 @@ int main( int argc, char *argv[])
 
 				phdr.p_flags = nflags ;
 				gelf_update_phdr(elf, i, &phdr);
-				//if(elf_flagphdr(elf, ELF_C_SET, ELF_F_DIRTY) == 0)
-				//	error(EXIT_FAILURE, 0, "elf_flagphdr() fail: %s", elf_errmsg(-1));
-				if(elf_update(elf, ELF_C_WRITE_MMAP) < 0)
-					error (EXIT_FAILURE, 0, "elf_update(ELF_C_WRITE) failed: %s.", elf_errmsg(-1));
 			}
 		}
 	}

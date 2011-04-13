@@ -4,12 +4,9 @@ SECTION .text
 
 align 16
 badness:
+	push rbp
+	mov rbp,rsp
 
-    push RBX
-    push RBP
-
-    pop RBP
-    pop RBX
-    ret
-
-end
+	mov rsp,rbp
+	pop rbp
+	ret
