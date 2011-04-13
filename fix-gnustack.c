@@ -52,21 +52,21 @@ int main( int argc, char *argv[])
 			if( phdr.p_flags & PF_W ) printf("W");
 			if( phdr.p_flags & PF_X ) printf("X");
 			printf("\n");
-		}
 
-		if((phdr.p_flags & PF_W) && (phdr.p_flags & PF_X))
-		{
-			printf("W&X found, flipping X flag ...\n");
-			nflags = phdr.p_flags ^ PF_X; 
-			printf("oflags=%u PF_X=%d nflags=%u\n", phdr.p_flags, PF_X, nflags);
+			if((phdr.p_flags & PF_W) && (phdr.p_flags & PF_X))
+			{
+				printf("W&X found, flipping X flag ...\n");
+				nflags = phdr.p_flags ^ PF_X; 
+				printf("oflags=%u PF_X=%d nflags=%u\n", phdr.p_flags, PF_X, nflags);
 
-			if(elf_update(elf, ELF_C_NULL ) < 0)
-				error (EXIT_FAILURE, "elf_update(ELF_C_NULL) failed: %s." , elf_errmsg(-1));
-			phdr.p_flags = nflags ;
-			if(elf_flagphdr(elf, ELF_C_SET, ELF_F_DIRTY) == NULL)
-				error(EXIT_FAILURE, 0, "gelf_flagphdr() fail: %s", elf_errmsg(-1));
-			if(elf_update(elf, ELF_C_WRITE) < 0)
-				error (EXIT_FAILURE, "elf_update(ELF_C_WRITE) failed: %s." , elf_errmsg(-1));
+				if(elf_update(elf, ELF_C_NULL ) < 0)
+					error (EXIT_FAILURE, "elf_update(ELF_C_NULL) failed: %s." , elf_errmsg(-1));
+				phdr.p_flags = nflags ;
+				if(elf_flagphdr(elf, ELF_C_SET, ELF_F_DIRTY) == NULL)
+					error(EXIT_FAILURE, 0, "gelf_flagphdr() fail: %s", elf_errmsg(-1));
+				if(elf_update(elf, ELF_C_WRITE) < 0)
+					error (EXIT_FAILURE, "elf_update(ELF_C_WRITE) failed: %s." , elf_errmsg(-1));
+			}
 		}
 	}
 
