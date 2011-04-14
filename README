@@ -1,7 +1,4 @@
 
-Miscellaneous Elf/GElf functions to parse an Elf object
-
-Author
-
-	Anthony G. Basile	<blueness@gentoo.org>
+Miscellaneous utilities to query and fix Elf binaries
+with an emphasis on hardening.
 
