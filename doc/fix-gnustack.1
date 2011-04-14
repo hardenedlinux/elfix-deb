@@ -1,0 +1,39 @@
+.TH "fix-gnustack" "1" "14 April 2011" "fix-gnustack Manual" "Documentation for elfix"
+.SH NAME
+fix-gnustack \- Query or clear the ELF GNU_STACK executable flag
+.SH SYNOPSIS
+.B fix-gnustack
+scans the program headers of ELF binaries or shared object libraries
+and reports if a GNU_STACK entry is marked both writeable and executable.
+On PaX hardened kernels where memory protection (MPROTECT) is enforced,
+execution of binaries with WX GNU_STACKS, or binaries linking against
+libraries with WX GNU_STACKS, is terminated by the kernel.  When
+.B fix-gnustack
+is called without the
+.B \-f
+option, it simply reports the RWX (read/write/execute) flags on any GNU_STACK
+found.  When called with the
+.B \-f
+option, it clears the X flag if both W and X are found.
+.RB [option]\ ELF
+.SH DESCRIPTION
+.B fix-gnustack 
+is a program which 
+.SH OPTIONS
+.TP
+.B \-f
+Remove the X flag (fix).
+.SH "HOMEPAGE"
+.PP
+\m[blue]\fBhttp://dev\&.gentoo\&.org/\&~blueness/elfix\fR\m[]
+.SH "REPORTING BUGS"
+.PP
+\m[blue]\fBhttp://bugs\&.gentoo\&.org\fR\m[]
+.SH SEE ALSO
+.BR scanelf (1),
+.BR dumpelf (1),
+.BR paxctl (1),
+.BR pspax (1).
+.SH AUTHORS
+.B Anthony G. Basile
+<blueness@gentoo.org>

@@ -26,6 +26,7 @@ AC_FUNC_ERROR_AT_LINE
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
+                 doc/Makefile
                  tests/Makefile])
 
 AC_OUTPUT
