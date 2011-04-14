@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.65])
 AC_INIT([elf-misc], [0.1], [blueness@gentoo.org])
-AC_CONFIG_SRCDIR([fix-gnustack.c])
+AC_CONFIG_SRCDIR([src/fix-gnustack.c])
 #AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.11 foreign])
 
@@ -25,5 +25,7 @@ AC_TYPE_SIZE_T
 AC_FUNC_ERROR_AT_LINE
 
 AC_CONFIG_FILES([Makefile
+                 src/Makefile
                  tests/Makefile])
+
 AC_OUTPUT

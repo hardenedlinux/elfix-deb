@@ -17,14 +17,17 @@ test.sh:
 	@echo "================================================================================"
 	@echo
 	@echo "Good Elf"
-	@../get-gnustack good
+	@../src/fix-gnustack good
 	@echo
 	@echo "Bad Elf"
-	@../get-gnustack bad
+	@../src/fix-gnustack bad
 	@echo
 	@echo "Fixing Bad Elf"
-	@../fix-gnustack bad
-	@../get-gnustack bad
+	@../src/fix-gnustack -f bad
+	@echo
+	@echo "Fixed Bad Elf"
+	@../src/fix-gnustack bad
+	@rm -f good bad
 	@echo
 	@echo "================================================================================"
 
