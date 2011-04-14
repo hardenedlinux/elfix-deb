@@ -1,9 +1,5 @@
 
-1. Addec check for yasm to configure.ac
-
-2. Fix for 32-bit make check.  This entails editing the yasm line in the chec and asm itself
-
-3. Fix the following print format errors that arrise on 32-bit:
+Fix the following print format errors that arrise on 32-bit:
 
 parse-elf.c:112: warning: format '%lu' expects type 'long unsigned int', but argument 6 has type 'Elf64_Addr'
 parse-elf.c:112: warning: format '%lu' expects type 'long unsigned int', but argument 7 has type 'Elf64_Off'

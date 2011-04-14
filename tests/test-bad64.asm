@@ -1,8 +1,6 @@
-global badness:function
+global badness
 
 SECTION .text
-
-align 16
 badness:
 	push rbp
 	mov rbp,rsp
