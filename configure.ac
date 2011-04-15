@@ -9,8 +9,23 @@ AM_INIT_AUTOMAKE([1.11 foreign])
 
 # Checks for programs.
 AC_PROG_CC
-AC_CHECK_PROG([has_yasm],[yasm],["yes"],["no"])
-AS_IF([test "x$has_yasm" = "xno"],AC_MSG_ERROR(["Missing yasm assembler"]))
+AC_ARG_ENABLE(
+	[tests],
+	AS_HELP_STRING(
+		[--enable-tests],
+		[enable tests]
+	),
+	[
+		AS_IF(
+			[test "x$enable_tests" = "xyes"],
+			[
+				AC_CHECK_PROG([has_yasm],[yasm],["yes"],["no"])
+				AS_IF([test "x$has_yasm" = "xno"],AC_MSG_ERROR(["Missing yasm assembler"]))
+			]
+		)
+	]
+)
+AM_CONDITIONAL([TEST],[test "x$has_yasm" = "xyes"])
 
 # Checks for libraries.
 AC_CHECK_LIB([elf], [elf_begin])
