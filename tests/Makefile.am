@@ -4,7 +4,7 @@ bad_SOURCES = bad.c
 bad_DEPENDENCIES = test-bad.o
 bad_LDADD = test-bad.o
 
-ARCH = $(shell uname -m)
+ARCH = $(shell uname -m | sed -e 's/i./x/')
 
 test-bad.o: test-bad64.asm test-bad32.asm
 	[[ "$(ARCH)" == "x86" ]] && yasm -f elf -m x86 test-bad32.asm && mv test-bad32.o test-bad.o || true
