@@ -31,7 +31,15 @@ AM_CONDITIONAL([TEST],[test "x$has_yasm" = "xyes"])
 AC_CHECK_LIB([elf], [elf_begin])
 
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h stdlib.h unistd.h])
+AC_CHECK_HEADERS([error.h])
+AC_CHECK_HEADERS([fcntl.h])
+AC_CHECK_HEADERS([gelf.h])
+AC_CHECK_HEADERS([stdio.h])
+AC_CHECK_HEADERS([stdlib.h])
+AC_CHECK_HEADERS([string.h])
+AC_CHECK_HEADERS([sys/stat.h])
+AC_CHECK_HEADERS([sys/types.h])
+AC_CHECK_HEADERS([unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
