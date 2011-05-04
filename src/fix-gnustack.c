@@ -63,7 +63,6 @@ main( int argc, char *argv[])
 	size_t i, phnum;
 
 	Elf *elf;
-	GElf_Ehdr ehdr;
 	GElf_Phdr phdr;
 
 	f_name = parse_cmd_args( argc, argv, &flagv );
@@ -88,9 +87,6 @@ main( int argc, char *argv[])
 
 	if(elf_kind(elf) != ELF_K_ELF)
 		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
-
-	if(gelf_getehdr(elf,&ehdr) == NULL)
-		error(EXIT_FAILURE, 0, "gelf_getehdr() fail: %s", elf_errmsg(-1));
 
 	elf_getphdrnum(elf, &phnum);
 	for(i=0; i<phnum; ++i)
