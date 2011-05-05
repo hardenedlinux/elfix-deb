@@ -7,8 +7,6 @@ AC_CONFIG_SRCDIR([src/fix-gnustack.c])
 #AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.11 foreign])
 
-# Checks for programs.
-AC_PROG_CC
 AC_ARG_ENABLE(
 	[tests],
 	AS_HELP_STRING(
@@ -26,6 +24,9 @@ AC_ARG_ENABLE(
 	]
 )
 AM_CONDITIONAL([TEST],[test "x$has_yasm" = "xyes"])
+
+# Checks for programs.
+AC_PROG_CC
 
 # Checks for libraries.
 AC_CHECK_LIB([elf], [elf_begin])
