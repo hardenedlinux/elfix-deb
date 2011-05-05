@@ -1,14 +1,13 @@
-noinst_PROGRAMS = good bad
-good_SOURCES = good.c
-bad_SOURCES = bad.c
-bad_DEPENDENCIES = test-bad.o
-bad_LDADD = test-bad.o
+noinst_PROGRAMS = bad-gnustack
+bad_gnustack_SOURCES = bad-gnustack.c
+bad_gnustack_DEPENDENCIES = bad-asm.o
+bad_gnustack_LDADD = bad-asm.o
 
 ARCH = $(shell uname -m | sed -e 's/i./x/')
 
-test-bad.o: test-bad64.asm test-bad32.asm
-	[[ "$(ARCH)" == "x86" ]] && yasm -f elf -m x86 test-bad32.asm && mv test-bad32.o test-bad.o || true
-	[[ "$(ARCH)" == "x86_64" ]] && yasm -f elf -m amd64 test-bad64.asm && mv test-bad64.o test-bad.o || true
+bad-asm.o: bad64.asm bad32.asm
+	[[ "$(ARCH)" == "x86" ]] && yasm -f elf -m x86 bad32.asm && mv bad32.o bad-asm.o || true
+	[[ "$(ARCH)" == "x86_64" ]] && yasm -f elf -m amd64 bad64.asm && mv bad64.o bad-asm.o || true
 
 check_SCRIPTS = test.sh
 TEST = $(check_SCRIPTS)
@@ -16,19 +15,13 @@ TEST = $(check_SCRIPTS)
 test.sh:
 	@echo "================================================================================"
 	@echo
-	@echo "Good Elf"
-	@../src/fix-gnustack good
+	@echo "Fixing Bad GNU_STACK Elf"
+	@../src/fix-gnustack -f bad-gnustack
 	@echo
-	@echo "Bad Elf"
-	@../src/fix-gnustack bad
-	@echo
-	@echo "Fixing Bad Elf"
-	@../src/fix-gnustack -f bad
-	@echo
-	@echo "Fixed Bad Elf"
-	@../src/fix-gnustack bad
-	@rm -f good bad
+	@echo "Fixed Bad GNU_STACK Elf"
+	@../src/fix-gnustack bad-gnustack
+	@rm -f good
 	@echo
 	@echo "================================================================================"
 
-CLEANFILES = test-bad.o test.sh
+CLEANFILES = bad-asm.o test.sh
