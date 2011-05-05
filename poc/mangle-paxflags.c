@@ -38,7 +38,7 @@
 #define HF_PAX_SEGMEXEC         32	// 0: Segmentation based non-exec pages
 
 
-#define PRINT(E,F,I) printf("%s: %s\n", #E, E & F ? ( I ? "enabled" : "disabled" ) : ( I ? "disabled" : "enabled" ) );
+#define PRINT(E,F,I) printf("%s:\t%s\n", #E, E & F ? ( I ? "enabled" : "disabled" ) : ( I ? "disabled" : "enabled" ) );
 #define CASE(N,P) case P: printf("%d: %s\n", (int)N, #P); break
 
 
@@ -74,8 +74,7 @@ int
 main( int argc, char *argv[])
 {
 	int fd;
-	int flag_ei_pax, flag_pt_pax_flags;
-	int found_ei_pax, found_pt_pax_flags;
+	int flag_ei_pax, flag_pt_pax_flags, found_ei_pax;
 	char *f_name;
 	size_t i, phnum;
 
@@ -130,7 +129,6 @@ main( int argc, char *argv[])
 	}
 
 	printf("==== PHRDs ====\n") ;
-	found_pt_pax_flags = 0 ;
 	elf_getphdrnum(elf, &phnum);
 	for(i=0; i<phnum; ++i)
 	{
@@ -162,19 +160,31 @@ main( int argc, char *argv[])
 			CASE(i,PT_HIPROC);
 		}
 
+		if(phdr.p_type == PT_PAX_FLAGS)
+		{
+			PRINT(PF_PAGEEXEC, phdr.p_flags, 1);
+			PRINT(PF_NOPAGEEXEC, phdr.p_flags, 1);
+			PRINT(PF_SEGMEXEC, phdr.p_flags, 1);
+			PRINT(PF_NOSEGMEXEC, phdr.p_flags, 1);
+			PRINT(PF_MPROTECT, phdr.p_flags, 1);
+			PRINT(PF_NOMPROTECT, phdr.p_flags, 1);
+			PRINT(PF_RANDEXEC, phdr.p_flags, 1);
+			PRINT(PF_NORANDEXEC, phdr.p_flags, 1);
+			PRINT(PF_EMUTRAMP, phdr.p_flags, 1);
+			PRINT(PF_NOEMUTRAMP, phdr.p_flags, 1);
+			PRINT(PF_RANDMMAP, phdr.p_flags, 1);
+			PRINT(PF_NORANDMMAP, phdr.p_flags, 1);
+		}
+
 		if((phdr.p_type == PT_PAX_FLAGS) && flag_pt_pax_flags )
 		{
-			found_pt_pax_flags = 1 ;
+			printf("CONVERTED -> PT_NULL\n\n");
 			phdr.p_type = PT_NULL;
 			if(!gelf_update_phdr(elf, i, &phdr))
 				error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
 		}
 	}
-
-	if( found_pt_pax_flags )
-		printf("Setting PT_PAX_FLAGS to PT_NULL\n\n");
-	else
-		printf("\n\n");
+	printf("\n\n");
 
 	elf_end(elf);
 	close(fd);
