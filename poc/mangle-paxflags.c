@@ -28,6 +28,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <config.h>
+
 // From chpax.h
 #define EI_PAX			14	// Index in e_ident[] where to read flags
 #define HF_PAX_PAGEEXEC         1	// 0: Paging based non-exec pages
@@ -37,9 +39,27 @@
 #define HF_PAX_RANDEXEC         16	// 1: Randomize ET_EXEC base
 #define HF_PAX_SEGMEXEC         32	// 0: Segmentation based non-exec pages
 
-
 #define PRINT(E,F,I) printf("%s:\t%s\n", #E, E & F ? ( I ? "enabled" : "disabled" ) : ( I ? "disabled" : "enabled" ) );
 #define CASE(N,P) case P: printf("%d: %s\n", (int)N, #P); break
+
+
+void
+print_help(char *v)
+{
+        printf(
+                "Package Name : " PACKAGE_STRING "\n"
+                "Bug Reports  : " PACKAGE_BUGREPORT "\n"
+                "Description  : Check for, or conditionally remove, executable flag from PT_GNU_STACK\n\n"
+                "Usage        : %s {-h | [-e] [-p] ELFfile}\n"
+                "options      :     Print out EI_PAX and PT_PAX_FLAGS information\n"
+                "             : -e  Set all EI_PAX flags to least secure setting, pEmrXs\n"
+                "             : -p  Remove PT_PAX_FLAGS program header\n"
+                "             : -h  Print out this help\n",
+                v
+        );
+
+        exit(EXIT_SUCCESS);
+}
 
 
 char *
@@ -48,11 +68,11 @@ parse_cmd_args( int c, char *v[], int *flag_ei_pax, int *flag_pt_pax_flags  )
 	int i, oc;
 
 	if((c != 2)&&(c != 3)&&(c != 4))
-		error(EXIT_FAILURE, 0, "Usage: %s [-e] [-p] elffile", v[0]);
+		error(EXIT_FAILURE, 0, "Usage: %s {[-e] [-p] ELFfile | [-h]}", v[0]);
 
 	*flag_ei_pax = 0;
 	*flag_pt_pax_flags = 0;
-	while((oc = getopt(c, v,":ep")) != -1)
+	while((oc = getopt(c, v,":eph")) != -1)
 		switch(oc)
 		{
 			case 'e':
@@ -60,6 +80,9 @@ parse_cmd_args( int c, char *v[], int *flag_ei_pax, int *flag_pt_pax_flags  )
 				break ;
 			case 'p':
 				*flag_pt_pax_flags = 1;
+				break;
+			case 'h':
+				print_help(v[0]);
 				break;
 			case '?':
 			default:

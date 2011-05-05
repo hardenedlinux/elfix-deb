@@ -28,6 +28,25 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <config.h>
+
+
+void
+print_help(char *v)
+{
+	printf(
+		"Package Name : " PACKAGE_STRING "\n"
+		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
+		"Description  : Check for, or conditionally remove, executable flag from PT_GNU_STACK\n\n"
+		"Usage        : %s {[-f] ELFfile | [-h]}\n"
+		"options      :     Print out protection flags on PT_GNU_STACK\n"
+		"             : -f  Remove X if WX flags are set on PT_GNU_STACK\n"
+		"             : -h  Print out this help\n",
+		v
+	);
+
+	exit(EXIT_SUCCESS);
+}
 
 
 char *
@@ -36,15 +55,18 @@ parse_cmd_args( int c, char *v[], int *flagv  )
 	int i, oc;
 
 	if((c != 2)&&(c != 3))
-		error(EXIT_FAILURE, 0, "Usage: %s [-f] elffile", v[0]);
+		error(EXIT_FAILURE, 0, "Usage: %s {-h | [-f] ELFfile}", v[0]);
 
 	*flagv = 0 ;
-	while((oc = getopt(c, v,":f")) != -1)
+	while((oc = getopt(c, v,":fh")) != -1)
 		switch(oc)
 		{
 			case 'f':
 				*flagv = 1 ;
 				break ;
+			case 'h':
+				print_help(v[0]);
+				break;
 			case '?':
 			default:
 				error(EXIT_FAILURE, 0, "option -%c is invalid: ignored.", optopt ) ;
