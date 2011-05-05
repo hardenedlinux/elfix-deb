@@ -25,19 +25,32 @@ AC_ARG_ENABLE(
 )
 AM_CONDITIONAL([TEST],[test "x$has_yasm" = "xyes"])
 
+AC_ARG_ENABLE(
+	[poc],
+	AS_HELP_STRING(
+		[--enable-poc],
+		[build proof of concept code]
+	)
+)
+AM_CONDITIONAL([POC],[test "x$enable_poc" = "xyes"])
+
 # Checks for programs.
 AC_PROG_CC
+AC_CHECK_FUNCS([strerror])
+AC_FUNC_MMAP
 
 # Checks for libraries.
 AC_CHECK_LIB([elf], [elf_begin])
 
 # Checks for header files.
+AC_CHECK_HEADERS([errno.h])
 AC_CHECK_HEADERS([error.h])
 AC_CHECK_HEADERS([fcntl.h])
 AC_CHECK_HEADERS([gelf.h])
 AC_CHECK_HEADERS([stdio.h])
 AC_CHECK_HEADERS([stdlib.h])
 AC_CHECK_HEADERS([string.h])
+AC_CHECK_HEADERS([sys/mman.h])
 AC_CHECK_HEADERS([sys/stat.h])
 AC_CHECK_HEADERS([sys/types.h])
 AC_CHECK_HEADERS([unistd.h])
@@ -51,6 +64,7 @@ AC_FUNC_ERROR_AT_LINE
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  doc/Makefile
+                 poc/Makefile
                  tests/Makefile])
 
 AC_OUTPUT

@@ -1,4 +1,7 @@
 if TEST
 SUBDIRS_TESTS = tests
 endif
-SUBDIRS = src doc $(SUBDIRS_TESTS)
+if POC
+SUBDIRS_POC = poc
+endif
+SUBDIRS = src doc $(SUBDIRS_TESTS) $(SUBDIRS_POC)

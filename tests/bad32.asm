@@ -1,4 +1,4 @@
-;test-bad32.asm: 32-bit asm source for sample elf with X on GNU_STACK
+;bad32.asm: 32-bit asm source for sample elf with X on GNU_STACK
 ;Copyright (C) 2011  Anthony G. Basile
 ;
 ;This program is free software: you can redistribute it and/or modify

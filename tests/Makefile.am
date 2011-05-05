@@ -20,7 +20,6 @@ test.sh:
 	@echo
 	@echo "Fixed Bad GNU_STACK Elf"
 	@../src/fix-gnustack bad-gnustack
-	@rm -f good
 	@echo
 	@echo "================================================================================"
 

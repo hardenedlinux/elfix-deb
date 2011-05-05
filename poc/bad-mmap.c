@@ -1,5 +1,5 @@
 /*
-	bad-gnustack.c: C source for sample elf with X on GNU_STACK
+	bad-mmap.c: create 4k anonymous mmap with RWX protection
 	Copyright (C) 2011  Anthony G. Basile
 
 	This program is free software: you can redistribute it and/or modify
@@ -15,10 +15,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include <stdlib.h>
 
-int main()
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <errno.h>
+#include <string.h>
+
+int
+main()
 {
-	badness();
+	if( mmap(NULL, 4096, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) != MAP_FAILED )
+		printf("mmap(): succeeded\n");
+	else
+		printf("mmap(): %s\n", strerror(errno));
 	return 0;
 }
