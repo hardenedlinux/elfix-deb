@@ -75,14 +75,14 @@ main( int argc, char *argv[])
 		if((fd = open(f_name, O_RDWR)) < 0)
 			error(EXIT_FAILURE, 0, "open() fail.");
 		if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
-			error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(-1));
+			error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
 	}
 	else
 	{
 		if((fd = open(f_name, O_RDONLY)) < 0)
 			error(EXIT_FAILURE, 0, "open() fail.");
 		if((elf = elf_begin(fd, ELF_C_READ, NULL)) == NULL)
-			error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(-1));
+			error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
 	}
 
 	if(elf_kind(elf) != ELF_K_ELF)
@@ -92,7 +92,7 @@ main( int argc, char *argv[])
 	for(i=0; i<phnum; ++i)
 	{
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
-			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(-1));
+			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
 
 		if(phdr.p_type == PT_GNU_STACK)
 		{
@@ -104,10 +104,10 @@ main( int argc, char *argv[])
 
 			if(flagv && (phdr.p_flags & PF_W) && (phdr.p_flags & PF_X))
 			{
-				printf("W&X FOUND: flipping X flag ...\n");
+				printf("W&X FOUND: X flag removed\n");
 				phdr.p_flags ^= PF_X;
 				if(!gelf_update_phdr(elf, i, &phdr))
-					error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(-1));
+					error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
 			}
 		}
 	}
