@@ -87,7 +87,7 @@ main( int argc, char *argv[])
 	Elf *elf;
 	GElf_Phdr phdr;
 
-	f_name = parse_cmd_args( argc, argv, &flagv );
+	f_name = parse_cmd_args(argc, argv, &flagv);
 
 	if(elf_version(EV_CURRENT) == EV_NONE)
 		error(EXIT_FAILURE, 0, "Library out of date.");

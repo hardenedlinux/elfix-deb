@@ -11,7 +11,7 @@ AC_ARG_ENABLE(
 	[tests],
 	AS_HELP_STRING(
 		[--enable-tests],
-		[enable tests]
+		[perform tests]
 	),
 	[
 		AS_IF(

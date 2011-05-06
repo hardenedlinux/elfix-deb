@@ -1,5 +1,5 @@
 /*
-	mangle-paxflags.c: check and optionally remove EI_PAX and/or PT_PAX_FLAGS
+	paxctl-ng.c: get/set pax flags on an ELF object
 	Copyright (C) 2011  Anthony G. Basile
 
 	This program is free software: you can redistribute it and/or modify
@@ -30,14 +30,7 @@
 
 #include <config.h>
 
-// From chpax.h
-#define EI_PAX			14	// Index in e_ident[] where to read flags
-#define HF_PAX_PAGEEXEC         1	// 0: Paging based non-exec pages
-#define HF_PAX_EMUTRAMP         2	// 0: Emulate trampolines
-#define HF_PAX_MPROTECT         4	// 0: Restrict mprotect()
-#define HF_PAX_RANDMMAP         8	// 0: Randomize mmap() base
-#define HF_PAX_RANDEXEC         16	// 1: Randomize ET_EXEC base
-#define HF_PAX_SEGMEXEC         32	// 0: Segmentation based non-exec pages
+#define EI_PAX 14 // Index in e_ident[] where to read flags - from chpax.h
 
 #define PRINT(E,F,I) printf("%s:\t%s\n", #E, E & F ? ( I ? "enabled" : "disabled" ) : ( I ? "disabled" : "enabled" ) );
 #define CASE(N,P) case P: printf("%d: %s\n", (int)N, #P); break
@@ -49,11 +42,17 @@ print_help(char *v)
         printf(
                 "Package Name : " PACKAGE_STRING "\n"
                 "Bug Reports  : " PACKAGE_BUGREPORT "\n"
-                "Description  : Check for, or conditionally remove, executable flag from PT_GNU_STACK\n\n"
-                "Usage        : %s {[-e] [-p] ELFfile | -h}\n"
-                "options      :     Print out EI_PAX and PT_PAX_FLAGS information\n"
-                "             : -e  Set all EI_PAX flags to least secure setting, pEmrXs\n"
-                "             : -p  Remove PT_PAX_FLAGS program header\n"
+                "Description  : Get or set pax flags on an ELF object\n\n"
+                "Usage        : %s {[-pPeEmMrRxXsSzZC]  ELFfile | [-h]}\n"
+                "options      :     Print out pax flag information\n"
+		"             : -p  Disable PAGEEXEC\t-P  Enable  PAGEEXEC\n"
+		"             : -e  Disable EMUTRAMP\t-E  Enable  EMUTRAMP\n"
+		"             : -m  Disable MPROTECT\t-M  Enable  MPROTECT\n"
+		"             : -r  Disable RANDMMAP\t-R  Enable  RANDMMAP\n"
+		"             : -x  Disable RANDEXEC\t-X  Enable  RANDEXEC\n"
+		"             : -s  Disable SEGMEXEC\t-X  Enable  SEGMEXEC\n"
+		"             : -z  Default least secure\t-Z Default most secure\n"
+		"             : -C  Created PT_PAX_FLAGS program header\n"
                 "             : -h  Print out this help\n",
                 v
         );
@@ -63,23 +62,48 @@ print_help(char *v)
 
 
 char *
-parse_cmd_args( int c, char *v[], int *flag_ei_pax, int *flag_pt_pax_flags  )
+parse_cmd_args( int c, char *v[], int *pax_flags, int *create_flag )
 {
 	int i, oc;
 
 	if((c != 2)&&(c != 3)&&(c != 4))
-		error(EXIT_FAILURE, 0, "Usage: %s {[-e] [-p] ELFfile | [-h]}", v[0]);
+		error(EXIT_FAILURE, 0, "Usage: %s {[-pPeEmMrRxXsSzZC] ELFfile | [-h]}", v[0]);
 
-	*flag_ei_pax = 0;
-	*flag_pt_pax_flags = 0;
-	while((oc = getopt(c, v,":eph")) != -1)
+	*pax_flags = 0;
+	*create_flag = 0;
+	while((oc = getopt(c, v,":pPeEmMrRxXsSzZCh")) != -1)
 		switch(oc)
 		{
-			case 'e':
-				*flag_ei_pax = 1;
-				break ;
 			case 'p':
-				*flag_pt_pax_flags = 1;
+				break ;
+			case 'P':
+				break;
+			case 'e':
+				break ;
+			case 'E':
+				break;
+			case 'm':
+				break ;
+			case 'M':
+				break;
+			case 'r':
+				break ;
+			case 'R':
+				break;
+			case 'x':
+				break ;
+			case 'X':
+				break;
+			case 's':
+				break ;
+			case 'S':
+				break;
+			case 'z':
+				break ;
+			case 'Z':
+				break;
+			case 'C':
+				*create_flag = 1;
 				break;
 			case 'h':
 				print_help(v[0]);
@@ -94,23 +118,83 @@ parse_cmd_args( int c, char *v[], int *flag_ei_pax, int *flag_pt_pax_flags  )
 
 
 int
+no_pt_pax_flags(Elf *e)
+{
+	size_t i, phnum;
+	GElf_Phdr phdr;
+
+	elf_getphdrnum(e, &phnum);
+	for(i=0; i<phnum; ++i)
+	{
+		if(gelf_getphdr(e, i, &phdr) != &phdr)
+			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
+		if(phdr.p_type == PT_PAX_FLAGS)
+			return 0;
+	}
+	return 1;
+}
+
+
+int
+create_pt_pax_flags(Elf *e)
+{
+	size_t i, phnum;
+	GElf_Phdr phdr;
+
+	elf_getphdrnum(e, &phnum);
+	for(i=0; i<phnum; ++i)
+	{
+		if(gelf_getphdr(e, i, &phdr) != &phdr)
+			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
+		if(phdr.p_type == PT_NULL)
+		{
+			phdr.p_type = PT_PAX_FLAGS;
+			phdr.p_flags = PF_NOEMUTRAMP|PF_NORANDEXEC;
+			if(!gelf_update_phdr(e, i, &phdr))
+				error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
+			return 1;
+		}
+	}
+
+
+	/*
+	if( !(phdr = gelf_newphdr(Elf *e, size_t phnum)) )
+	{
+		phdr.p_type = PT_PAX_FLAGS;
+		//phdr.p_offset
+		//phdr.p_vaddr
+		//phdr.p_paddr
+		//phdr.p_filesz
+		//phdr.p_memsz
+		phdr.p_flags = PF_NOEMUTRAMP|PF_NORANDEXEC;
+		//phdr.p_align
+
+		if(!gelf_update_phdr(e, i, &phdr))
+			error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
+		return 1;
+	}
+		error(EXIT_FAILURE, 0, "gelf_newphdr(): %s", elf_errmsg(elf_errno()));
+	*/
+
+}
+
+
+int
 main( int argc, char *argv[])
 {
 	int fd;
-	int flag_ei_pax, flag_pt_pax_flags, found_ei_pax;
+	int pax_flags, create_flag;
 	char *f_name;
-	size_t i, phnum;
 
 	Elf *elf;
 	GElf_Ehdr ehdr;
-	GElf_Phdr phdr;
 
-	f_name = parse_cmd_args(argc, argv, &flag_ei_pax, &flag_pt_pax_flags);
+	f_name = parse_cmd_args(argc, argv, &pax_flags, &create_flag);
 
 	if(elf_version(EV_CURRENT) == EV_NONE)
 		error(EXIT_FAILURE, 0, "Library out of date.");
 
-	if( flag_ei_pax || flag_pt_pax_flags )
+	if(create_flag)
 	{
 		if((fd = open(f_name, O_RDWR)) < 0)
 			error(EXIT_FAILURE, 0, "open() fail.");
@@ -128,11 +212,39 @@ main( int argc, char *argv[])
 	if(elf_kind(elf) != ELF_K_ELF)
 		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
 
-	if(gelf_getehdr(elf,&ehdr) != &ehdr)
-		error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
 
-	found_ei_pax = ((u_long) ehdr.e_ident[EI_PAX + 1] << 8) + (u_long) ehdr.e_ident[EI_PAX];
 
+
+
+	if(create_flag)
+	{
+		//To be safe, let's make sure EI_PAX flags are zero-ed for most secure legacy
+		if(gelf_getehdr(elf, &ehdr) != &ehdr)
+			error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
+
+		ehdr.e_ident[EI_PAX] = 0;
+		ehdr.e_ident[EI_PAX + 1] = 0;
+
+		if(!gelf_update_ehdr(elf, &ehdr))
+			error(EXIT_FAILURE, 0, "gelf_update_ehdr(): %s", elf_errmsg(elf_errno()));
+
+		if(no_pt_pax_flags(elf))
+		{
+			printf("PT_PAX_FLAGS phdr not found: creating one\n");
+			if(create_pt_pax_flags(elf))
+			{
+				printf("PT_PAX_FLAGS phdr create: succeeded\n");
+			}
+			else
+				error(EXIT_FAILURE, 0, "PT_PAX_FLAGS phdr create: failed");
+		}
+		else
+			error(EXIT_FAILURE, 0, "PT_PAX_FLAGS phdr found: nothing to do");
+	}	
+
+
+
+	/*
 	printf("==== EI_PAX ====\n") ;
 	PRINT(HF_PAX_PAGEEXEC, found_ei_pax, 0);
 	PRINT(HF_PAX_EMUTRAMP, found_ei_pax, 1);
@@ -142,14 +254,6 @@ main( int argc, char *argv[])
 	PRINT(HF_PAX_SEGMEXEC, found_ei_pax, 0);
 	printf("\n");
 
-	if( flag_ei_pax )
-	{
-		printf("Disabling EI_PAX\n\n");
-		ehdr.e_ident[EI_PAX]     = 0xFF;
-		ehdr.e_ident[EI_PAX + 1] = 0xFF;
-		if(!gelf_update_ehdr(elf, &ehdr))
-			error(EXIT_FAILURE, 0, "gelf_update_ehdr(): %s", elf_errmsg(elf_errno()));
-	}
 
 	printf("==== PHRDs ====\n") ;
 	elf_getphdrnum(elf, &phnum);
@@ -208,6 +312,7 @@ main( int argc, char *argv[])
 		}
 	}
 	printf("\n\n");
+	*/
 
 	elf_end(elf);
 	close(fd);
