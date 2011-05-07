@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <error.h>
+#include <libgen.h>
 
 #include <gelf.h>
 
@@ -39,12 +40,13 @@
 void
 print_help(char *v)
 {
-        printf(
-                "Package Name : " PACKAGE_STRING "\n"
-                "Bug Reports  : " PACKAGE_BUGREPORT "\n"
-                "Description  : Get or set pax flags on an ELF object\n\n"
-                "Usage        : %s {[-pPeEmMrRxXsSzZC]  ELFfile | [-h]}\n"
-                "options      :     Print out pax flag information\n"
+	printf(
+		"Package Name : " PACKAGE_STRING "\n"
+		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
+		"Program Name : %s\n"
+		"Description  : Get or set pax flags on an ELF object\n\n"
+		"Usage        : %s {[-pPeEmMrRxXsSzZC]  ELFfile | [-h]}\n"
+		"options      :     Print out pax flag information\n"
 		"             : -p  Disable PAGEEXEC\t-P  Enable  PAGEEXEC\n"
 		"             : -e  Disable EMUTRAMP\t-E  Enable  EMUTRAMP\n"
 		"             : -m  Disable MPROTECT\t-M  Enable  MPROTECT\n"
@@ -53,11 +55,12 @@ print_help(char *v)
 		"             : -s  Disable SEGMEXEC\t-X  Enable  SEGMEXEC\n"
 		"             : -z  Default least secure\t-Z Default most secure\n"
 		"             : -C  Created PT_PAX_FLAGS program header\n"
-                "             : -h  Print out this help\n",
-                v
-        );
+		"             : -h  Print out this help\n",
+		basename(v),
+		basename(v)
+	);
 
-        exit(EXIT_SUCCESS);
+	exit(EXIT_SUCCESS);
 }
 
 

@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <error.h>
+#include <libgen.h>
 
 #include <gelf.h>
 
@@ -37,12 +38,13 @@ print_help(char *v)
 	printf(
 		"Package Name : " PACKAGE_STRING "\n"
 		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
+		"Program Name : %s\n"
 		"Description  : Check for, or conditionally remove, executable flag from PT_GNU_STACK\n\n"
 		"Usage        : %s {[-f] ELFfile | [-h]}\n"
 		"options      :     Print out protection flags on PT_GNU_STACK\n"
 		"             : -f  Remove X if WX flags are set on PT_GNU_STACK\n"
 		"             : -h  Print out this help\n",
-		v
+		basename(v), basename(v)
 	);
 
 	exit(EXIT_SUCCESS);
