@@ -44,7 +44,8 @@ print_help(char *v)
 		"options      :     Print out protection flags on PT_GNU_STACK\n"
 		"             : -f  Remove X if WX flags are set on PT_GNU_STACK\n"
 		"             : -h  Print out this help\n",
-		basename(v), basename(v)
+		basename(v),
+		basename(v)
 	);
 
 	exit(EXIT_SUCCESS);
