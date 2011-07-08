@@ -206,7 +206,11 @@ int main( int argc, char *argv[])
    					shdr.sh_entsize
 				);
 
-				if((data = elf_getdata(scn, data)) != NULL)
+				if(shdr.sh_type == SHT_NOBITS)
+					continue;
+
+				data = NULL;
+				while((data = elf_getdata(scn, data)) != NULL)
 				{
 					printf("\n ***** DATA ***** \n");
 					printf( "Data:\t\t%s\nType:\t\t%d\nSize:\t\t%lu\n"
@@ -220,7 +224,6 @@ int main( int argc, char *argv[])
 					);
 				}
 				printf("\n\n");
-
 			}
 
 

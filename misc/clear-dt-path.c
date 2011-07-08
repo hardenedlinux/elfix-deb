@@ -48,21 +48,24 @@ int main( int argc, char *argv[])
 			while((scn = elf_nextscn(elf, scn)) != NULL)
 			{
 				gelf_getshdr(scn, &shdr);
-				data = elf_getdata(scn, NULL);
 
 				if(shdr.sh_type != SHT_DYNAMIC)
 					continue;
 
 				printf("Section name: %s\n", elf_strptr(elf, ehdr.e_shstrndx, shdr.sh_name));
 
-				if(data != NULL)
-					for( i=0; gelf_getdyn(data, i, &dyn) != NULL; i++)
-					{
-						if(dyn.d_tag == DT_RPATH)
-							printf("DT_RPATH found\n");
-						if(dyn.d_tag == DT_RUNPATH)
-							printf("DT_RUNPATH found\n");
-					}
+				data = NULL;
+				while((data = elf_getdata(scn, data)) != NULL)
+				{
+					if(data != NULL)
+						for( i=0; gelf_getdyn(data, i, &dyn) != NULL; i++)
+						{
+							if(dyn.d_tag == DT_RPATH)
+								printf("DT_RPATH found\n");
+							if(dyn.d_tag == DT_RUNPATH)
+								printf("DT_RUNPATH found\n");
+						}
+				}
 			}
 		}
 

@@ -4,4 +4,4 @@ all: clear-dt-path parse-elf print-sections
 	gcc -o $@ $^ -lelf
 
 clean:
-	rm -rf parse-elf print-sections
+	rm -rf clear-dt-path parse-elf print-sections

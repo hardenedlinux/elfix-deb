@@ -1,21 +1,22 @@
 
-#include <stdio.h>	// printf
-#include <stdlib.h>	// EXIT_FAILURE
-#include <error.h>	// error
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <error.h>
 
-#include <gelf.h>	// elf_* and gelf_*
+#include <gelf.h>
 
-#include <sys/types.h>	// open
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>	// close
+#include <unistd.h>
 
 
 int main( int argc, char *argv[])
 {
 	int fd, cmd;
 	size_t i;
-	char *p; 
+	char shname[1024];
 
 	Elf *arf, *elf;
 	GElf_Ehdr ehdr;
@@ -47,16 +48,20 @@ int main( int argc, char *argv[])
 			while((scn = elf_nextscn(elf, scn)) != NULL)
 			{
 				gelf_getshdr(scn, &shdr);
-				printf("Section name: %s\n", elf_strptr(elf, ehdr.e_shstrndx, shdr.sh_name));
 
-				if( elf_getdata(scn, NULL) == NULL)
-					printf("no data\n");
+				strcpy(shname, elf_strptr(elf, ehdr.e_shstrndx, shdr.sh_name));
+				printf("%s\n", shname);
 
 				/*
+				if( !strcmp(shname, ".bss") || !strcmp(shname, ".tbss") )
+					continue; 
+				*/
+				if(shdr.sh_type == SHT_NOBITS)
+					continue;
+
 				data = NULL;
 				while((data = elf_getdata(scn, data)) != NULL)
 				{
-					printf("%2x\n", data);
 					printf( "Type:\t\t%d\nSize:\t\t%lu\n"
 						"Off:\t\t%lu\nAlign:\t\t%lu\nVersion:\t%u\n",
 						data->d_type,
@@ -75,7 +80,6 @@ int main( int argc, char *argv[])
 				}
 
 				printf("\n\n");
-				*/
 			}
 		}
 
