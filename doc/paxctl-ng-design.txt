@@ -31,9 +31,46 @@ PURPOSAL
 To avoid ambiguity in Hardened Gentoo and to smooth the transition to a
 future, we propose the following standards to how pax markings are treated:
 
-1) The kernel.
+1) The kernel.  The kernel will be patched to force respect of PT_PAX markings
+first, and only if these are missing, revert to EI_PAX.  If both markings are
+misssing, then the kernel will revert to enforcing maximum protection, meaning
 
-2) Userland utility.
+	PAGEEXEC enabled
+	SEGMEXEC enabled
+	MPROTECT enabled
+	EMUTRAMP disabled
+	RANDMMAP enabled
+
+Once xattr pax markings are introduced, then the kernel will be patched to
+force respect of xattr markings first.  If these are missing, either because
+the file has not been pax marked in their xattr fields, or because the
+filesystem doesn't support xattrs, then the kernel will revert to using
+PT_PAX.  If the PT_PAX header is missing, the kernel will then revert to
+EI_PAX markings, and if even these are missing, it will finaly revert to
+enforcing maximum protection.
+
+
+2) Userland utility.  A new userland utility will be required to ensure
+consistency between the two (eventually three) types of pax markings.
+
+If an ELF binary has a PT_PAX header, it will use that for pax markings.
+For consistency, and until standards say otherwise, it will also mark
+the EI_PAX field with the same flags.
+
+If the binary does not have a PT_PAX header, it will not attempt to add
+such a header, nor convert a GNU_STACK header.  Rather, it will only mark
+the EI_PAX fields.
+
+When xattr pax markings are introduced, then the utility will try to add
+the same markings to all three: xattrs, PT_PAX and EI_PAX.  It may fail
+to add the markings to either xattrs and/or PT_PAX for the reasons stated
+above, but at least the markings will be in EI_PAX.
+
+
+3) It is hoped that by the time EI_PAX markings must be deprecated because
+ehdr.e_ident[14] and ehdr.e_ident[15] are allocated to some other official
+purpose, xattr marking will be fully supported and EI_PAX can be dropped
+from both the kernel and the userland utility.
 
 
 
