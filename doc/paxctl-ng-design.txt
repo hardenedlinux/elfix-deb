@@ -1,0 +1,43 @@
+
+INTRODUCTION
+
+Currently there are two ways to perform pax markings, one is by EI_PAX and
+the other by PT_PAX.  The former is a legacy marking which uses bytes 14
+and 15 of the ehdr.e_ident[] field.  These are in a reserved area of the ELF
+header and could be allocated to a different official use by some future
+standard [1].  For this reason, it is undesireable to continue using this
+marking scheme.  The second method introduces a new program header called
+PAX_FLAGS which hosts the markings.  While this avoids hijacking a reserved
+area of an ELF binary, it introduces the problem of pre-compiled binaries
+which do not have a PT_PAX program header.  Binaries compiled on a Gentoo
+system automatically have a PT_PAX header because of patched binutils.  However
+binaries compiled on other systems do not necessarily have such a section.
+This can be remedied by either adding a PT_PAX header or converting a GNU_STACK
+header.  However both of these are problematic.  In the case of self-checking
+elf binaries, adding a PT_PAX header will cause a failure of the check.
+Alternatively, converting a GNU_STACK header can cause the binary to fail
+to execute correctly.
+
+A third possibility is being consider, but it is in its infancy as of this
+writing.  The pax markings can be put in the Extended File Attributes, much
+like selinux labels.  This is not without its difficulties because not all
+filesystems are capable of supporting xattrs.  However, work on making
+filesystems, like tmpfs, and archiving tools, like tar, aware of xattrs
+is maturing and migrating pax markings to xattrs is now a design possibility.
+
+
+PURPOSAL
+
+To avoid ambiguity in Hardened Gentoo and to smooth the transition to a
+future, we propose the following standards to how pax markings are treated:
+
+1) The kernel.
+
+2) Userland utility.
+
+
+
+REFERENCE
+
+[1] http://refspecs.freestandards.org/elf/
+
