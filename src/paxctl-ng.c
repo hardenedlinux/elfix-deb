@@ -54,6 +54,7 @@ print_help(char *v)
 		"             : -x  Disable RANDEXEC\t-X  Enable  RANDEXEC\n"
 		"             : -s  Disable SEGMEXEC\t-X  Enable  SEGMEXEC\n"
 		"             : -z  Default least secure\t-Z Default most secure\n"
+		"             : -v  view the flags\n"
 		"             : -h  Print out this help\n",
 		basename(v),
 		basename(v)
@@ -69,10 +70,10 @@ parse_cmd_args( int c, char *v[], int *pax_flags )
 	int i, oc;
 
 	if((c != 2)&&(c != 3)&&(c != 4))
-		error(EXIT_FAILURE, 0, "Usage: %s {[-pPeEmMrRxXsSzZC] ELFfile | [-h]}", v[0]);
+		error(EXIT_FAILURE, 0, "Usage: %s {[-pPeEmMrRxXsSzZv] ELFfile | [-h]}", v[0]);
 
 	*pax_flags = 0;
-	while((oc = getopt(c, v,":pPeEmMrRxXsSzZCh")) != -1)
+	while((oc = getopt(c, v,":pPeEmMrRxXsSzZvh")) != -1)
 		switch(oc)
 		{
 			case 'p':
@@ -103,6 +104,9 @@ parse_cmd_args( int c, char *v[], int *pax_flags )
 				break ;
 			case 'Z':
 				break;
+			case 'v':
+				*pax_flags = -1; // Invalid flag signal read flags, not set
+				break;
 			case 'h':
 				print_help(v[0]);
 				break;
@@ -115,8 +119,11 @@ parse_cmd_args( int c, char *v[], int *pax_flags )
 }
 
 
+/*
+ * return 1 if PAX_FLAGS program header exists, 0 otherwise
+ */
 int
-no_pt_pax_flags(Elf *e)
+pt_pax_flags(Elf *e)
 {
 	size_t i, phnum;
 	GElf_Phdr phdr;
@@ -127,9 +134,9 @@ no_pt_pax_flags(Elf *e)
 		if(gelf_getphdr(e, i, &phdr) != &phdr)
 			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
 		if(phdr.p_type == PT_PAX_FLAGS)
-			return 0;
+			return 1;
 	}
-	return 1;
+	return 0;
 }
 
 
@@ -150,6 +157,7 @@ main( int argc, char *argv[])
 
 	if((fd = open(f_name, O_RDWR)) < 0)
 		error(EXIT_FAILURE, 0, "open() fail.");
+
 	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
 		error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
 
