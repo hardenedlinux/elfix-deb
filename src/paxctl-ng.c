@@ -54,7 +54,6 @@ print_help(char *v)
 		"             : -x  Disable RANDEXEC\t-X  Enable  RANDEXEC\n"
 		"             : -s  Disable SEGMEXEC\t-X  Enable  SEGMEXEC\n"
 		"             : -z  Default least secure\t-Z Default most secure\n"
-		"             : -C  Created PT_PAX_FLAGS program header\n"
 		"             : -h  Print out this help\n",
 		basename(v),
 		basename(v)
@@ -65,7 +64,7 @@ print_help(char *v)
 
 
 char *
-parse_cmd_args( int c, char *v[], int *pax_flags, int *create_flag )
+parse_cmd_args( int c, char *v[], int *pax_flags )
 {
 	int i, oc;
 
@@ -73,7 +72,6 @@ parse_cmd_args( int c, char *v[], int *pax_flags, int *create_flag )
 		error(EXIT_FAILURE, 0, "Usage: %s {[-pPeEmMrRxXsSzZC] ELFfile | [-h]}", v[0]);
 
 	*pax_flags = 0;
-	*create_flag = 0;
 	while((oc = getopt(c, v,":pPeEmMrRxXsSzZCh")) != -1)
 		switch(oc)
 		{
@@ -104,9 +102,6 @@ parse_cmd_args( int c, char *v[], int *pax_flags, int *create_flag )
 			case 'z':
 				break ;
 			case 'Z':
-				break;
-			case 'C':
-				*create_flag = 1;
 				break;
 			case 'h':
 				print_help(v[0]);
@@ -139,112 +134,53 @@ no_pt_pax_flags(Elf *e)
 
 
 int
-create_pt_pax_flags(Elf *e)
-{
-	size_t i, phnum;
-	GElf_Phdr phdr;
-
-	elf_getphdrnum(e, &phnum);
-	for(i=0; i<phnum; ++i)
-	{
-		if(gelf_getphdr(e, i, &phdr) != &phdr)
-			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
-		if(phdr.p_type == PT_NULL)
-		{
-			phdr.p_type = PT_PAX_FLAGS;
-			phdr.p_flags = PF_NOEMUTRAMP|PF_NORANDEXEC;
-			if(!gelf_update_phdr(e, i, &phdr))
-				error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
-			return 1;
-		}
-	}
-
-
-	/*
-	if( !(phdr = gelf_newphdr(Elf *e, size_t phnum)) )
-	{
-		phdr.p_type = PT_PAX_FLAGS;
-		//phdr.p_offset
-		//phdr.p_vaddr
-		//phdr.p_paddr
-		//phdr.p_filesz
-		//phdr.p_memsz
-		phdr.p_flags = PF_NOEMUTRAMP|PF_NORANDEXEC;
-		//phdr.p_align
-
-		if(!gelf_update_phdr(e, i, &phdr))
-			error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
-		return 1;
-	}
-		error(EXIT_FAILURE, 0, "gelf_newphdr(): %s", elf_errmsg(elf_errno()));
-	*/
-
-}
-
-
-int
 main( int argc, char *argv[])
 {
 	int fd;
-	int pax_flags, create_flag;
+	int pax_flags;
 	char *f_name;
 
 	Elf *elf;
 	GElf_Ehdr ehdr;
 
-	f_name = parse_cmd_args(argc, argv, &pax_flags, &create_flag);
+	f_name = parse_cmd_args(argc, argv, &pax_flags);
 
 	if(elf_version(EV_CURRENT) == EV_NONE)
 		error(EXIT_FAILURE, 0, "Library out of date.");
 
-	if(create_flag)
-	{
-		if((fd = open(f_name, O_RDWR)) < 0)
-			error(EXIT_FAILURE, 0, "open() fail.");
-		if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
-			error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
-	}
-	else
-	{
-		if((fd = open(f_name, O_RDONLY)) < 0)
-			error(EXIT_FAILURE, 0, "open() fail.");
-		if((elf = elf_begin(fd, ELF_C_READ, NULL)) == NULL)
-			error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
-	}
+	if((fd = open(f_name, O_RDWR)) < 0)
+		error(EXIT_FAILURE, 0, "open() fail.");
+	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
+		error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
 
 	if(elf_kind(elf) != ELF_K_ELF)
 		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
 
 
+	/*
+	if(gelf_getehdr(elf, &ehdr) != &ehdr)
+		error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
 
+	ehdr.e_ident[EI_PAX] = 0;
+	ehdr.e_ident[EI_PAX + 1] = 0;
 
+	if(!gelf_update_ehdr(elf, &ehdr))
+		error(EXIT_FAILURE, 0, "gelf_update_ehdr(): %s", elf_errmsg(elf_errno()));
 
-	if(create_flag)
+	if(no_pt_pax_flags(elf))
 	{
-		//To be safe, let's make sure EI_PAX flags are zero-ed for most secure legacy
-		if(gelf_getehdr(elf, &ehdr) != &ehdr)
-			error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
-
-		ehdr.e_ident[EI_PAX] = 0;
-		ehdr.e_ident[EI_PAX + 1] = 0;
-
-		if(!gelf_update_ehdr(elf, &ehdr))
-			error(EXIT_FAILURE, 0, "gelf_update_ehdr(): %s", elf_errmsg(elf_errno()));
-
-		if(no_pt_pax_flags(elf))
+		printf("PT_PAX_FLAGS phdr not found: creating one\n");
+		if(create_pt_pax_flags(elf))
 		{
-			printf("PT_PAX_FLAGS phdr not found: creating one\n");
-			if(create_pt_pax_flags(elf))
-			{
-				printf("PT_PAX_FLAGS phdr create: succeeded\n");
-			}
-			else
-				error(EXIT_FAILURE, 0, "PT_PAX_FLAGS phdr create: failed");
+			printf("PT_PAX_FLAGS phdr create: succeeded\n");
 		}
 		else
-			error(EXIT_FAILURE, 0, "PT_PAX_FLAGS phdr found: nothing to do");
-	}	
-
+			error(EXIT_FAILURE, 0, "PT_PAX_FLAGS phdr create: failed");
+	}
+	else
+		error(EXIT_FAILURE, 0, "PT_PAX_FLAGS phdr found: nothing to do");
+	}
+	*/
 
 
 	/*
