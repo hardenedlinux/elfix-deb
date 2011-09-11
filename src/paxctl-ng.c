@@ -232,7 +232,7 @@ print_flags(Elf *elf)
 
 
 void
-set_flags(Elf *elf)
+set_flags(Elf *elf, int *pax_flags)
 {
 	GElf_Ehdr ehdr;
 	char ei_buf[BUF_SIZE];
@@ -240,17 +240,59 @@ set_flags(Elf *elf)
 
 	GElf_Phdr phdr;
 	char pt_buf[BUF_SIZE];
+	uint16_t pt_flags;
 	char found_pt_pax;
 	size_t i, phnum;
-
 
 	memset(ei_buf, 0, BUF_SIZE);
 	memset(pt_buf, 0, BUF_SIZE);
 
-	/*
-	if(!gelf_update_ehdr(e, &ehdr))
+	if(gelf_getehdr(elf, &ehdr) != &ehdr)
+		error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
+
+	ei_flags = ehdr.e_ident[EI_PAX] + (ehdr.e_ident[EI_PAX + 1] << 8);
+
+	if(*pax_flags & PF_PAGEEXEC)
+		ei_flags &= ~HF_PAX_PAGEEXEC;
+	if(*pax_flags & PF_NOPAGEEXEC)
+		ei_flags |= HF_PAX_PAGEEXEC;
+
+	if(*pax_flags & PF_SEGMEXEC)
+		ei_flags &= ~HF_PAX_SEGMEXEC;
+	if(*pax_flags & PF_NOSEGMEXEC)
+		ei_flags |= HF_PAX_SEGMEXEC;
+
+	if(*pax_flags & PF_MPROTECT)
+		ei_flags &= ~HF_PAX_MPROTECT;
+	if(*pax_flags & PF_NOMPROTECT)
+		ei_flags |= HF_PAX_MPROTECT;
+
+	if(*pax_flags & PF_EMUTRAMP)
+		ei_flags |= HF_PAX_EMUTRAMP;
+	if(*pax_flags & PF_NOEMUTRAMP)
+		ei_flags &= ~HF_PAX_EMUTRAMP;
+
+	if(*pax_flags & PF_RANDMMAP)
+		ei_flags &= ~HF_PAX_RANDMMAP;
+	if(*pax_flags & PF_NORANDMMAP)
+		ei_flags |= HF_PAX_RANDMMAP;
+
+	if(*pax_flags & PF_RANDEXEC)
+		ei_flags |= HF_PAX_RANDEXEC;
+	if(*pax_flags & PF_NORANDEXEC)
+		ei_flags &= ~HF_PAX_RANDEXEC;
+
+
+	if(gelf_getehdr(elf, &ehdr) != &ehdr)
+		error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
+
+	ehdr.e_ident[EI_PAX] = (uint8_t)ei_flags  ;
+	ehdr.e_ident[EI_PAX + 1] = (uint8_t)(ei_flags >> 8) ;
+
+	if(!gelf_update_ehdr(elf, &ehdr))
 		error(EXIT_FAILURE, 0, "gelf_update_ehdr(): %s", elf_errmsg(elf_errno()));
 
+	/*
 	elf_getphdrnum(elf, &phnum);
 	for(i=0; i<phnum; ++i)
 	{
@@ -292,11 +334,11 @@ main( int argc, char *argv[])
 	if(elf_kind(elf) != ELF_K_ELF)
 		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
 
+	if(pax_flags != 0)
+		set_flags(elf, &pax_flags);
+
 	if(view_flags == 1)
 		print_flags(elf);
-
-	if(pax_flags != 0)
-		set_flags(elf);
 
 	elf_end(elf);
 	close(fd);
