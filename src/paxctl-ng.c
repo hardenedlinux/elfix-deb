@@ -46,21 +46,21 @@ void
 print_help(char *v)
 {
 	printf(
+		"\n"
 		"Package Name : " PACKAGE_STRING "\n"
 		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
 		"Program Name : %s\n"
 		"Description  : Get or set pax flags on an ELF object\n\n"
-		"Usage        : %s {[-PpEeMmRrXxSsZzv]  ELFfile | [-h]}\n"
-		"options      :     Print out pax flag information\n"
-		"             : -p  Disable PAGEEXEC\t-P  Enable  PAGEEXEC\n"
-		"             : -e  Disable EMUTRAMP\t-E  Enable  EMUTRAMP\n"
-		"             : -m  Disable MPROTECT\t-M  Enable  MPROTECT\n"
-		"             : -r  Disable RANDMMAP\t-R  Enable  RANDMMAP\n"
-		"             : -x  Disable RANDEXEC\t-X  Enable  RANDEXEC\n"
-		"             : -s  Disable SEGMEXEC\t-X  Enable  SEGMEXEC\n"
-		"             : -z  Default least secure\t-Z Default most secure\n"
-		"             : -v  view the flags\n"
-		"             : -h  Print out this help\n",
+		"Usage        : %s [-{Pp}{Ee}{Mm}{Rr}{Xx}{Ss}v ELF] | [-Z ELF] | [-z ELF] | [-h]\n\n"
+		"options      : -P Enable PAGEEXEC\tor\t-p disable  PAGEEXEC\n"
+		"             : -E Enable EMUTRAMP\tor\t-e disable  EMUTRAMP\n"
+		"             : -M Enable MPROTECT\tor\t-m disable  MPROTECT\n"
+		"             : -R Enable RANDMMAP\tor\t-r disable  RANDMMAP\n"
+		"             : -X Enable RANDEXEC\tor\t-x disable  RANDEXEC\n"
+		"             : -S Enable SEGMEXEC\tor\t-s disable  SEGMEXEC\n"
+		"             : -Z Default most secure\tor\t-z Default least secure\n"
+		"             : -v view the flags\n"
+		"             : -h Print out this help\n\n",
 		basename(v),
 		basename(v)
 	);
@@ -73,6 +73,9 @@ char *
 parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 {
 	int i, oc;
+	int compat;
+
+	compat = 0;
 
 	*pax_flags = 0;
 	*view_flags = 0;
@@ -81,50 +84,65 @@ parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 		{
 			case 'P':
 				*pax_flags |= PF_PAGEEXEC;
+				compat |= 1;
 				break;
 			case 'p':
 				*pax_flags |= PF_NOPAGEEXEC;
+				compat |= 1;
 				break ;
 			case 'S':
 				*pax_flags |= PF_SEGMEXEC;
+				compat |= 1;
 				break;
 			case 's':
 				*pax_flags |= PF_NOSEGMEXEC;
+				compat |= 1;
 				break ;
 			case 'M':
 				*pax_flags |= PF_MPROTECT;
+				compat |= 1;
 				break;
 			case 'm':
 				*pax_flags |= PF_NOMPROTECT;
+				compat |= 1;
 				break ;
 			case 'E':
 				*pax_flags |= PF_EMUTRAMP;
+				compat |= 1;
 				break;
 			case 'e':
 				*pax_flags |= PF_NOEMUTRAMP;
+				compat |= 1;
 				break ;
 			case 'R':
 				*pax_flags |= PF_RANDMMAP;
+				compat |= 1;
 				break;
 			case 'r':
 				*pax_flags |= PF_NORANDMMAP;
+				compat |= 1;
 				break ;
 			case 'X':
 				*pax_flags |= PF_RANDEXEC;
+				compat |= 1;
 				break;
 			case 'x':
 				*pax_flags |= PF_NORANDEXEC;
+				compat |= 1;
 				break ;
 			case 'Z':
 				*pax_flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
 					PF_NOEMUTRAMP | PF_RANDMMAP | PF_RANDEXEC;
+				compat += 1;
 				break ;
 			case 'z':
 				*pax_flags = PF_NOPAGEEXEC | PF_NOSEGMEXEC | PF_NOMPROTECT |
 					PF_EMUTRAMP | PF_NORANDMMAP | PF_NORANDEXEC;
+				compat += 1;
 				break;
 			case 'v':
 				*view_flags = 1;
+				compat |= 1;
 				break;
 			case 'h':
 				print_help(v[0]);
@@ -134,11 +152,26 @@ parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 				error(EXIT_FAILURE, 0, "option -%c is invalid: ignored.", optopt ) ;
 		}
 
-//	if((c != 2)&&(c != 3)&&(c != 4))
-//		error(EXIT_FAILURE, 0, "Usage: %s {[-pPeEmMrRxXsSzZv] ELFfile | [-h]}", v[0]);
+	if( (*pax_flags & PF_PAGEEXEC) && (*pax_flags & PF_NOPAGEEXEC))
+		compat = 2;
 
-	if(v[optind] == NULL)
-		error(EXIT_FAILURE, 0, "Usage: %s {[-pPeEmMrRxXsSzZv] ELFfile | [-h]}", v[0]);
+	if( (*pax_flags & PF_SEGMEXEC) && (*pax_flags & PF_NOSEGMEXEC))
+		compat = 2;
+
+	if( (*pax_flags & PF_MPROTECT) && (*pax_flags & PF_NOMPROTECT))
+		compat = 2;
+
+	if( (*pax_flags & PF_EMUTRAMP) && (*pax_flags & PF_NOEMUTRAMP))
+		compat = 2;
+
+	if( (*pax_flags & PF_RANDMMAP) && (*pax_flags & PF_NORANDMMAP))
+		compat = 2;
+
+	if( (*pax_flags & PF_RANDEXEC) && (*pax_flags & PF_NORANDEXEC))
+		compat = 2;
+
+	if(compat != 1 || v[optind] == NULL)
+		print_help(v[0]);
 
 	return v[optind] ;
 }
