@@ -17,6 +17,7 @@
 */
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <error.h>
@@ -31,10 +32,14 @@
 
 #include <config.h>
 
-#define EI_PAX 14 // Index in e_ident[] where to read flags - from chpax.h
+#define HF_PAX_PAGEEXEC		1
+#define HF_PAX_EMUTRAMP		2
+#define HF_PAX_MPROTECT		4
+#define HF_PAX_RANDMMAP		8
+#define HF_PAX_RANDEXEC		16
+#define HF_PAX_SEGMEXEC		32
 
-#define PRINT(E,F,I) printf("%s:\t%s\n", #E, E & F ? ( I ? "enabled" : "disabled" ) : ( I ? "disabled" : "enabled" ) );
-#define CASE(N,P) case P: printf("%d: %s\n", (int)N, #P); break
+#define EI_PAX			14   // Index to read the PaX flags into ELF header e_ident[] array
 
 
 void
@@ -65,7 +70,7 @@ print_help(char *v)
 
 
 char *
-parse_cmd_args( int c, char *v[], int *pax_flags )
+parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 {
 	int i, oc;
 
@@ -73,6 +78,7 @@ parse_cmd_args( int c, char *v[], int *pax_flags )
 		error(EXIT_FAILURE, 0, "Usage: %s {[-pPeEmMrRxXsSzZv] ELFfile | [-h]}", v[0]);
 
 	*pax_flags = 0;
+	*view_flags = 0;
 	while((oc = getopt(c, v,":pPeEmMrRxXsSzZvh")) != -1)
 		switch(oc)
 		{
@@ -105,7 +111,7 @@ parse_cmd_args( int c, char *v[], int *pax_flags )
 			case 'Z':
 				break;
 			case 'v':
-				*pax_flags = -1; // Invalid flag signal read flags, not set
+				*view_flags = 1;
 				break;
 			case 'h':
 				print_help(v[0]);
@@ -119,24 +125,69 @@ parse_cmd_args( int c, char *v[], int *pax_flags )
 }
 
 
-/*
- * return 1 if PAX_FLAGS program header exists, 0 otherwise
- */
-int
-pt_pax_flags(Elf *e)
+#define BUF_SIZE 7
+void
+print_flags(Elf *e, GElf_Ehdr *eh)
 {
+	char ei_buf[BUF_SIZE];
+	char pt_buf[BUF_SIZE];
+	uint16_t ei_flags;
+
+	char found_pt_pax;
 	size_t i, phnum;
 	GElf_Phdr phdr;
 
+	memset(ei_buf, 0, BUF_SIZE);
+	memset(pt_buf, 0, BUF_SIZE);
+
+	ei_flags = eh->e_ident[EI_PAX] + (eh->e_ident[EI_PAX + 1] << 8);
+
+  	ei_buf[0] = ei_flags & HF_PAX_PAGEEXEC ? 'p' : 'P';
+	ei_buf[1] = ei_flags & HF_PAX_SEGMEXEC ? 's' : 'S';
+	ei_buf[2] = ei_flags & HF_PAX_MPROTECT ? 'm' : 'M';
+	ei_buf[3] = ei_flags & HF_PAX_EMUTRAMP ? 'E' : 'e';
+	ei_buf[4] = ei_flags & HF_PAX_RANDMMAP ? 'r' : 'R';
+	ei_buf[5] = ei_flags & HF_PAX_RANDEXEC ? 'X' : 'x';
+
+	printf("EI_PAX: %s\n", ei_buf);
+
+	found_pt_pax = 0;
 	elf_getphdrnum(e, &phnum);
 	for(i=0; i<phnum; ++i)
 	{
 		if(gelf_getphdr(e, i, &phdr) != &phdr)
 			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
 		if(phdr.p_type == PT_PAX_FLAGS)
-			return 1;
+		{
+			found_pt_pax = 1;
+
+			pt_buf[0] = phdr.p_flags & PF_PAGEEXEC ? 'P' :
+				phdr.p_flags & PF_NOPAGEEXEC ? 'p' : '-' ;
+
+			pt_buf[1] = phdr.p_flags & PF_SEGMEXEC   ? 'S' : 
+				phdr.p_flags & PF_NOSEGMEXEC ? 's' : '-';
+
+			pt_buf[2] = phdr.p_flags & PF_MPROTECT   ? 'M' :
+				phdr.p_flags & PF_NOMPROTECT ? 'm' : '-';
+
+			pt_buf[3] = phdr.p_flags & PF_EMUTRAMP   ? 'E' :
+				phdr.p_flags & PF_NOEMUTRAMP ? 'e' : '-';
+
+			pt_buf[4] = phdr.p_flags & PF_RANDMMAP   ? 'R' :
+				phdr.p_flags & PF_NORANDMMAP ? 'r' : '-';
+
+			pt_buf[5] = phdr.p_flags & PF_RANDEXEC   ? 'X' :
+				phdr.p_flags & PF_NORANDEXEC ? 'x' : '-';
+		}
 	}
-	return 0;
+
+	if(found_pt_pax)
+		printf("PT_PAX: %s\n", pt_buf);
+	else
+		printf("PT_PAX: not found\n");
+
+	if(strcmp(ei_buf, pt_buf))
+		printf("EI_PAX != PT_PAX\n");
 }
 
 
@@ -144,13 +195,13 @@ int
 main( int argc, char *argv[])
 {
 	int fd;
-	int pax_flags;
+	int pax_flags, view_flags;
 	char *f_name;
 
 	Elf *elf;
 	GElf_Ehdr ehdr;
 
-	f_name = parse_cmd_args(argc, argv, &pax_flags);
+	f_name = parse_cmd_args(argc, argv, &pax_flags, &view_flags);
 
 	if(elf_version(EV_CURRENT) == EV_NONE)
 		error(EXIT_FAILURE, 0, "Library out of date.");
@@ -164,91 +215,22 @@ main( int argc, char *argv[])
 	if(elf_kind(elf) != ELF_K_ELF)
 		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
 
-
-	/*
+	// get ehdr
 	if(gelf_getehdr(elf, &ehdr) != &ehdr)
 		error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
 
-	ehdr.e_ident[EI_PAX] = 0;
-	ehdr.e_ident[EI_PAX + 1] = 0;
+	if(view_flags == 1)
+		print_flags(elf, &ehdr);
 
+	/*
 	if(!gelf_update_ehdr(elf, &ehdr))
 		error(EXIT_FAILURE, 0, "gelf_update_ehdr(): %s", elf_errmsg(elf_errno()));
 
-	if(no_pt_pax_flags(elf))
-	{
-		printf("PT_PAX_FLAGS phdr not found: creating one\n");
-		if(create_pt_pax_flags(elf))
-		{
-			printf("PT_PAX_FLAGS phdr create: succeeded\n");
-		}
-		else
-			error(EXIT_FAILURE, 0, "PT_PAX_FLAGS phdr create: failed");
-	}
-	else
-		error(EXIT_FAILURE, 0, "PT_PAX_FLAGS phdr found: nothing to do");
-	}
-	*/
-
-
-	/*
-	printf("==== EI_PAX ====\n") ;
-	PRINT(HF_PAX_PAGEEXEC, found_ei_pax, 0);
-	PRINT(HF_PAX_EMUTRAMP, found_ei_pax, 1);
-	PRINT(HF_PAX_MPROTECT, found_ei_pax, 0);
-	PRINT(HF_PAX_RANDMMAP, found_ei_pax, 0);
-	PRINT(HF_PAX_RANDEXEC, found_ei_pax, 1);
-	PRINT(HF_PAX_SEGMEXEC, found_ei_pax, 0);
-	printf("\n");
-
-
-	printf("==== PHRDs ====\n") ;
 	elf_getphdrnum(elf, &phnum);
 	for(i=0; i<phnum; ++i)
 	{
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
 			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
-
-		switch(phdr.p_type)
-		{
-			CASE(i,PT_NULL);
-			CASE(i,PT_LOAD);
-			CASE(i,PT_DYNAMIC);
-			CASE(i,PT_INTERP);
-			CASE(i,PT_NOTE);
-			CASE(i,PT_SHLIB);
-			CASE(i,PT_PHDR);
-			CASE(i,PT_TLS);
-			CASE(i,PT_NUM);
-			CASE(i,PT_LOOS);
-			CASE(i,PT_GNU_EH_FRAME);
-			CASE(i,PT_GNU_STACK);
-			CASE(i,PT_GNU_RELRO);
-			CASE(i,PT_PAX_FLAGS);
-			CASE(i,PT_LOSUNW);
-			//CASE(i,PT_SUNWBSS);
-			CASE(i,PT_SUNWSTACK);
-			CASE(i,PT_HISUNW);
-			//CASE(i,PT_HIOS);
-			CASE(i,PT_LOPROC);
-			CASE(i,PT_HIPROC);
-		}
-
-		if(phdr.p_type == PT_PAX_FLAGS)
-		{
-			PRINT(PF_PAGEEXEC, phdr.p_flags, 1);
-			PRINT(PF_NOPAGEEXEC, phdr.p_flags, 1);
-			PRINT(PF_SEGMEXEC, phdr.p_flags, 1);
-			PRINT(PF_NOSEGMEXEC, phdr.p_flags, 1);
-			PRINT(PF_MPROTECT, phdr.p_flags, 1);
-			PRINT(PF_NOMPROTECT, phdr.p_flags, 1);
-			PRINT(PF_RANDEXEC, phdr.p_flags, 1);
-			PRINT(PF_NORANDEXEC, phdr.p_flags, 1);
-			PRINT(PF_EMUTRAMP, phdr.p_flags, 1);
-			PRINT(PF_NOEMUTRAMP, phdr.p_flags, 1);
-			PRINT(PF_RANDMMAP, phdr.p_flags, 1);
-			PRINT(PF_NORANDMMAP, phdr.p_flags, 1);
-		}
 
 		if((phdr.p_type == PT_PAX_FLAGS) && flag_pt_pax_flags )
 		{
