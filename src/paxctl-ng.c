@@ -51,16 +51,17 @@ print_help(char *v)
 		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
 		"Program Name : %s\n"
 		"Description  : Get or set pax flags on an ELF object\n\n"
-		"Usage        : %s [-{Pp}{Ee}{Mm}{Rr}{Xx}{Ss}v ELF] | [-Z ELF] | [-z ELF] | [-h]\n\n"
-		"options      : -P Enable PAGEEXEC\tor\t-p disable  PAGEEXEC\n"
-		"             : -E Enable EMUTRAMP\tor\t-e disable  EMUTRAMP\n"
-		"             : -M Enable MPROTECT\tor\t-m disable  MPROTECT\n"
-		"             : -R Enable RANDMMAP\tor\t-r disable  RANDMMAP\n"
-		"             : -X Enable RANDEXEC\tor\t-x disable  RANDEXEC\n"
-		"             : -S Enable SEGMEXEC\tor\t-s disable  SEGMEXEC\n"
-		"             : -Z Default most secure\tor\t-z Default least secure\n"
+		"Usage        : %s [-PpEeMmRrXxSsv ELF] | [-Z ELF] | [-z ELF] | [-h]\n\n"
+		"Options      : -P enable PAGEEXEC\t-p disable  PAGEEXEC\n"
+		"             : -E enable EMUTRAMP\t-e disable  EMUTRAMP\n"
+		"             : -M enable MPROTECT\t-m disable  MPROTECT\n"
+		"             : -R enable RANDMMAP\t-r disable  RANDMMAP\n"
+		"             : -X enable RANDEXEC\t-x disable  RANDEXEC\n"
+		"             : -S enable SEGMEXEC\t-s disable  SEGMEXEC\n"
+		"             : -Z most secure settings\t-z all default settings\n"
 		"             : -v view the flags\n"
-		"             : -h Print out this help\n\n",
+		"             : -h print out this help\n\n"
+		"Note         :  If both enabling and disabling flags are set, the default - is used\n\n",
 		basename(v),
 		basename(v)
 	);
@@ -136,8 +137,7 @@ parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 				compat += 1;
 				break ;
 			case 'z':
-				*pax_flags = PF_NOPAGEEXEC | PF_NOSEGMEXEC | PF_NOMPROTECT |
-					PF_EMUTRAMP | PF_NORANDMMAP | PF_NORANDEXEC;
+				*pax_flags = -1;
 				compat += 1;
 				break;
 			case 'v':
@@ -152,24 +152,6 @@ parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 				error(EXIT_FAILURE, 0, "option -%c is invalid: ignored.", optopt ) ;
 		}
 
-	if( (*pax_flags & PF_PAGEEXEC) && (*pax_flags & PF_NOPAGEEXEC))
-		compat = 2;
-
-	if( (*pax_flags & PF_SEGMEXEC) && (*pax_flags & PF_NOSEGMEXEC))
-		compat = 2;
-
-	if( (*pax_flags & PF_MPROTECT) && (*pax_flags & PF_NOMPROTECT))
-		compat = 2;
-
-	if( (*pax_flags & PF_EMUTRAMP) && (*pax_flags & PF_NOEMUTRAMP))
-		compat = 2;
-
-	if( (*pax_flags & PF_RANDMMAP) && (*pax_flags & PF_NORANDMMAP))
-		compat = 2;
-
-	if( (*pax_flags & PF_RANDEXEC) && (*pax_flags & PF_NORANDEXEC))
-		compat = 2;
-
 	if(compat != 1 || v[optind] == NULL)
 		print_help(v[0]);
 
@@ -179,20 +161,25 @@ parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 
 #define BUF_SIZE 7
 void
-print_flags(Elf *e, GElf_Ehdr *eh)
+print_flags(Elf *elf)
 {
+	GElf_Ehdr ehdr;
 	char ei_buf[BUF_SIZE];
-	char pt_buf[BUF_SIZE];
 	uint16_t ei_flags;
 
+	GElf_Phdr phdr;
+	char pt_buf[BUF_SIZE];
 	char found_pt_pax;
 	size_t i, phnum;
-	GElf_Phdr phdr;
+
 
 	memset(ei_buf, 0, BUF_SIZE);
 	memset(pt_buf, 0, BUF_SIZE);
 
-	ei_flags = eh->e_ident[EI_PAX] + (eh->e_ident[EI_PAX + 1] << 8);
+	if(gelf_getehdr(elf, &ehdr) != &ehdr)
+		error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
+
+	ei_flags = ehdr.e_ident[EI_PAX] + (ehdr.e_ident[EI_PAX + 1] << 8);
 
   	ei_buf[0] = ei_flags & HF_PAX_PAGEEXEC ? 'p' : 'P';
 	ei_buf[1] = ei_flags & HF_PAX_SEGMEXEC ? 's' : 'S';
@@ -204,10 +191,10 @@ print_flags(Elf *e, GElf_Ehdr *eh)
 	printf("EI_PAX: %s\n", ei_buf);
 
 	found_pt_pax = 0;
-	elf_getphdrnum(e, &phnum);
+	elf_getphdrnum(elf, &phnum);
 	for(i=0; i<phnum; ++i)
 	{
-		if(gelf_getphdr(e, i, &phdr) != &phdr)
+		if(gelf_getphdr(elf, i, &phdr) != &phdr)
 			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
 		if(phdr.p_type == PT_PAX_FLAGS)
 		{
@@ -238,44 +225,30 @@ print_flags(Elf *e, GElf_Ehdr *eh)
 	else
 		printf("PT_PAX: not found\n");
 
-	if(strcmp(ei_buf, pt_buf))
-		printf("EI_PAX != PT_PAX\n");
+	//Only compare non default flags
+	//if(strcmp(ei_buf, pt_buf))
+	//	printf("EI_PAX != PT_PAX\n");
 }
 
 
-int
-main( int argc, char *argv[])
+void
+set_flags(Elf *elf)
 {
-	int fd;
-	int pax_flags, view_flags;
-	char *f_name;
-
-	Elf *elf;
 	GElf_Ehdr ehdr;
+	char ei_buf[BUF_SIZE];
+	uint16_t ei_flags;
 
-	f_name = parse_cmd_args(argc, argv, &pax_flags, &view_flags);
+	GElf_Phdr phdr;
+	char pt_buf[BUF_SIZE];
+	char found_pt_pax;
+	size_t i, phnum;
 
-	if(elf_version(EV_CURRENT) == EV_NONE)
-		error(EXIT_FAILURE, 0, "Library out of date.");
 
-	if((fd = open(f_name, O_RDWR)) < 0)
-		error(EXIT_FAILURE, 0, "open() fail.");
-
-	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
-		error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
-
-	if(elf_kind(elf) != ELF_K_ELF)
-		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
-
-	// get ehdr
-	if(gelf_getehdr(elf, &ehdr) != &ehdr)
-		error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
-
-	if(view_flags == 1)
-		print_flags(elf, &ehdr);
+	memset(ei_buf, 0, BUF_SIZE);
+	memset(pt_buf, 0, BUF_SIZE);
 
 	/*
-	if(!gelf_update_ehdr(elf, &ehdr))
+	if(!gelf_update_ehdr(e, &ehdr))
 		error(EXIT_FAILURE, 0, "gelf_update_ehdr(): %s", elf_errmsg(elf_errno()));
 
 	elf_getphdrnum(elf, &phnum);
@@ -292,8 +265,38 @@ main( int argc, char *argv[])
 				error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
 		}
 	}
-	printf("\n\n");
 	*/
+}
+
+
+int
+main( int argc, char *argv[])
+{
+	int fd;
+	int pax_flags, view_flags;
+	char *f_name;
+
+	Elf *elf;
+
+	f_name = parse_cmd_args(argc, argv, &pax_flags, &view_flags);
+
+	if(elf_version(EV_CURRENT) == EV_NONE)
+		error(EXIT_FAILURE, 0, "Library out of date.");
+
+	if((fd = open(f_name, O_RDWR)) < 0)
+		error(EXIT_FAILURE, 0, "open() fail.");
+
+	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
+		error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
+
+	if(elf_kind(elf) != ELF_K_ELF)
+		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
+
+	if(view_flags == 1)
+		print_flags(elf);
+
+	if(pax_flags != 0)
+		set_flags(elf);
 
 	elf_end(elf);
 	close(fd);
