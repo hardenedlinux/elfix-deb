@@ -50,7 +50,7 @@ print_help(char *v)
 		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
 		"Program Name : %s\n"
 		"Description  : Get or set pax flags on an ELF object\n\n"
-		"Usage        : %s {[-pPeEmMrRxXsSzZC]  ELFfile | [-h]}\n"
+		"Usage        : %s {[-PpEeMmRrXxSsZzv]  ELFfile | [-h]}\n"
 		"options      :     Print out pax flag information\n"
 		"             : -p  Disable PAGEEXEC\t-P  Enable  PAGEEXEC\n"
 		"             : -e  Disable EMUTRAMP\t-E  Enable  EMUTRAMP\n"
@@ -74,41 +74,54 @@ parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 {
 	int i, oc;
 
-	if((c != 2)&&(c != 3)&&(c != 4))
-		error(EXIT_FAILURE, 0, "Usage: %s {[-pPeEmMrRxXsSzZv] ELFfile | [-h]}", v[0]);
-
 	*pax_flags = 0;
 	*view_flags = 0;
-	while((oc = getopt(c, v,":pPeEmMrRxXsSzZvh")) != -1)
+	while((oc = getopt(c, v,":PpEeMmRrXxSsZzvh")) != -1)
 		switch(oc)
 		{
-			case 'p':
-				break ;
 			case 'P':
+				*pax_flags |= PF_PAGEEXEC;
 				break;
-			case 'e':
-				break ;
-			case 'E':
-				break;
-			case 'm':
-				break ;
-			case 'M':
-				break;
-			case 'r':
-				break ;
-			case 'R':
-				break;
-			case 'x':
-				break ;
-			case 'X':
-				break;
-			case 's':
+			case 'p':
+				*pax_flags |= PF_NOPAGEEXEC;
 				break ;
 			case 'S':
+				*pax_flags |= PF_SEGMEXEC;
 				break;
-			case 'z':
+			case 's':
+				*pax_flags |= PF_NOSEGMEXEC;
+				break ;
+			case 'M':
+				*pax_flags |= PF_MPROTECT;
+				break;
+			case 'm':
+				*pax_flags |= PF_NOMPROTECT;
+				break ;
+			case 'E':
+				*pax_flags |= PF_EMUTRAMP;
+				break;
+			case 'e':
+				*pax_flags |= PF_NOEMUTRAMP;
+				break ;
+			case 'R':
+				*pax_flags |= PF_RANDMMAP;
+				break;
+			case 'r':
+				*pax_flags |= PF_NORANDMMAP;
+				break ;
+			case 'X':
+				*pax_flags |= PF_RANDEXEC;
+				break;
+			case 'x':
+				*pax_flags |= PF_NORANDEXEC;
 				break ;
 			case 'Z':
+				*pax_flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
+					PF_NOEMUTRAMP | PF_RANDMMAP | PF_RANDEXEC;
+				break ;
+			case 'z':
+				*pax_flags = PF_NOPAGEEXEC | PF_NOSEGMEXEC | PF_NOMPROTECT |
+					PF_EMUTRAMP | PF_NORANDMMAP | PF_NORANDEXEC;
 				break;
 			case 'v':
 				*view_flags = 1;
@@ -120,6 +133,12 @@ parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 			default:
 				error(EXIT_FAILURE, 0, "option -%c is invalid: ignored.", optopt ) ;
 		}
+
+//	if((c != 2)&&(c != 3)&&(c != 4))
+//		error(EXIT_FAILURE, 0, "Usage: %s {[-pPeEmMrRxXsSzZv] ELFfile | [-h]}", v[0]);
+
+	if(v[optind] == NULL)
+		error(EXIT_FAILURE, 0, "Usage: %s {[-pPeEmMrRxXsSzZv] ELFfile | [-h]}", v[0]);
 
 	return v[optind] ;
 }
