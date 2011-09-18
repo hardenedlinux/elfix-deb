@@ -53,11 +53,11 @@ print_help(char *v)
 		"Description  : Get or set pax flags on an ELF object\n\n"
 		"Usage        : %s [-PpEeMmRrXxSsv ELF] | [-Z ELF] | [-z ELF] | [-h]\n\n"
 		"Options      : -P enable PAGEEXEC\t-p disable  PAGEEXEC\n"
-		"             : -E enable EMUTRAMP\t-e disable  EMUTRAMP\n"
+		"             : -S enable SEGMEXEC\t-s disable  SEGMEXEC\n"
 		"             : -M enable MPROTECT\t-m disable  MPROTECT\n"
+		"             : -E enable EMUTRAMP\t-e disable  EMUTRAMP\n"
 		"             : -R enable RANDMMAP\t-r disable  RANDMMAP\n"
 		"             : -X enable RANDEXEC\t-x disable  RANDEXEC\n"
-		"             : -S enable SEGMEXEC\t-s disable  SEGMEXEC\n"
 		"             : -Z most secure settings\t-z all default settings\n"
 		"             : -v view the flags\n"
 		"             : -h print out this help\n\n"
@@ -292,22 +292,57 @@ set_flags(Elf *elf, int *pax_flags)
 	if(!gelf_update_ehdr(elf, &ehdr))
 		error(EXIT_FAILURE, 0, "gelf_update_ehdr(): %s", elf_errmsg(elf_errno()));
 
-	/*
 	elf_getphdrnum(elf, &phnum);
 	for(i=0; i<phnum; ++i)
 	{
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
 			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
 
-		if((phdr.p_type == PT_PAX_FLAGS) && flag_pt_pax_flags )
+		if(phdr.p_type == PT_PAX_FLAGS)
 		{
-			printf("CONVERTED -> PT_NULL\n\n");
-			phdr.p_type = PT_NULL;
+			//Take and Pp flags and conver them to -
+			if((*pax_flags & PF_PAGEEXEC) && (*pax_flags & PF_NOPAGEEXEC))
+			{
+				*pax_flags ^= PF_PAGEEXEC;
+				*pax_flags ^= PF_NOPAGEEXEC;
+			}
+
+			if((*pax_flags & PF_SEGMEXEC) && (*pax_flags & PF_NOSEGMEXEC))
+			{
+				*pax_flags ^= PF_SEGMEXEC;
+				*pax_flags ^= PF_NOSEGMEXEC;
+			}
+
+			if((*pax_flags & PF_MPROTECT) && (*pax_flags & PF_NOMPROTECT))
+			{
+				*pax_flags ^= PF_MPROTECT;
+				*pax_flags ^= PF_NOMPROTECT;
+			}
+
+			if((*pax_flags & PF_EMUTRAMP) && (*pax_flags & PF_NOEMUTRAMP))
+			{
+				*pax_flags ^= PF_EMUTRAMP;
+				*pax_flags ^= PF_NOEMUTRAMP;
+			}
+
+			if((*pax_flags & PF_RANDMMAP) && (*pax_flags & PF_NORANDMMAP))
+			{
+				*pax_flags ^= PF_RANDMMAP;
+				*pax_flags ^= PF_NORANDMMAP;
+			}
+
+			if((*pax_flags & PF_RANDEXEC) && (*pax_flags & PF_NORANDEXEC))
+			{
+				*pax_flags ^= PF_RANDEXEC;
+				*pax_flags ^= PF_NORANDEXEC;
+			}
+
+			phdr.p_flags = *pax_flags ;
+
 			if(!gelf_update_phdr(elf, i, &phdr))
 				error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
 		}
 	}
-	*/
 }
 
 
