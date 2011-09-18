@@ -137,7 +137,9 @@ parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 				compat += 1;
 				break ;
 			case 'z':
-				*pax_flags = -1;
+				*pax_flags = PF_PAGEEXEC | PF_NOPAGEEXEC | PF_SEGMEXEC | PF_NOSEGMEXEC |
+					PF_MPROTECT | PF_NOMPROTECT | PF_EMUTRAMP | PF_NOEMUTRAMP |
+					PF_RANDMMAP | PF_NORANDMMAP | PF_RANDEXEC | PF_NORANDEXEC;
 				compat += 1;
 				break;
 			case 'v':
@@ -256,31 +258,43 @@ set_flags(Elf *elf, int *pax_flags)
 		ei_flags &= ~HF_PAX_PAGEEXEC;
 	if(*pax_flags & PF_NOPAGEEXEC)
 		ei_flags |= HF_PAX_PAGEEXEC;
+	if((*pax_flags & PF_PAGEEXEC) && (*pax_flags & PF_NOPAGEEXEC))
+		ei_flags &= ~HF_PAX_PAGEEXEC;
 
 	if(*pax_flags & PF_SEGMEXEC)
 		ei_flags &= ~HF_PAX_SEGMEXEC;
 	if(*pax_flags & PF_NOSEGMEXEC)
 		ei_flags |= HF_PAX_SEGMEXEC;
+	if((*pax_flags & PF_SEGMEXEC) && (*pax_flags & PF_NOSEGMEXEC))
+		ei_flags &= ~HF_PAX_SEGMEXEC;
 
 	if(*pax_flags & PF_MPROTECT)
 		ei_flags &= ~HF_PAX_MPROTECT;
 	if(*pax_flags & PF_NOMPROTECT)
 		ei_flags |= HF_PAX_MPROTECT;
+	if((*pax_flags & PF_MPROTECT) && (*pax_flags & PF_NOMPROTECT))
+		ei_flags &= ~HF_PAX_MPROTECT;
 
 	if(*pax_flags & PF_EMUTRAMP)
 		ei_flags |= HF_PAX_EMUTRAMP;
 	if(*pax_flags & PF_NOEMUTRAMP)
+		ei_flags &= ~HF_PAX_EMUTRAMP;
+	if((*pax_flags & PF_EMUTRAMP) && (*pax_flags & PF_NOEMUTRAMP))
 		ei_flags &= ~HF_PAX_EMUTRAMP;
 
 	if(*pax_flags & PF_RANDMMAP)
 		ei_flags &= ~HF_PAX_RANDMMAP;
 	if(*pax_flags & PF_NORANDMMAP)
 		ei_flags |= HF_PAX_RANDMMAP;
+	if((*pax_flags & PF_RANDMMAP) && (*pax_flags & PF_NORANDMMAP))
+		ei_flags &= ~HF_PAX_RANDMMAP;
 
 	if(*pax_flags & PF_RANDEXEC)
 		ei_flags |= HF_PAX_RANDEXEC;
 	if(*pax_flags & PF_NORANDEXEC)
 		ei_flags &= ~HF_PAX_RANDEXEC;
+	if((*pax_flags & PF_RANDEXEC) && (*pax_flags & PF_NORANDEXEC))
+		ei_flags |= HF_PAX_RANDEXEC;
 
 
 	if(gelf_getehdr(elf, &ehdr) != &ehdr)

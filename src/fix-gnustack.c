@@ -40,7 +40,7 @@ print_help(char *v)
 		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
 		"Program Name : %s\n"
 		"Description  : Check for, or conditionally remove, executable flag from PT_GNU_STACK\n\n"
-		"Usage        : %s {[-f] ELF | [-h]}\n"
+		"Usage        : %s [-f] ELF | [-h]\n"
 		"options      :     Print out protection flags on PT_GNU_STACK\n"
 		"             : -f  Remove X if WX flags are set on PT_GNU_STACK\n"
 		"             : -h  Print out this help\n",
