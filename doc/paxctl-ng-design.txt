@@ -33,7 +33,7 @@ future, we propose the following standards to how pax markings are treated:
 
 1) The kernel.  The kernel will be patched to force respect of PT_PAX markings
 first, and only if these are missing, revert to EI_PAX.  If both markings are
-misssing, then the kernel will revert to enforcing maximum protection, meaning
+missing, then the kernel will revert to enforcing maximum protection, meaning
 
 	PAGEEXEC enabled
 	SEGMEXEC enabled
