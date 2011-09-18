@@ -123,41 +123,56 @@
 .rm #[ #] #H #V #F C
 .\" ========================================================================
 .\"
-.IX Title "FIX-GNUSTACK 1"
-.TH FIX-GNUSTACK 1 "2011-04-14" "elfix 0.2" "Documentation for elfix"
+.IX Title "PAXCTL-NG 1"
+.TH PAXCTL-NG 1 "2011-08-18" "elfix 0.2" "Documentation for elfix"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
 .nh
 .SH "NAME"
-fix\-gnustack \- query or clear any ELF GNU_STACK executable flag
+paxctl\-ng \- get or consistently set the pax flags for both EI_PAX and PT_PAX
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
-\&\fBfix-gnustack\fR \-h
+\&\fBpaxctl-ng\fR [\-h]
 .PP
-\&\fBfix-gnustack\fR [\-f] ELFfile
+\&\fBpaxctl-ng\fR [\-PpEeMmRrXxSs] [\-v] \s-1ELF\s0
+.PP
+\&\fBpaxctl-ng\fR \-Z [\-v] \s-1ELF\s0
+.PP
+\&\fBpaxctl-ng\fR \-z [\-v] \s-1ELF\s0
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-\&\fBfix-gnustack\fR scans the program headers of an \s-1ELF\s0 binary or shared
-object library and reports if it has a \s-1GNU_STACK\s0 entry and if it is
-marked both writeable and executable.  On PaX hardened kernels where
-memory protection (\s-1MPROTECT\s0) is enforced, execution of binaries with
-\&\s-1WX\s0 marked \s-1GNU_STACKS\s0, or of binaries linking against libraries with
-\&\s-1WX\s0 makred \s-1GNU_STACKS\s0, is terminated by the kernel.  When \fBfix-gnustack\fR
-is called without the \fB\-f\fR option on an ELFfile, it simply reports the
-\&\s-1RWX\s0 (read/write/execute) flags on any \s-1GNU_STACK\s0 entry found.  When called
-with \fB\-f\fR, it clears the X flag if a \s-1GNU_STACK\s0 entry is found and it
-has both W and X flags.
+\&\fBpaxctl-ng\fR scans the program headers of \s-1ELF\s0 binaries or shared
 .SH "OPTIONS"
 .IX Header "OPTIONS"
-.IP "\fB\-h\fR" 4
-.IX Item "-h"
-Print out a short help message and exit.
-.IP "[\fB\-f\fR] ELFfile" 4
-.IX Item "[-f] ELFfile"
-\&\*(L"Fix\*(R" the ELFfile, ie, remove the X flag from any \s-1GNU_STACK\s0 entry found
-if it has both W and X flags.  When called without, it simply reports
-what flags it found.
+.IP "\fB\-h\fR   Print out a short help message and exit." 4
+.IX Item "-h   Print out a short help message and exit."
+.PD 0
+.IP "" 4
+.IP "\fB\-P\fR or \fB\-p\fR   Enable or disable \s-1PAGEEXEC\s0" 4
+.IX Item "-P or -p   Enable or disable PAGEEXEC"
+.IP "\fB\-S\fR or \fB\-s\fR   Enable or disable \s-1SEGMEXEC\s0" 4
+.IX Item "-S or -s   Enable or disable SEGMEXEC"
+.IP "\fB\-M\fR or \fB\-m\fR   Enable or disable \s-1MPROTECT\s0" 4
+.IX Item "-M or -m   Enable or disable MPROTECT"
+.IP "\fB\-E\fR or \fB\-e\fR   Enable or disable \s-1EMUTRAMP\s0" 4
+.IX Item "-E or -e   Enable or disable EMUTRAMP"
+.IP "\fB\-R\fR or \fB\-r\fR   Enable or disable \s-1RANDMMAP\s0" 4
+.IX Item "-R or -r   Enable or disable RANDMMAP"
+.IP "\fB\-X\fR or \fB\-x\fR   Enable or disable \s-1RANDEXEC\s0" 4
+.IX Item "-X or -x   Enable or disable RANDEXEC"
+.PD
+If both enabling and disabling flags are set for one item, 
+eg. \-Pp for \s-1PAGEEXEC\s0, then the default setting \- is used is
+for \s-1PT_PAX\s0, while the most secure setting is used for \s-1EI_PAX\s0.
+.IP "\fB\-Z\fR Enable most secure settings (PSMeRX)" 4
+.IX Item "-Z Enable most secure settings (PSMeRX)"
+.PD 0
+.IP "\fB\-z\fR Enable default setting (\s-1PT_PAX\s0) or most secure setting (\s-1EI_PAX\s0)" 4
+.IX Item "-z Enable default setting (PT_PAX) or most secure setting (EI_PAX)"
+.IP "\fB\-v\fR View the flags" 4
+.IX Item "-v View the flags"
+.PD
 .SH "HOMEPAGE"
 .IX Header "HOMEPAGE"
 http://dev.gentoo.org/~blueness/elfix
@@ -166,7 +181,7 @@ http://dev.gentoo.org/~blueness/elfix
 Please report bugs at http://bugs.gentoo.org.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fBscanelf\fR(1), \fBdumpelf\fR(1), \fBpaxctl\fR(1), \fBpaxctl-ng\fR(1), \fBpspax\fR(1).
+\&\fBscanelf\fR(1), \fBdumpelf\fR(1), \fBpaxctl\fR(1), \fBpspax\fR(1), \fBfix-gnustack\fR(1).
 .SH "AUTHORS"
 .IX Header "AUTHORS"
 \&\fBAnthony G. Basile\fR <blueness@gentoo.org>

@@ -1,0 +1,67 @@
+=head1 NAME
+
+B<paxctl-ng> - get or consistently set the pax flags for both EI_PAX and PT_PAX
+
+=head1 SYNOPSIS
+
+B<paxctl-ng> [-h]
+
+B<paxctl-ng> [-PpEeMmRrXxSs] [-v] ELF
+
+B<paxctl-ng> -Z [-v] ELF
+
+B<paxctl-ng> -z [-v] ELF
+
+=head1 DESCRIPTION
+
+B<paxctl-ng> scans the program headers of ELF binaries or shared
+
+=head1 OPTIONS
+
+=over
+
+=item B<-h>   Print out a short help message and exit.
+
+=item
+
+=item B<-P> or B<-p>   Enable or disable PAGEEXEC
+
+=item B<-S> or B<-s>   Enable or disable SEGMEXEC
+
+=item B<-M> or B<-m>   Enable or disable MPROTECT
+
+=item B<-E> or B<-e>   Enable or disable EMUTRAMP
+
+=item B<-R> or B<-r>   Enable or disable RANDMMAP
+
+=item B<-X> or B<-x>   Enable or disable RANDEXEC
+
+If both enabling and disabling flags are set for one item, 
+eg. -Pp for PAGEEXEC, then the default setting - is used is
+for PT_PAX, while the most secure setting is used for EI_PAX. 
+
+=item B<-Z> Enable most secure settings (PSMeRX)
+
+=item B<-z> Enable default setting (PT_PAX) or most secure setting (EI_PAX)
+
+=item B<-v> View the flags
+
+
+
+=back
+
+=head1 HOMEPAGE
+
+http://dev.gentoo.org/~blueness/elfix
+
+=head1 REPORTING BUGS
+
+Please report bugs at http://bugs.gentoo.org.
+
+=head1 SEE ALSO
+
+B<scanelf>(1), B<dumpelf>(1), B<paxctl>(1), B<pspax>(1), B<fix-gnustack>(1).
+
+=head1 AUTHORS
+
+B<Anthony G. Basile> <blueness@gentoo.org>
