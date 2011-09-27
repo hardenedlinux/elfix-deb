@@ -297,9 +297,6 @@ set_flags(Elf *elf, int *pax_flags)
 		ei_flags |= HF_PAX_RANDEXEC;
 
 
-	if(gelf_getehdr(elf, &ehdr) != &ehdr)
-		error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
-
 	ehdr.e_ident[EI_PAX] = (uint8_t)ei_flags  ;
 	ehdr.e_ident[EI_PAX + 1] = (uint8_t)(ei_flags >> 8) ;
 
