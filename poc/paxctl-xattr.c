@@ -155,41 +155,50 @@ parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 }
 
 
+uint16_t
+read_flags(int fd)
+{
+	//UINT16_MAX is an invalid value
+	uint16_t xt_flags = UINT16_MAX;
+
+	if(fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t)) == -1)
+	{
+		//xattrs is supported, PAX_NAMESPACE is present, but it is the wrong size
+		if(errno == ERANGE)
+		{
+			printf("XT_PAX: malformed flags found\n");
+			//FIXME remove the user.pax field
+			xt_flags = 0;
+		}
+
+		//xattrs is supported, PAX_NAMESPACE is not present
+		if(errno == ENOATTR)
+		{
+			printf("XT_PAX: not found\n");
+			xt_flags = 0;
+		}
+
+		//xattrs is not supported
+		if(errno == ENOTSUP)
+			printf("XT_PAX: extended attribute not supported\n");
+	}
+
+	return xt_flags;
+}
+
+
 #define BUF_SIZE 7
 void
 print_flags(int fd)
 {
-	char xt_buf[BUF_SIZE];
 	uint16_t xt_flags;
-
-	static ssize_t vsize = 1024;
-	static char *value = NULL;
-	ssize_t i, vret = -1;
+	char xt_buf[BUF_SIZE];
 
 	memset(xt_buf, 0, BUF_SIZE);
-	value  = malloc(vsize);
 
-	//If at first we don't succeed, grow buffer size
-	while(((vret = fgetxattr(fd, PAX_NAMESPACE, value, vsize)) == -1) && (errno == ERANGE))
-	{
-		vsize <<= 1;
-		value = realloc(value, vsize);
-	}
-
-	if(errno == ENOATTR)
-	{
-		printf("XT_PAX: not found or permission denied\n");
-		return;
-	}
-
-	if(errno == ENOTSUP)
-	{
-		printf("XT_PAX: extended attribute not supported\n");
-		return;
-	}
-
-	xt_flags = (uint16_t)value[0];
-	xt_flags = xt_flags << 8 + value[1];
+	//If an invalid value is returned, then skip this
+	if((xt_flags = read_flags(fd)) == UINT16_MAX)
+		return ;
 
 	xt_buf[0] = xt_flags & PF_PAGEEXEC ? 'P' :
 		xt_flags & PF_NOPAGEEXEC ? 'p' : '-' ;
@@ -218,118 +227,119 @@ set_flags(int fd, int *pax_flags)
 {
 	uint16_t xt_flags;
 
-	//int fsetxattr(int fd, const char *name, const void *value, size_t size, int flags);
+	//If an invalid value is returned, then skip this
+	if((xt_flags = read_flags(fd)) == UINT16_MAX)
+		return ;
 
-	/*
-	if( / DOME xattrs is supported / )
+	//PAGEEXEC
+	if(*pax_flags & PF_PAGEEXEC)
 	{
-		//PAGEEXEC
-		if(*pax_flags & PF_PAGEEXEC)
-		{
-			phdr.p_flags |= PF_PAGEEXEC;
-			phdr.p_flags &= ~PF_NOPAGEEXEC;
-		}
-		if(*pax_flags & PF_NOPAGEEXEC)
-		{
-			phdr.p_flags &= ~PF_PAGEEXEC;
-			phdr.p_flags |= PF_NOPAGEEXEC;
-		}
-		if((*pax_flags & PF_PAGEEXEC) && (*pax_flags & PF_NOPAGEEXEC))
-		{
-			phdr.p_flags &= ~PF_PAGEEXEC;
-			phdr.p_flags &= ~PF_NOPAGEEXEC;
-		}
-
-		//SEGMEXEC
-		if(*pax_flags & PF_SEGMEXEC)
-		{
-			phdr.p_flags |= PF_SEGMEXEC;
-			phdr.p_flags &= ~PF_NOSEGMEXEC;
-		}
-		if(*pax_flags & PF_NOSEGMEXEC)
-		{
-			phdr.p_flags &= ~PF_SEGMEXEC;
-			phdr.p_flags |= PF_NOSEGMEXEC;
-		}
-		if((*pax_flags & PF_SEGMEXEC) && (*pax_flags & PF_NOSEGMEXEC))
-		{
-			phdr.p_flags &= ~PF_SEGMEXEC;
-			phdr.p_flags &= ~PF_NOSEGMEXEC;
-		}
-
-		//MPROTECT
-		if(*pax_flags & PF_MPROTECT)
-		{
-			phdr.p_flags |= PF_MPROTECT;
-			phdr.p_flags &= ~PF_NOMPROTECT;
-		}
-		if(*pax_flags & PF_NOMPROTECT)
-		{
-			phdr.p_flags &= ~PF_MPROTECT;
-			phdr.p_flags |= PF_NOMPROTECT;
-		}
-		if((*pax_flags & PF_MPROTECT) && (*pax_flags & PF_NOMPROTECT))
-		{
-			phdr.p_flags &= ~PF_MPROTECT;
-			phdr.p_flags &= ~PF_NOMPROTECT;
-		}
-
-		//EMUTRAMP
-		if(*pax_flags & PF_EMUTRAMP)
-		{
-			phdr.p_flags |= PF_EMUTRAMP;
-			phdr.p_flags &= ~PF_NOEMUTRAMP;
-		}
-		if(*pax_flags & PF_NOEMUTRAMP)
-		{
-			phdr.p_flags &= ~PF_EMUTRAMP;
-			phdr.p_flags |= PF_NOEMUTRAMP;
-		}
-		if((*pax_flags & PF_EMUTRAMP) && (*pax_flags & PF_NOEMUTRAMP))
-		{
-			phdr.p_flags &= ~PF_EMUTRAMP;
-			phdr.p_flags &= ~PF_NOEMUTRAMP;
-		}
-
-		//RANDMMAP
-		if(*pax_flags & PF_RANDMMAP)
-		{
-			phdr.p_flags |= PF_RANDMMAP;
-			phdr.p_flags &= ~PF_NORANDMMAP;
-		}
-		if(*pax_flags & PF_NORANDMMAP)
-		{
-			phdr.p_flags &= ~PF_RANDMMAP;
-			phdr.p_flags |= PF_NORANDMMAP;
-		}
-		if((*pax_flags & PF_RANDMMAP) && (*pax_flags & PF_NORANDMMAP))
-		{
-			phdr.p_flags &= ~PF_RANDMMAP;
-			phdr.p_flags &= ~PF_NORANDMMAP;
-		}
-
-		//RANDEXEC
-		if(*pax_flags & PF_RANDEXEC)
-		{
-			phdr.p_flags |= PF_RANDEXEC;
-			phdr.p_flags &= ~PF_NORANDEXEC;
-		}
-		if(*pax_flags & PF_NORANDEXEC)
-		{
-			phdr.p_flags &= ~PF_RANDEXEC;
-			phdr.p_flags |= PF_NORANDEXEC;
-		}
-		if((*pax_flags & PF_RANDEXEC) && (*pax_flags & PF_NORANDEXEC))
-		{
-			phdr.p_flags &= ~PF_RANDEXEC;
-			phdr.p_flags &= ~PF_NORANDEXEC;
-		}
-
-		/ update xattr /
+		xt_flags |= PF_PAGEEXEC;
+		xt_flags &= ~PF_NOPAGEEXEC;
 	}
-	else
-		printf("XT_PAX: not found\n");
-	*/
+	if(*pax_flags & PF_NOPAGEEXEC)
+	{
+		xt_flags &= ~PF_PAGEEXEC;
+		xt_flags |= PF_NOPAGEEXEC;
+	}
+	if((*pax_flags & PF_PAGEEXEC) && (*pax_flags & PF_NOPAGEEXEC))
+	{
+		xt_flags &= ~PF_PAGEEXEC;
+		xt_flags &= ~PF_NOPAGEEXEC;
+	}
+
+	//SEGMEXEC
+	if(*pax_flags & PF_SEGMEXEC)
+	{
+		xt_flags |= PF_SEGMEXEC;
+		xt_flags &= ~PF_NOSEGMEXEC;
+	}
+	if(*pax_flags & PF_NOSEGMEXEC)
+	{
+		xt_flags &= ~PF_SEGMEXEC;
+		xt_flags |= PF_NOSEGMEXEC;
+	}
+	if((*pax_flags & PF_SEGMEXEC) && (*pax_flags & PF_NOSEGMEXEC))
+	{
+		xt_flags &= ~PF_SEGMEXEC;
+		xt_flags &= ~PF_NOSEGMEXEC;
+	}
+
+	//MPROTECT
+	if(*pax_flags & PF_MPROTECT)
+	{
+		xt_flags |= PF_MPROTECT;
+		xt_flags &= ~PF_NOMPROTECT;
+	}
+	if(*pax_flags & PF_NOMPROTECT)
+	{
+		xt_flags &= ~PF_MPROTECT;
+		xt_flags |= PF_NOMPROTECT;
+	}
+	if((*pax_flags & PF_MPROTECT) && (*pax_flags & PF_NOMPROTECT))
+	{
+		xt_flags &= ~PF_MPROTECT;
+		xt_flags &= ~PF_NOMPROTECT;
+	}
+
+	//EMUTRAMP
+	if(*pax_flags & PF_EMUTRAMP)
+	{
+		xt_flags |= PF_EMUTRAMP;
+		xt_flags &= ~PF_NOEMUTRAMP;
+	}
+	if(*pax_flags & PF_NOEMUTRAMP)
+	{
+		xt_flags &= ~PF_EMUTRAMP;
+		xt_flags |= PF_NOEMUTRAMP;
+	}
+	if((*pax_flags & PF_EMUTRAMP) && (*pax_flags & PF_NOEMUTRAMP))
+	{
+		xt_flags &= ~PF_EMUTRAMP;
+		xt_flags &= ~PF_NOEMUTRAMP;
+	}
+
+	//RANDMMAP
+	if(*pax_flags & PF_RANDMMAP)
+	{
+		xt_flags |= PF_RANDMMAP;
+		xt_flags &= ~PF_NORANDMMAP;
+	}
+	if(*pax_flags & PF_NORANDMMAP)
+	{
+		xt_flags &= ~PF_RANDMMAP;
+		xt_flags |= PF_NORANDMMAP;
+	}
+	if((*pax_flags & PF_RANDMMAP) && (*pax_flags & PF_NORANDMMAP))
+	{
+		xt_flags &= ~PF_RANDMMAP;
+		xt_flags &= ~PF_NORANDMMAP;
+	}
+
+	//RANDEXEC
+	if(*pax_flags & PF_RANDEXEC)
+	{
+		xt_flags |= PF_RANDEXEC;
+		xt_flags &= ~PF_NORANDEXEC;
+	}
+	if(*pax_flags & PF_NORANDEXEC)
+	{
+		xt_flags &= ~PF_RANDEXEC;
+		xt_flags |= PF_NORANDEXEC;
+	}
+	if((*pax_flags & PF_RANDEXEC) && (*pax_flags & PF_NORANDEXEC))
+	{
+		xt_flags &= ~PF_RANDEXEC;
+		xt_flags &= ~PF_NORANDEXEC;
+	}
+
+	if(fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0) == -1)
+	{
+		if(errno == ENOSPC || errno == EDQUOT)
+			printf("XT_PAX: cannot store xt_flags\n");
+		if(errno == ENOTSUP)
+			printf("XT_PAX: extended attribute not supported\n");
+	}
 }
 
 
