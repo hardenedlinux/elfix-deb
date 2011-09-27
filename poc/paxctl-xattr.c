@@ -25,7 +25,7 @@
 #include <libgen.h>
 
 #include <gelf.h>
-#include <sys/xattr.h>
+#include <attr/xattr.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -160,84 +160,65 @@ void
 print_flags(int fd)
 {
 	char xt_buf[BUF_SIZE];
-
-	static ssize_t xsize = 1024;
-	static char *xattrs = NULL;
-	ssize_t i, xret = -1;
+	uint16_t xt_flags;
 
 	static ssize_t vsize = 1024;
 	static char *value = NULL;
-	ssize_t vret = -1;
+	ssize_t i, vret = -1;
 
 	memset(xt_buf, 0, BUF_SIZE);
-	xattrs = malloc(xsize);
 	value  = malloc(vsize);
 
 	//If at first we don't succeed, grow buffer size
-	while(((xret = flistxattr(fd, xattrs, xsize)) == -1) && (errno == ERANGE))
+	while(((vret = fgetxattr(fd, PAX_NAMESPACE, value, vsize)) == -1) && (errno == ERANGE))
 	{
-		xsize <<= 1;
-		xattrs = realloc(xattrs, xsize);
+		vsize <<= 1;
+		value = realloc(value, vsize);
+	}
+
+	if(errno == ENOATTR)
+	{
+		printf("XT_PAX: not found or permission denied\n");
+		return;
 	}
 
 	if(errno == ENOTSUP)
 	{
-		printf("XT_PAX: not found without Extended Attribute Support\n");
+		printf("XT_PAX: extended attribute not supported\n");
 		return;
 	}
 
-	for(i = 0; i < xret; i += strlen(&xattrs[i]) + 1)
-	{
+	xt_flags = (uint16_t)value[0];
+	xt_flags = xt_flags << 8 + value[1];
 
-		if(strcmp(&xattrs[i], PAX_NAMESPACE) == 0)
-		{
-			printf("here\n");
+	xt_buf[0] = xt_flags & PF_PAGEEXEC ? 'P' :
+		xt_flags & PF_NOPAGEEXEC ? 'p' : '-' ;
 
-			while(((vret = fgetxattr(fd, &xattrs[i], value, vsize)) == -1) && (errno == ERANGE))
-			{
-				xsize <<= 1;
-				xattrs = realloc(xattrs, xsize);
-			}
+	xt_buf[1] = xt_flags & PF_SEGMEXEC   ? 'S' : 
+		xt_flags & PF_NOSEGMEXEC ? 's' : '-';
 
-			/*
-			valueLen = getxattr(argv[j], &xattrs[ns], value, XATTR_SIZE);
-			if (valueLen == -1) {
-				printf("couldn't get value");
-			} else {
-				for (k = 0; k < valueLen; k++)
-				printf("%02x ", (unsigned int) value[k]);
-			}
+	xt_buf[2] = xt_flags & PF_MPROTECT   ? 'M' :
+		xt_flags & PF_NOMPROTECT ? 'm' : '-';
 
-			xt_buf[0] = xt_flags & PF_PAGEEXEC ? 'P' :
-				xt_flags & PF_NOPAGEEXEC ? 'p' : '-' ;
+	xt_buf[3] = xt_flags & PF_EMUTRAMP   ? 'E' :
+		xt_flags & PF_NOEMUTRAMP ? 'e' : '-';
 
-			xt_buf[1] = xt_flags & PF_SEGMEXEC   ? 'S' : 
-				xt_flags & PF_NOSEGMEXEC ? 's' : '-';
+	xt_buf[4] = xt_flags & PF_RANDMMAP   ? 'R' :
+		xt_flags & PF_NORANDMMAP ? 'r' : '-';
 
-			xt_buf[2] = xt_flags & PF_MPROTECT   ? 'M' :
-				xt_flags & PF_NOMPROTECT ? 'm' : '-';
+	xt_buf[5] = xt_flags & PF_RANDEXEC   ? 'X' :
+		xt_flags & PF_NORANDEXEC ? 'x' : '-';
 
-			xt_buf[3] = xt_flags & PF_EMUTRAMP   ? 'E' :
-				xt_flags & PF_NOEMUTRAMP ? 'e' : '-';
-
-			xt_buf[4] = xt_flags & PF_RANDMMAP   ? 'R' :
-				xt_flags & PF_NORANDMMAP ? 'r' : '-';
-
-			xt_buf[5] = xt_flags & PF_RANDEXEC   ? 'X' :
-				xt_flags & PF_NORANDEXEC ? 'x' : '-';
-
-			printf("XT_PAX: %s\n", xt_buf);
-			*/
-		}
-	}
+	printf("XT_PAX: %s\n", xt_buf);
 }
 
 
 void
 set_flags(int fd, int *pax_flags)
 {
-	char xt_buf[BUF_SIZE];
-	memset(xt_buf, 0, BUF_SIZE);
+	uint16_t xt_flags;
+
+	//int fsetxattr(int fd, const char *name, const void *value, size_t size, int flags);
 
 	/*
 	if( / DOME xattrs is supported / )
