@@ -237,17 +237,10 @@ void
 set_flags(Elf *elf, int *pax_flags)
 {
 	GElf_Ehdr ehdr;
-	char ei_buf[BUF_SIZE];
 	uint16_t ei_flags;
 
 	GElf_Phdr phdr;
-	char pt_buf[BUF_SIZE];
-	uint16_t pt_flags;
-	char found_pt_pax;
 	size_t i, phnum;
-
-	memset(ei_buf, 0, BUF_SIZE);
-	memset(pt_buf, 0, BUF_SIZE);
 
 	if(gelf_getehdr(elf, &ehdr) != &ehdr)
 		error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
