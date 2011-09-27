@@ -254,6 +254,7 @@ set_flags(Elf *elf, int *pax_flags)
 
 	ei_flags = ehdr.e_ident[EI_PAX] + (ehdr.e_ident[EI_PAX + 1] << 8);
 
+	//PAGEEXEC
 	if(*pax_flags & PF_PAGEEXEC)
 		ei_flags &= ~HF_PAX_PAGEEXEC;
 	if(*pax_flags & PF_NOPAGEEXEC)
@@ -261,6 +262,7 @@ set_flags(Elf *elf, int *pax_flags)
 	if((*pax_flags & PF_PAGEEXEC) && (*pax_flags & PF_NOPAGEEXEC))
 		ei_flags &= ~HF_PAX_PAGEEXEC;
 
+	//SEGMEXEC
 	if(*pax_flags & PF_SEGMEXEC)
 		ei_flags &= ~HF_PAX_SEGMEXEC;
 	if(*pax_flags & PF_NOSEGMEXEC)
@@ -268,6 +270,7 @@ set_flags(Elf *elf, int *pax_flags)
 	if((*pax_flags & PF_SEGMEXEC) && (*pax_flags & PF_NOSEGMEXEC))
 		ei_flags &= ~HF_PAX_SEGMEXEC;
 
+	//MPROTECT
 	if(*pax_flags & PF_MPROTECT)
 		ei_flags &= ~HF_PAX_MPROTECT;
 	if(*pax_flags & PF_NOMPROTECT)
@@ -275,6 +278,7 @@ set_flags(Elf *elf, int *pax_flags)
 	if((*pax_flags & PF_MPROTECT) && (*pax_flags & PF_NOMPROTECT))
 		ei_flags &= ~HF_PAX_MPROTECT;
 
+	//EMUTRAMP
 	if(*pax_flags & PF_EMUTRAMP)
 		ei_flags |= HF_PAX_EMUTRAMP;
 	if(*pax_flags & PF_NOEMUTRAMP)
@@ -282,6 +286,7 @@ set_flags(Elf *elf, int *pax_flags)
 	if((*pax_flags & PF_EMUTRAMP) && (*pax_flags & PF_NOEMUTRAMP))
 		ei_flags &= ~HF_PAX_EMUTRAMP;
 
+	//RANDMMAP
 	if(*pax_flags & PF_RANDMMAP)
 		ei_flags &= ~HF_PAX_RANDMMAP;
 	if(*pax_flags & PF_NORANDMMAP)
@@ -289,6 +294,7 @@ set_flags(Elf *elf, int *pax_flags)
 	if((*pax_flags & PF_RANDMMAP) && (*pax_flags & PF_NORANDMMAP))
 		ei_flags &= ~HF_PAX_RANDMMAP;
 
+	//RANDEXEC
 	if(*pax_flags & PF_RANDEXEC)
 		ei_flags |= HF_PAX_RANDEXEC;
 	if(*pax_flags & PF_NORANDEXEC)
@@ -311,44 +317,107 @@ set_flags(Elf *elf, int *pax_flags)
 
 		if(phdr.p_type == PT_PAX_FLAGS)
 		{
-			//Take and Pp flags and conver them to -
+			//PAGEEXEC
+			if(*pax_flags & PF_PAGEEXEC)
+			{
+				phdr.p_flags |= PF_PAGEEXEC;
+				phdr.p_flags &= ~PF_NOPAGEEXEC;
+			}
+			if(*pax_flags & PF_NOPAGEEXEC)
+			{
+				phdr.p_flags &= ~PF_PAGEEXEC;
+				phdr.p_flags |= PF_NOPAGEEXEC;
+			}
 			if((*pax_flags & PF_PAGEEXEC) && (*pax_flags & PF_NOPAGEEXEC))
 			{
-				*pax_flags ^= PF_PAGEEXEC;
-				*pax_flags ^= PF_NOPAGEEXEC;
+				phdr.p_flags &= ~PF_PAGEEXEC;
+				phdr.p_flags &= ~PF_NOPAGEEXEC;
 			}
 
+			//SEGMEXEC
+			if(*pax_flags & PF_SEGMEXEC)
+			{
+				phdr.p_flags |= PF_SEGMEXEC;
+				phdr.p_flags &= ~PF_NOSEGMEXEC;
+			}
+			if(*pax_flags & PF_NOSEGMEXEC)
+			{
+				phdr.p_flags &= ~PF_SEGMEXEC;
+				phdr.p_flags |= PF_NOSEGMEXEC;
+			}
 			if((*pax_flags & PF_SEGMEXEC) && (*pax_flags & PF_NOSEGMEXEC))
 			{
-				*pax_flags ^= PF_SEGMEXEC;
-				*pax_flags ^= PF_NOSEGMEXEC;
+				phdr.p_flags &= ~PF_SEGMEXEC;
+				phdr.p_flags &= ~PF_NOSEGMEXEC;
 			}
 
+			//MPROTECT
+			if(*pax_flags & PF_MPROTECT)
+			{
+				phdr.p_flags |= PF_MPROTECT;
+				phdr.p_flags &= ~PF_NOMPROTECT;
+			}
+			if(*pax_flags & PF_NOMPROTECT)
+			{
+				phdr.p_flags &= ~PF_MPROTECT;
+				phdr.p_flags |= PF_NOMPROTECT;
+			}
 			if((*pax_flags & PF_MPROTECT) && (*pax_flags & PF_NOMPROTECT))
 			{
-				*pax_flags ^= PF_MPROTECT;
-				*pax_flags ^= PF_NOMPROTECT;
+				phdr.p_flags &= ~PF_MPROTECT;
+				phdr.p_flags &= ~PF_NOMPROTECT;
 			}
 
+			//EMUTRAMP
+			if(*pax_flags & PF_EMUTRAMP)
+			{
+				phdr.p_flags |= PF_EMUTRAMP;
+				phdr.p_flags &= ~PF_NOEMUTRAMP;
+			}
+			if(*pax_flags & PF_NOEMUTRAMP)
+			{
+				phdr.p_flags &= ~PF_EMUTRAMP;
+				phdr.p_flags |= PF_NOEMUTRAMP;
+			}
 			if((*pax_flags & PF_EMUTRAMP) && (*pax_flags & PF_NOEMUTRAMP))
 			{
-				*pax_flags ^= PF_EMUTRAMP;
-				*pax_flags ^= PF_NOEMUTRAMP;
+				phdr.p_flags &= ~PF_EMUTRAMP;
+				phdr.p_flags &= ~PF_NOEMUTRAMP;
 			}
 
+			//RANDMMAP
+			if(*pax_flags & PF_RANDMMAP)
+			{
+				phdr.p_flags |= PF_RANDMMAP;
+				phdr.p_flags &= ~PF_NORANDMMAP;
+			}
+			if(*pax_flags & PF_NORANDMMAP)
+			{
+				phdr.p_flags &= ~PF_RANDMMAP;
+				phdr.p_flags |= PF_NORANDMMAP;
+			}
 			if((*pax_flags & PF_RANDMMAP) && (*pax_flags & PF_NORANDMMAP))
 			{
-				*pax_flags ^= PF_RANDMMAP;
-				*pax_flags ^= PF_NORANDMMAP;
+				phdr.p_flags &= ~PF_RANDMMAP;
+				phdr.p_flags &= ~PF_NORANDMMAP;
 			}
 
+			//RANDEXEC
+			if(*pax_flags & PF_RANDEXEC)
+			{
+				phdr.p_flags |= PF_RANDEXEC;
+				phdr.p_flags &= ~PF_NORANDEXEC;
+			}
+			if(*pax_flags & PF_NORANDEXEC)
+			{
+				phdr.p_flags &= ~PF_RANDEXEC;
+				phdr.p_flags |= PF_NORANDEXEC;
+			}
 			if((*pax_flags & PF_RANDEXEC) && (*pax_flags & PF_NORANDEXEC))
 			{
-				*pax_flags ^= PF_RANDEXEC;
-				*pax_flags ^= PF_NORANDEXEC;
+				phdr.p_flags &= ~PF_RANDEXEC;
+				phdr.p_flags &= ~PF_NORANDEXEC;
 			}
-
-			phdr.p_flags = *pax_flags ;
 
 			if(!gelf_update_phdr(elf, i, &phdr))
 				error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
