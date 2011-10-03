@@ -3,6 +3,8 @@ bad_gnustack_SOURCES = bad-gnustack.c
 bad_gnustack_DEPENDENCIES = bad-asm.o
 bad_gnustack_LDADD = bad-asm.o
 
+EXTRA_DIST = bad64.asm bad32.asm
+
 ARCH = $(shell uname -m | sed -e 's/i./x/')
 
 bad-asm.o: bad64.asm bad32.asm
