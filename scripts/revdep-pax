@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+
+from os import listdir
+#from os import path
+import re
+
+var_db_pkg = '/var/db/pkg'
+
+binaries = {}
+for cat in listdir(var_db_pkg):
+	catdir = '%s/%s' % (var_db_pkg, cat)
+	for pkg in listdir(catdir):
+		pkgdir = '%s/%s' % (catdir, pkg)
+		need = '%s/%s' % (pkgdir, 'NEEDED')
+		try:
+			g = open(need, 'r')
+			needs = g.readlines()
+			for line in needs:
+				line = line.strip()
+				linking = re.split('\s', line)
+				binary = linking[0]
+				print binary
+				library_list = re.split(',', linking[1])
+				binaries[binary] = library_list
+		except:
+			break
+
+""" Print out mapping: binary -> library, library, library ...
+for binary in binaries:
+	print binary
+	for library in binaries[binary]:
+		print "\t", library
+"""
+
+libraries = {}
+for binary in binaries:
+	for library in binaries[binary]:
+		libraries[library] = []
+
+for binary in binaries:
+	for library in binaries[binary]:
+		libraries[library].append(binary)
+
+""" Print out mapping: library -> binary, binary, binary ...
+for library in libraries:
+	print library
+	for binary in libraries[library]:
+		print "\t", binary
+		#if not path.exists(binary):
+		#	print "%s doesn't exist!" % binary
+"""
+
+
