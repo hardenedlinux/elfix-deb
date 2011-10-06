@@ -4,6 +4,8 @@ from os import listdir
 #from os import path
 import re
 
+import pax
+
 var_db_pkg = '/var/db/pkg'
 
 binaries = {}
@@ -21,6 +23,7 @@ for cat in listdir(var_db_pkg):
 				binary = linking[0]
 				print binary
 				library_list = re.split(',', linking[1])
+				print "\t%s" % library_list
 				binaries[binary] = library_list
 		except:
 			break
