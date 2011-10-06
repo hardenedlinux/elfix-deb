@@ -54,17 +54,16 @@ pax_getflags(PyObject *self, PyObject *args)
 	int fd, sts;
 	Elf *elf;
 
+	char pax_buf[BUF_SIZE];
+
 	GElf_Ehdr ehdr;
-	char ei_buf[BUF_SIZE];
 	uint16_t ei_flags;
 
 	GElf_Phdr phdr;
-	char pt_buf[BUF_SIZE];
 	char found_pt_pax;
 	size_t i, phnum;
 
-	memset(ei_buf, 0, BUF_SIZE);
-	memset(pt_buf, 0, BUF_SIZE);
+	memset(pax_buf, 0, BUF_SIZE);
 
 	if (!PyArg_ParseTuple(args, "s", &f_name))
 	{
@@ -86,12 +85,15 @@ pax_getflags(PyObject *self, PyObject *args)
 
 	if((elf = elf_begin(fd, ELF_C_READ_MMAP, NULL)) == NULL)
 	{
+		close(fd);
 		PyErr_SetString(PaxError, "pax_getflags: elf_begin() failed");
 		return NULL;
 	}
 
 	if(elf_kind(elf) != ELF_K_ELF)
 	{
+		elf_end(elf);
+		close(fd);
 		PyErr_SetString(PaxError, "pax_getflags: elf_kind() failed: this is not an elf file.");
 		return NULL;
 	}
@@ -103,6 +105,8 @@ pax_getflags(PyObject *self, PyObject *args)
 	{
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
 		{
+			elf_end(elf);
+			close(fd);
 			PyErr_SetString(PaxError, "pax_getflags: gelf_getphdr() failed");
 			return NULL;
 		}
@@ -111,50 +115,48 @@ pax_getflags(PyObject *self, PyObject *args)
 		{
 			found_pt_pax = 1;
 
-			pt_buf[0] = phdr.p_flags & PF_PAGEEXEC ? 'P' :
+			pax_buf[0] = phdr.p_flags & PF_PAGEEXEC ? 'P' :
 				phdr.p_flags & PF_NOPAGEEXEC ? 'p' : '-' ;
 
-			pt_buf[1] = phdr.p_flags & PF_SEGMEXEC   ? 'S' : 
+			pax_buf[1] = phdr.p_flags & PF_SEGMEXEC   ? 'S' : 
 				phdr.p_flags & PF_NOSEGMEXEC ? 's' : '-';
 
-			pt_buf[2] = phdr.p_flags & PF_MPROTECT   ? 'M' :
+			pax_buf[2] = phdr.p_flags & PF_MPROTECT   ? 'M' :
 				phdr.p_flags & PF_NOMPROTECT ? 'm' : '-';
 
-			pt_buf[3] = phdr.p_flags & PF_EMUTRAMP   ? 'E' :
+			pax_buf[3] = phdr.p_flags & PF_EMUTRAMP   ? 'E' :
 				phdr.p_flags & PF_NOEMUTRAMP ? 'e' : '-';
 
-			pt_buf[4] = phdr.p_flags & PF_RANDMMAP   ? 'R' :
+			pax_buf[4] = phdr.p_flags & PF_RANDMMAP   ? 'R' :
 				phdr.p_flags & PF_NORANDMMAP ? 'r' : '-';
 
-			pt_buf[5] = phdr.p_flags & PF_RANDEXEC   ? 'X' :
+			pax_buf[5] = phdr.p_flags & PF_RANDEXEC   ? 'X' :
 				phdr.p_flags & PF_NORANDEXEC ? 'x' : '-';
 		}
 	}
 
-	if(found_pt_pax)
-		printf("PT_PAX: %s\n", pt_buf);
-	else
+	if(!found_pt_pax)
 	{
 		if(gelf_getehdr(elf, &ehdr) != &ehdr)
 		{
+			elf_end(elf);
+			close(fd);
 			PyErr_SetString(PaxError, "pax_getflags: gelf_getehdr() failed");
 			return NULL;
 		}
 
 		ei_flags = ehdr.e_ident[EI_PAX] + (ehdr.e_ident[EI_PAX + 1] << 8);
 
-  		ei_buf[0] = ei_flags & HF_PAX_PAGEEXEC ? 'p' : 'P';
-		ei_buf[1] = ei_flags & HF_PAX_SEGMEXEC ? 's' : 'S';
-		ei_buf[2] = ei_flags & HF_PAX_MPROTECT ? 'm' : 'M';
-		ei_buf[3] = ei_flags & HF_PAX_EMUTRAMP ? 'E' : 'e';
-		ei_buf[4] = ei_flags & HF_PAX_RANDMMAP ? 'r' : 'R';
-		ei_buf[5] = ei_flags & HF_PAX_RANDEXEC ? 'X' : 'x';
-
-		printf("EI_PAX: %s\n", ei_buf);
+  		pax_buf[0] = ei_flags & HF_PAX_PAGEEXEC ? 'p' : 'P';
+		pax_buf[1] = ei_flags & HF_PAX_SEGMEXEC ? 's' : 'S';
+		pax_buf[2] = ei_flags & HF_PAX_MPROTECT ? 'm' : 'M';
+		pax_buf[3] = ei_flags & HF_PAX_EMUTRAMP ? 'E' : 'e';
+		pax_buf[4] = ei_flags & HF_PAX_RANDMMAP ? 'r' : 'R';
+		pax_buf[5] = ei_flags & HF_PAX_RANDEXEC ? 'X' : 'x';
 	}
 
 	elf_end(elf);
 	close(fd);
 
-	return Py_BuildValue("i", sts);
+	return Py_BuildValue("s", pax_buf);
 }
