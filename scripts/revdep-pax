@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 
-from os import listdir
-#from os import listdir, path
+import os
+import subprocess
 import re
-
 import pax
 
 
 def get_forward_linkings():
 	var_db_pkg = '/var/db/pkg'
 	forward_linkings = {}
-	for cat in listdir(var_db_pkg):
+	for cat in os.listdir(var_db_pkg):
 		catdir = '%s/%s' % (var_db_pkg, cat)
-		for pkg in listdir(catdir):
+		for pkg in os.listdir(catdir):
 			pkgdir = '%s/%s' % (catdir, pkg)
 			need = '%s/%s' % (pkgdir, 'NEEDED')
 			try:
@@ -43,8 +42,26 @@ def invert_linkings( forward_linkings ):
 	return reverse_linkings 
 
 
+def get_soname2file_mappings():
+	ldconfig_output = subprocess.check_output(["/sbin/ldconfig", "-p"])
+	ldconfig_lines = ldconfig_output.split('\n')
+	ldconfig_lines.pop(0)			#first line is a header
+	ldconfig_lines.pop()				#last line empty because of previous split
+	mappings = {}
+	for m in range(0,len(ldconfig_lines)):
+		ldconfig_lines[m] = ldconfig_lines[m].strip()
+		mapp = re.split('=>', ldconfig_lines[m] )
+		soname = re.sub('\(.*$', '', mapp[0]).strip()
+		abi = re.search('\(.+\)', mapp[0]).group(0)
+		abi = abi.strip().strip('(').strip(')').strip()
+		filename = mapp[1].strip()
+		filename =  os.path.realpath(filename)
+		mappings[soname] = [ filename, pax.getflags(filename), abi ]
+	return mappings 
+
 forward_linkings = get_forward_linkings()
 reverse_linkings = invert_linkings( forward_linkings )
+soname2file_mappings = get_soname2file_mappings()
 
 
 """ Print out mapping: binary -> library, library, library ... """
@@ -52,6 +69,7 @@ for elf in forward_linkings:
 	print elf
 	for elf_dep in forward_linkings[elf]:
 		print "\t", elf_dep
+		#print "\t\t", soname2file_mappings[elf_dep]
 
 raw_input()
 
@@ -62,3 +80,7 @@ for elf_dep in reverse_linkings:
 		print "\t", elf
 		#if not path.exists(elf):
 		#	print "%s doesn't exist!" % elf
+raw_input()
+
+for s in soname2file_mappings:
+	print s, soname2file_mappings[s]
