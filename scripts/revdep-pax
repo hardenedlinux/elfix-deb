@@ -7,9 +7,9 @@ import re
 import pax
 
 
-def forward_linkings():
+def get_forward_linkings():
 	var_db_pkg = '/var/db/pkg'
-	elf_objects = {}
+	forward_linkings = {}
 	for cat in listdir(var_db_pkg):
 		catdir = '%s/%s' % (var_db_pkg, cat)
 		for pkg in listdir(catdir):
@@ -20,44 +20,45 @@ def forward_linkings():
 				needs = g.readlines()
 				for line in needs:
 					line = line.strip()
-					linking = re.split('\s', line)
-					elf = linking[0]
-					elf_deps = re.split(',', linking[1])
-					elf_objects[elf] = elf_deps 
+					link = re.split('\s', line)
+					elf = link[0]
+					linkings = re.split(',', link[1])
+					forward_linkings[elf] = linkings 
 			except:
 				break
 
-	return elf_objects 
+	return forward_linkings 
 
 
-def reverse_linkings( binaries ):
-	libraries = {}
-	for binary in binaries:
-		for library in binaries[binary]:
-			libraries[library] = []
+def invert_linkings( forward_linkings ):
+	reverse_linkings = {}
+	for elf in forward_linkings:
+		for elf_dep in forward_linkings[elf]:
+			reverse_linkings[elf_dep] = []
 
-	for binary in binaries:
-		for library in binaries[binary]:
-			libraries[library].append(binary)
+	for elf in forward_linkings:
+		for elf_dep in forward_linkings[elf]:
+			reverse_linkings[elf_dep].append(elf)
 
-	return libraries
+	return reverse_linkings 
 
 
-elf_objects = forward_linkings()
-elf_deps = reverse_linkings( elf_objects )
+forward_linkings = get_forward_linkings()
+reverse_linkings = invert_linkings( forward_linkings )
 
-""" Print out mapping: binary -> library, library, library ...
-for elf in elf_objects:
+
+""" Print out mapping: binary -> library, library, library ... """
+for elf in forward_linkings:
 	print elf
-	for elf_deps in elf_objects[elf]:
-		print "\t", elf_deps
-"""
+	for elf_dep in forward_linkings[elf]:
+		print "\t", elf_dep
 
-""" Print out mapping: library -> binary, binary, binary ...
-for elf in elf_deps:
-	print elf
-	for elf_object in elf_deps[elf]:
-		print "\t", elf_object
-		#if not path.exists(binary):
-		#	print "%s doesn't exist!" % binary
-"""
+raw_input()
+
+""" Print out mapping: library -> binary, binary, binary ... """
+for elf_dep in reverse_linkings:
+	print elf_dep
+	for elf in reverse_linkings[elf_dep]:
+		print "\t", elf
+		#if not path.exists(elf):
+		#	print "%s doesn't exist!" % elf
