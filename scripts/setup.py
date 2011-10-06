@@ -4,7 +4,8 @@ from distutils.core import setup, Extension
 
 module1 = Extension(
 	name='pax',
-	sources = ['paxmodule.c']
+	sources = ['paxmodule.c'],
+	libraries = ['elf'],
 )
 
 setup(
