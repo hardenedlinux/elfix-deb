@@ -5,6 +5,25 @@ import subprocess
 import re
 import pax
 
+def get_ldd_linkings(elf):
+	try:
+		ldd_output = subprocess.check_output(["/usr/bin/ldd", elf])
+	except:
+		return []
+	ldd_lines = ldd_output.split('\n')
+	linkings = []
+	for m in range(0,len(ldd_lines)):
+		if not re.search('=>', ldd_lines[m]):
+			continue
+		ldd_lines[m] = ldd_lines[m].strip()
+		mapp = re.split('=>', ldd_lines[m] )
+		soname = mapp[0].strip()
+		filename = re.sub('\(.*$', '', mapp[1]).strip()
+		if filename == '':
+			continue
+		filename =  os.path.realpath(filename)
+		linkings.append(soname)
+	return linkings
 
 def get_forward_linkings():
 	var_db_pkg = '/var/db/pkg'
@@ -21,7 +40,8 @@ def get_forward_linkings():
 					line = line.strip()
 					link = re.split('\s', line)
 					elf = link[0]
-					linkings = re.split(',', link[1])
+					linkings = get_ldd_linkings(elf)
+					#linkings = re.split(',', link[1]) #this uses NEEDS to determine linkage
 					forward_linkings[elf] = linkings 
 			except:
 				break
@@ -46,7 +66,7 @@ def get_soname2file_mappings():
 	ldconfig_output = subprocess.check_output(["/sbin/ldconfig", "-p"])
 	ldconfig_lines = ldconfig_output.split('\n')
 	ldconfig_lines.pop(0)			#first line is a header
-	ldconfig_lines.pop()				#last line empty because of previous split
+	ldconfig_lines.pop()			#last line empty because of previous split
 	mappings = {}
 	for m in range(0,len(ldconfig_lines)):
 		ldconfig_lines[m] = ldconfig_lines[m].strip()
@@ -65,15 +85,25 @@ soname2file_mappings = get_soname2file_mappings()
 
 
 """ Print out mapping: binary -> library, library, library ... """
+unmapped = []
 for elf in forward_linkings:
 	print elf
 	for elf_dep in forward_linkings[elf]:
 		print "\t", elf_dep
-		#print "\t\t", soname2file_mappings[elf_dep]
+		#try:
+		#	print "\t\t", soname2file_mappings[elf_dep]
+		#except:
+		#	unmapped.append(elf_dep)
+		#	print "%s doesn't have a mapping" % elf_dep
 
 raw_input()
 
-""" Print out mapping: library -> binary, binary, binary ... """
+print unmapped
+
+raw_input()
+
+
+""" Print out mapping: library -> binary, binary, binary ...
 for elf_dep in reverse_linkings:
 	print elf_dep
 	for elf in reverse_linkings[elf_dep]:
@@ -84,3 +114,4 @@ raw_input()
 
 for s in soname2file_mappings:
 	print s, soname2file_mappings[s]
+"""
