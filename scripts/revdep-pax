@@ -7,27 +7,34 @@ import pax
 
 def get_ldd_linkings(elf):
 	try:
-		ldd_output = subprocess.check_output(["/usr/bin/ldd", elf])
+		#When subprocess.DEVNULL makes it to python, change this: http://bugs.python.org/issue5870
+		ldd_output = subprocess.check_output(['/usr/bin/ldd', elf], stderr=subprocess.PIPE)
 	except:
 		return []
 	ldd_lines = ldd_output.split('\n')
 	linkings = []
+	mappings = []
 	for m in range(0,len(ldd_lines)):
 		if not re.search('=>', ldd_lines[m]):
 			continue
 		ldd_lines[m] = ldd_lines[m].strip()
 		mapp = re.split('=>', ldd_lines[m] )
 		soname = mapp[0].strip()
+		soname = os.path.basename(soname)	# This is for ./libSDL-1.2.so.0
 		filename = re.sub('\(.*$', '', mapp[1]).strip()
 		if filename == '':
 			continue
-		filename =  os.path.realpath(filename)
+		filename = os.path.realpath(filename)
 		linkings.append(soname)
-	return linkings
+		mappings.append([soname,filename])
+	return ( linkings, mappings )
+
 
 def get_forward_linkings():
+	""" I'm still not sure we wan to use /var/db/pkg vs some path of binaries """
 	var_db_pkg = '/var/db/pkg'
 	forward_linkings = {}
+	so2filename_mappings = {}
 	for cat in os.listdir(var_db_pkg):
 		catdir = '%s/%s' % (var_db_pkg, cat)
 		for pkg in os.listdir(catdir):
@@ -40,13 +47,14 @@ def get_forward_linkings():
 					line = line.strip()
 					link = re.split('\s', line)
 					elf = link[0]
-					linkings = get_ldd_linkings(elf)
-					#linkings = re.split(',', link[1]) #this uses NEEDS to determine linkage
+					( linkings, mappings ) = get_ldd_linkings(elf)
 					forward_linkings[elf] = linkings 
+					for m in mappings:
+						so2filename_mappings[m[0]] = m[1]
 			except:
 				break
 
-	return forward_linkings 
+	return ( forward_linkings, so2filename_mappings )
 
 
 def invert_linkings( forward_linkings ):
@@ -62,56 +70,76 @@ def invert_linkings( forward_linkings ):
 	return reverse_linkings 
 
 
-def get_soname2file_mappings():
-	ldconfig_output = subprocess.check_output(["/sbin/ldconfig", "-p"])
-	ldconfig_lines = ldconfig_output.split('\n')
-	ldconfig_lines.pop(0)			#first line is a header
-	ldconfig_lines.pop()			#last line empty because of previous split
-	mappings = {}
-	for m in range(0,len(ldconfig_lines)):
-		ldconfig_lines[m] = ldconfig_lines[m].strip()
-		mapp = re.split('=>', ldconfig_lines[m] )
-		soname = re.sub('\(.*$', '', mapp[0]).strip()
-		abi = re.search('\(.+\)', mapp[0]).group(0)
-		abi = abi.strip().strip('(').strip(')').strip()
-		filename = mapp[1].strip()
-		filename =  os.path.realpath(filename)
-		mappings[soname] = [ filename, pax.getflags(filename), abi ]
-	return mappings 
+def print_forward_linkings( forward_linkings ):
+	missing_elfs = []
+	missing_links = []
+	for elf in forward_linkings:
+		try:
+			print elf, '(',  pax.getflags(elf), ')'
+		except:
+			missing_elfs.append(elf)
+			continue
+		for elf_dep in forward_linkings[elf]:
+			try:
+				filename = so2filename_mappings[elf_dep]
+				flags = pax.getflags(filename)
+				print '\t', elf_dep, '\t', filename, '(', flags, ')'
+			except:
+				missing_links.append(elf_dep)
 
-forward_linkings = get_forward_linkings()
+
+	missing_elfs = set(missing_elfs)
+	print '\n\n'
+	print '**** Missing elfs ****'
+	for m in missing_elfs:
+		print m
+
+	missing_links = set(missing_links)
+	print '\n\n'
+	print '**** Missing forward linkings ****'
+	for m in missing_links:
+		print m
+
+	print '\n\n'
+
+
+def print_reverse_linkings( reverse_linkings ):
+	missing_elfs = []
+	missing_links = []
+	for elf in reverse_linkings:
+		try:
+			filename = so2filename_mappings[elf]
+			flags = pax.getflags(filename)
+			print elf, '\t', filename, '(', flags, ')'
+		except:
+			missing_elfs.append(elf)
+		for elf_dep in reverse_linkings[elf]:
+			try:
+				flags = pax.getflags(elf_dep)
+				print '\t', elf_dep, '(', flags, ')'
+			except:
+				missing_links.append(elf_dep)
+
+	missing_elfs = set(missing_elfs)
+	print '\n\n'
+	print '**** Missing elfs ****'
+	for m in missing_elfs:
+		print m
+
+	missing_links = set(missing_links)
+	print '\n\n'
+	print '**** Missing reverse linkings ****'
+	for m in missing_links:
+		print m
+
+	print '\n\n'
+
+
+( forward_linkings, so2filename_mappings ) = get_forward_linkings()
 reverse_linkings = invert_linkings( forward_linkings )
-soname2file_mappings = get_soname2file_mappings()
+
+print_forward_linkings( forward_linkings )
+#print_reverse_linkings( reverse_linkings )
 
 
-""" Print out mapping: binary -> library, library, library ... """
-unmapped = []
-for elf in forward_linkings:
-	print elf
-	for elf_dep in forward_linkings[elf]:
-		print "\t", elf_dep
-		#try:
-		#	print "\t\t", soname2file_mappings[elf_dep]
-		#except:
-		#	unmapped.append(elf_dep)
-		#	print "%s doesn't have a mapping" % elf_dep
 
-raw_input()
-
-print unmapped
-
-raw_input()
-
-
-""" Print out mapping: library -> binary, binary, binary ...
-for elf_dep in reverse_linkings:
-	print elf_dep
-	for elf in reverse_linkings[elf_dep]:
-		print "\t", elf
-		#if not path.exists(elf):
-		#	print "%s doesn't exist!" % elf
-raw_input()
-
-for s in soname2file_mappings:
-	print s, soname2file_mappings[s]
-"""
