@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import sys
+import getopt
 import os
 import subprocess
 import re
@@ -31,7 +33,7 @@ def get_ldd_linkings(elf):
 
 
 def get_forward_linkings():
-	""" I'm still not sure we wan to use /var/db/pkg vs some path of binaries """
+	# I'm still not sure we wan to use /var/db/pkg vs some path of binaries
 	var_db_pkg = '/var/db/pkg'
 	forward_linkings = {}
 	so2filename_mappings = {}
@@ -70,7 +72,7 @@ def invert_linkings( forward_linkings ):
 	return reverse_linkings 
 
 
-def print_forward_linkings( forward_linkings ):
+def print_forward_linkings( forward_linkings, so2filename_mappings ):
 	missing_elfs = []
 	missing_links = []
 	for elf in forward_linkings:
@@ -86,7 +88,6 @@ def print_forward_linkings( forward_linkings ):
 				print '\t', elf_dep, '\t', filename, '(', flags, ')'
 			except:
 				missing_links.append(elf_dep)
-
 
 	missing_elfs = set(missing_elfs)
 	print '\n\n'
@@ -135,11 +136,54 @@ def print_reverse_linkings( reverse_linkings ):
 	print '\n\n'
 
 
-( forward_linkings, so2filename_mappings ) = get_forward_linkings()
-reverse_linkings = invert_linkings( forward_linkings )
-
-print_forward_linkings( forward_linkings )
-#print_reverse_linkings( reverse_linkings )
+def usage():
+	print 'TODO'
 
 
+def main():
+	try:
+		opts, args = getopt.getopt(sys.argv[1:], 'hfrb:l:')
+	except getopt.GetoptError, err:
+		print str(err) # will print something like 'option -a not recognized'
+		usage()
+		sys.exit(1)
+
+	if len(opts) == 0:
+		usage()
+		sys.exit(1)
+
+	binary = None
+	library = None
+
+	do_forward = False
+	do_reverse = False
+
+	for o, a in opts:
+		if o == '-h':
+			usage()
+			sys.exit(1)
+		elif o == '-f':
+			do_forward = True
+		elif o == '-r':
+			do_reverse = True
+		elif o == '-b':
+			binary = a
+		elif o == '-l':
+			library = a
+		else:
+			print 'Option included in getopt but not handled here!'
+			usage()
+			sys.exit(1)
+
+	if do_forward:
+		( forward_linkings, so2filename_mappings ) = get_forward_linkings()
+		print_forward_linkings( forward_linkings, so2filename_mappings )
+
+	if do_reverse:
+		( forward_linkings, so2filename_mappings ) = get_forward_linkings()
+		reverse_linkings = invert_linkings( forward_linkings )
+		print_reverse_linkings( reverse_linkings )
+
+if __name__ == '__main__':
+    main()
 
