@@ -12,6 +12,7 @@ def get_ldd_linkings(elf):
 		#When subprocess.DEVNULL makes it to python, change this: http://bugs.python.org/issue5870
 		ldd_output = subprocess.check_output(['/usr/bin/ldd', elf], stderr=subprocess.PIPE)
 	except:
+		# We should record these elfs which are probably static
 		return []
 	ldd_lines = ldd_output.split('\n')
 	linkings = []
@@ -54,7 +55,7 @@ def get_forward_linkings():
 					for m in mappings:
 						so2filename_mappings[m[0]] = m[1]
 			except:
-				break
+				continue
 
 	return ( forward_linkings, so2filename_mappings )
 
@@ -104,7 +105,7 @@ def print_forward_linkings( forward_linkings, so2filename_mappings ):
 	print '\n\n'
 
 
-def print_reverse_linkings( reverse_linkings ):
+def print_reverse_linkings( reverse_linkings, so2filename_mappings ):
 	missing_elfs = []
 	missing_links = []
 	for elf in reverse_linkings:
@@ -152,11 +153,11 @@ def main():
 		usage()
 		sys.exit(1)
 
+	do_forward = False
+	do_reverse = False
 	binary = None
 	library = None
 
-	do_forward = False
-	do_reverse = False
 
 	for o, a in opts:
 		if o == '-h':
@@ -182,7 +183,25 @@ def main():
 	if do_reverse:
 		( forward_linkings, so2filename_mappings ) = get_forward_linkings()
 		reverse_linkings = invert_linkings( forward_linkings )
-		print_reverse_linkings( reverse_linkings )
+		print_reverse_linkings( reverse_linkings, so2filename_mappings )
+
+	if binary != None:
+		( forward_linkings, so2filename_mappings ) = get_forward_linkings()
+		linkings = forward_linkings[binary]
+		print linkings
+
+		"""
+		try:
+			filename = so2filename_mappings[binary]
+			flags = pax.getflags(filename)
+			print binary, '\t', filename, '(', flags, ')'
+		except:
+			print "%s doesn't link to anything that I know of" % binary
+		"""
+
+	if library !=None:
+		( forward_linkings, so2filename_mappings ) = get_forward_linkings()
+		reverse_linkings = invert_linkings( forward_linkings )
 
 if __name__ == '__main__':
     main()
