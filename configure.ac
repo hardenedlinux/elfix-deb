@@ -64,6 +64,7 @@ AC_FUNC_ERROR_AT_LINE
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
+                 scripts/Makefile
                  doc/Makefile
                  poc/Makefile
                  tests/Makefile])
