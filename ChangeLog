@@ -1,6 +1,25 @@
+2011-10-08  Anthony G. Basile <blueness@gentoo.org>
+
+	* Add python pax module and revdep-pax
+	* Add poc/paxmark-libs
+
+2011-10-03  Anthony G. Basile <blueness@gentoo.org>
+
+	* Code cleanup and fixed make check
+	* Add poc/paxctl-xattr
+
+2011-09-27  Anthony G. Basile <blueness@gentoo.org>
+
+	* Code cleanup and fix PT_PAX flag setting
+
+2011-08-18  Anthony G. Basile <blueness@gentoo.org>
+
+	* Add paxctl-ng
+
 2011-04-14  Anthony G. Basile <blueness@gentoo.org>
 
 	* Initial release
+	* Add fix-gnustack
 -----
 
 Copyright (C) 2011  Anthony G. Basile
