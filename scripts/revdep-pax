@@ -143,7 +143,7 @@ def usage():
 
 def main():
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], 'hfrb:l:')
+		opts, args = getopt.getopt(sys.argv[1:], 'hfrb:s:')
 	except getopt.GetoptError, err:
 		print str(err) # will print something like 'option -a not recognized'
 		usage()
@@ -156,7 +156,7 @@ def main():
 	do_forward = False
 	do_reverse = False
 	binary = None
-	library = None
+	soname = None
 
 
 	for o, a in opts:
@@ -169,8 +169,8 @@ def main():
 			do_reverse = True
 		elif o == '-b':
 			binary = a
-		elif o == '-l':
-			library = a
+		elif o == '-s':
+			soname = a
 		else:
 			print 'Option included in getopt but not handled here!'
 			usage()
@@ -188,20 +188,32 @@ def main():
 	if binary != None:
 		( forward_linkings, so2filename_mappings ) = get_forward_linkings()
 		linkings = forward_linkings[binary]
-		print linkings
 
-		"""
-		try:
-			filename = so2filename_mappings[binary]
-			flags = pax.getflags(filename)
-			print binary, '\t', filename, '(', flags, ')'
-		except:
-			print "%s doesn't link to anything that I know of" % binary
-		"""
+		flags = pax.getflags(binary)
+		print binary, '(', flags, ')'
+		for soname in linkings:
+			try:
+				filename = so2filename_mappings[soname]
+				flags = pax.getflags(filename)
+				print '\t', soname, '\t', filename, '(', flags, ')'
+			except:
+				print "file for soname %s not found" % soname
 
-	if library !=None:
+	if soname !=None:
 		( forward_linkings, so2filename_mappings ) = get_forward_linkings()
 		reverse_linkings = invert_linkings( forward_linkings )
+		linkings = reverse_linkings[soname]
+		library = so2filename_mappings[soname]
+
+		flags = pax.getflags(library)
+		print soname, '\t', library, '(', flags, ')'
+		for binary in linkings:
+			try:
+				flags = pax.getflags(binary)
+				print '\t', binary, '(', flags, ')'
+			except:
+				print "cannot obtain pax flags for %s" % binary
+
 
 if __name__ == '__main__':
     main()
