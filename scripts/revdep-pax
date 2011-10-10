@@ -8,13 +8,16 @@ import re
 import pax
 
 def get_ldd_linkings(binary):
+
 	try:
-		#When subprocess.DEVNULL makes it to python, change this: http://bugs.python.org/issue5870
+		#TODO: when subprocess.DEVNULL makes it to python, change this: http://bugs.python.org/issue5870
 		ldd_output = subprocess.check_output(['/usr/bin/ldd', binary], stderr=subprocess.PIPE)
 	except:
-		# We should record these binaries which are probably statically linked
+		#TODO: we should record these binaries which are probably statically linked
 		return []
+
 	ldd_lines = ldd_output.split('\n')
+
 	linkings = []
 	mappings = {}
 	for m in range(0,len(ldd_lines)):
@@ -30,14 +33,16 @@ def get_ldd_linkings(binary):
 		library = os.path.realpath(library)
 		linkings.append(soname)
 		mappings[soname] = library 
+
 	return ( linkings, mappings )
 
 
 def get_forward_linkings():
-	# I'm still not sure we wan to use /var/db/pkg vs some path of binaries
+	#TODO: I'm still not sure we wan to use /var/db/pkg vs some path of binaries
 	var_db_pkg = '/var/db/pkg'
+
 	forward_linkings = {}
-	so2filename_mappings = {}
+	so2library_mappings = {}
 	for cat in os.listdir(var_db_pkg):
 		catdir = '%s/%s' % (var_db_pkg, cat)
 		for pkg in os.listdir(catdir):
@@ -52,11 +57,11 @@ def get_forward_linkings():
 					binary = link[0]
 					( linkings, mappings ) = get_ldd_linkings(binary)
 					forward_linkings[binary] = linkings 
-					so2filename_mappings.update(mappings)
+					so2library_mappings.update(mappings)
 			except:
 				continue
 
-	return ( forward_linkings, so2filename_mappings )
+	return ( forward_linkings, so2library_mappings )
 
 
 def invert_linkings( forward_linkings ):
@@ -72,7 +77,7 @@ def invert_linkings( forward_linkings ):
 	return reverse_linkings 
 
 
-def print_forward_linkings( forward_linkings, so2filename_mappings, verbose ):
+def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 	missing_binaries = []
 	missing_links = []
 	for binary in forward_linkings:
@@ -87,7 +92,7 @@ def print_forward_linkings( forward_linkings, so2filename_mappings, verbose ):
 		count = 0
 		for soname in forward_linkings[binary]:
 			try:
-				library = so2filename_mappings[soname]
+				library = so2library_mappings[soname]
 				library_flags = pax.getflags(library)
 				s = "%s\n\t%s\t%s ( %s )" % ( s, soname, library, library_flags )
 				if binary_flags != library_flags:
@@ -103,33 +108,38 @@ def print_forward_linkings( forward_linkings, so2filename_mappings, verbose ):
 			if count != 0:
 				print s
 
+	print
+
 	missing_binaries = set(missing_binaries)
-	print '\n\n'
+	print
+	print
 	print '**** Missing binaries ****'
 	for m in missing_binaries:
 		print m
 
 	missing_links = set(missing_links)
-	print '\n\n'
+	print
+	print
 	print '**** Missing forward linkings ****'
 	for m in missing_links:
 		print m
 
-	print '\n\n'
+	print
+	print
 
 
-def print_reverse_linkings( reverse_linkings, so2filename_mappings, verbose ):
+def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose ):
 	missing_sonames = []
 	missing_links = []
 
 	for soname in reverse_linkings:
 
 		try:
-			library = so2filename_mappings[soname]
+			library = so2library_mappings[soname]
 			library_flags = pax.getflags(library)
 			s = "%s\t%s ( %s )" % ( soname, library, library_flags )
 		except:
-			missing_libraries.append(soname)
+			missing_sonames.append(soname)
 			continue
 
 		count = 0
@@ -150,19 +160,23 @@ def print_reverse_linkings( reverse_linkings, so2filename_mappings, verbose ):
 			if count != 0:
 				print s
 
+	print
+
 	missing_sonames = set(missing_sonames)
-	print '\n\n'
+	print
+	print
 	print '**** Missing sonames ****'
 	for m in missing_sonames:
 		print m
 
 	missing_links = set(missing_links)
-	print '\n\n'
+	print
+	print
 	print '**** Missing reverse linkings ****'
 	for m in missing_links:
 		print m
-
-	print '\n\n'
+	print
+	print
 
 
 def run_usage():
@@ -183,14 +197,14 @@ def run_usage():
 
 
 def run_forward(verbose):
-	( forward_linkings, so2filename_mappings ) = get_forward_linkings()
-	print_forward_linkings( forward_linkings, so2filename_mappings, verbose)
+	( forward_linkings, so2library_mappings ) = get_forward_linkings()
+	print_forward_linkings( forward_linkings, so2library_mappings, verbose)
 
 
 def run_reverse(verbose):
-	( forward_linkings, so2filename_mappings ) = get_forward_linkings()
+	( forward_linkings, so2library_mappings ) = get_forward_linkings()
 	reverse_linkings = invert_linkings( forward_linkings )
-	print_reverse_linkings( reverse_linkings, so2filename_mappings, verbose )
+	print_reverse_linkings( reverse_linkings, so2library_mappings, verbose )
 
 
 def run_binary(binary, verbose):
@@ -219,10 +233,10 @@ def run_binary(binary, verbose):
 
 
 def run_soname(soname, verbose):
-	( forward_linkings, so2filename_mappings ) = get_forward_linkings()
+	( forward_linkings, so2library_mappings ) = get_forward_linkings()
 	reverse_linkings = invert_linkings( forward_linkings )
 	linkings = reverse_linkings[soname]
-	library = so2filename_mappings[soname]
+	library = so2library_mappings[soname]
 
 	library_flags = pax.getflags(library)
 	print soname, '\t', library, '(', library_flags, ')'
@@ -241,7 +255,8 @@ def run_soname(soname, verbose):
 			print "cannot obtain pax flags for %s" % binary
 
 	if count == 0:
-		print '\nNo mismatches'
+		print
+		print 'No mismatches'
 
 def main():
 	try:
@@ -281,6 +296,8 @@ def main():
 			print 'Option included in getopt but not handled here!'
 			print 'Please file a bug'
 			sys.exit(1)
+
+	#TODO: Add code to only allow one of -h, -f -r -b -s
 
 	if do_usage:
 		run_usage()
