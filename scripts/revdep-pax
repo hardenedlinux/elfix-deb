@@ -137,7 +137,18 @@ def print_reverse_linkings( reverse_linkings, so2filename_mappings ):
 
 
 def usage():
-	print 'TODO'
+	print 'Package Name : elfix\n'
+	print 'Bug Reports  : http://bugs.gentoo.org/'
+	print 'Program Name : revdep-pax\n'
+	print 'Description  : Get or set pax flags on an ELF object\n\n'
+	print 'Usage        : revdep-pax [-fv] | [-rv] | -v [-b BINARY] | -v [-s SONAME] | -h\n\n'
+	print 'Options      : -f         print out all the forward mappings for all system binaries\n'
+	print '             : -r         print out all the reverse mappints for all system sonames\n'
+	print '             : -b BINARY  print all the forward mappings only for BINARY\n'
+	print '             : -s SONAME  print all the reverse mappings only for SONAME\n'
+	print '             : -v         verbose, otherwise just print mismatched pax flags \n'
+	print '             : -h         print out this help\n\n'
+
 
 def run_forward():
 	( forward_linkings, so2filename_mappings ) = get_forward_linkings()
