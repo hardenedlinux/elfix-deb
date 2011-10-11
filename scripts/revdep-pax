@@ -84,7 +84,8 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 
 		try:
 			binary_flags = pax.getflags(binary)
-			s = "%s ( %s )" % ( binary, binary_flags )
+			sv = "%s ( %s )" % ( binary, binary_flags )
+			s = sv
 		except:
 			missing_binaries.append(binary)
 			continue
@@ -94,14 +95,15 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 			try:
 				library = so2library_mappings[soname]
 				library_flags = pax.getflags(library)
-				s = "%s\n\t%s\t%s ( %s )" % ( s, soname, library, library_flags )
+				sv = "%s\n\t%s\t%s ( %s )" % ( sv, soname, library, library_flags )
 				if binary_flags != library_flags:
+					s = "%s\n\t%s\t%s ( %s )" % ( s, soname, library, library_flags )
 					count = count + 1
 			except:
 				missing_links.append(soname)
 
 		if verbose:
-			print s
+			print sv
 			if count == 0:
 				print 'No mismatches'
 		else:
@@ -137,7 +139,8 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose ):
 		try:
 			library = so2library_mappings[soname]
 			library_flags = pax.getflags(library)
-			s = "%s\t%s ( %s )" % ( soname, library, library_flags )
+			sv = "%s\t%s ( %s )" % ( soname, library, library_flags )
+			s = sv
 		except:
 			missing_sonames.append(soname)
 			continue
@@ -146,14 +149,15 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose ):
 		for binary in reverse_linkings[soname]:
 			try:
 				binary_flags = pax.getflags(binary)
-				s = "%s\n\t%s ( %s )" % ( s, binary, binary_flags )
+				sv = "%s\n\t%s ( %s )" % ( sv, binary, binary_flags )
 				if library_flags != binary_flags:
+					s = "%s\n\t%s ( %s )" % ( s, binary, binary_flags )
 					count = count + 1
 			except:
 				missing_links.append(binary)
 
 		if verbose:
-			print s
+			print sv
 			if count == 0:
 				print 'No mismatches'
 		else:
