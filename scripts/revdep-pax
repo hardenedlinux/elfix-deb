@@ -215,12 +215,14 @@ def run_usage():
 def run_forward(verbose):
 	( forward_linkings, so2library_mappings ) = get_forward_linkings()
 	print_forward_linkings( forward_linkings, so2library_mappings, verbose)
+	print
 
 
 def run_reverse(verbose):
 	( forward_linkings, so2library_mappings ) = get_forward_linkings()
 	reverse_linkings = invert_linkings( forward_linkings )
 	print_reverse_linkings( reverse_linkings, so2library_mappings, verbose )
+	print
 
 
 def run_binary(binary, verbose):
@@ -253,9 +255,23 @@ def run_binary(binary, verbose):
 		print
 
 
-def run_soname(soname, verbose):
+def invert_so2library_mappings( so2library_mappings ):
+	library2soname_mappings = {}
+	for soname, library in so2library_mappings.iteritems():
+		library2soname_mappings[library] = soname
+	return library2soname_mappings
+
+
+def run_soname(name, verbose, use_soname):
 	( forward_linkings, so2library_mappings ) = get_forward_linkings()
 	reverse_linkings = invert_linkings( forward_linkings )
+
+	if use_soname:
+		soname = name
+	else:
+		library2soname_mappings = invert_so2library_mappings(so2library_mappings)
+		soname = library2soname_mappings[name]
+
 	linkings = reverse_linkings[soname]
 	library = so2library_mappings[soname]
 
@@ -284,9 +300,10 @@ def run_soname(soname, verbose):
 		print '\tMismatches'
 		print
 
+
 def main():
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], 'hfrb:s:v')
+		opts, args = getopt.getopt(sys.argv[1:], 'hfrb:s:l:v')
 	except getopt.GetoptError, err:
 		print str(err) # will print something like 'option -a not recognized'
 		run_usage()
@@ -302,6 +319,7 @@ def main():
 
 	binary = None
 	soname = None
+	library = None
 
 	verbose = False
 
@@ -316,6 +334,8 @@ def main():
 			binary = a
 		elif o == '-s':
 			soname = a
+		elif o == '-l':
+			library = a
 		elif o == '-v':
 			verbose = True
 		else:
@@ -337,8 +357,12 @@ def main():
 	if binary != None:
 		run_binary(binary, verbose)
 
-	if soname !=None:
-		run_soname(soname, verbose)
+	if soname != None:
+		run_soname(soname, verbose, True)
+
+	if library != None:
+		library = os.path.realpath(library)
+		run_soname(library, verbose, False)
 
 if __name__ == '__main__':
     main()
