@@ -105,7 +105,13 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 		if verbose:
 			print sv
 			if count == 0:
-				print 'No mismatches'
+				print
+				print '\tNo mismatches'
+				print
+			else:
+				print
+				print '\tMismatches'
+				print
 		else:
 			if count != 0:
 				print s
@@ -159,7 +165,13 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose ):
 		if verbose:
 			print sv
 			if count == 0:
-				print 'No mismatches'
+				print
+				print '\tNo mismatches'
+				print
+			else:
+				print
+				print '\tMismatches'
+				print
 		else:
 			if count != 0:
 				print s
@@ -233,7 +245,12 @@ def run_binary(binary, verbose):
 
 	if count == 0:
 		print
-		print 'No mismatches'
+		print '\tNo mismatches'
+		print
+	else:
+		print
+		print '\tMismatches'
+		print
 
 
 def run_soname(soname, verbose):
@@ -260,7 +277,12 @@ def run_soname(soname, verbose):
 
 	if count == 0:
 		print
-		print 'No mismatches'
+		print '\tNo mismatches'
+		print
+	else:
+		print
+		print '\tMismatches'
+		print
 
 def main():
 	try:
