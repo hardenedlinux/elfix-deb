@@ -267,11 +267,11 @@ def main():
 		opts, args = getopt.getopt(sys.argv[1:], 'hfrb:s:v')
 	except getopt.GetoptError, err:
 		print str(err) # will print something like 'option -a not recognized'
-		usage()
+		run_usage()
 		sys.exit(1)
 
 	if len(opts) == 0:
-		usage()
+		run_usage()
 		sys.exit(1)
 
 	do_usage   = False
