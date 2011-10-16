@@ -203,14 +203,12 @@ def run_usage():
 	print 'Program Name : revdep-pax'
 	print 'Description  : Get or set pax flags on an ELF object'
 	print
-	print 'Usage        : revdep-pax [-fv] | [-rv] | -v [-b BINARY] | -v [-s SONAME] | -h'
-	print
-	print 'Options      : -f         print out all the forward mappings for all system binaries'
-	print '             : -r         print out all the reverse mappints for all system sonames'
-	print '             : -b BINARY  print all the forward mappings only for BINARY'
-	print '             : -s SONAME  print all the reverse mappings only for SONAME'
-	print '             : -v         verbose, otherwise just print mismatched pax flags'
-	print '             : -h         print out this help'
+	print 'Usage        : revdep-pax -f [-v]         print out all forward mappings for all system binaries'
+	print '             : revdep-pax -r [-v]         print out all reverse mappints for all system sonames'
+	print '             : revdep-pax -b BINARY [-v]  print all forward mappings only for BINARY'
+	print '             : revdep-pax -s SONAME [-v]  print all reverse mappings only for SONAME'
+	print '             : revdep-pax [-h]            print out this help'
+	print '             : -v                         verbose, otherwise just print mismatched flags'
 	print
 
 
@@ -327,19 +325,27 @@ def main():
 
 	verbose = False
 
+	opt_count = 0
+
 	for o, a in opts:
 		if o == '-h':
 			do_usage = True
+			opt_count += 1
 		elif o == '-f':
 			do_forward = True
+			opt_count += 1
 		elif o == '-r':
 			do_reverse = True
+			opt_count += 1
 		elif o == '-b':
 			binary = a
+			opt_count += 1
 		elif o == '-s':
 			soname = a
+			opt_count += 1
 		elif o == '-l':
 			library = a
+			opt_count += 1
 		elif o == '-v':
 			verbose = True
 		else:
@@ -347,24 +353,18 @@ def main():
 			print 'Please file a bug'
 			sys.exit(1)
 
-	#TODO: Add code to only allow one of -h, -f -r -b -s
-
-	if do_usage:
+	# Only allow one of -h, -f -r -b -s
+	if opt_count > 1 or do_usage:
 		run_usage()
-
-	if do_forward:
+	elif do_forward:
 		run_forward(verbose)
-
-	if do_reverse:
+	elif do_reverse:
 		run_reverse(verbose)
-
-	if binary != None:
+	elif binary != None:
 		run_binary(binary, verbose)
-
-	if soname != None:
+	elif soname != None:
 		run_soname(soname, verbose, True)
-
-	if library != None:
+	elif library != None:
 		library = os.path.realpath(library)
 		run_soname(library, verbose, False)
 
