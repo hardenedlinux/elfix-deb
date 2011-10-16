@@ -104,6 +104,7 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 
 		if verbose:
 			print sv
+			print
 			if count == 0:
 				print
 				print '\tNo mismatches'
@@ -164,6 +165,7 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose ):
 
 		if verbose:
 			print sv
+			print
 			if count == 0:
 				print
 				print '\tNo mismatches'
@@ -230,6 +232,7 @@ def run_binary(binary, verbose):
 
 	binary_flags = pax.getflags(binary)
 	print binary, '(', binary_flags, ')'
+	print
 
 	count = 0
 	for soname in linkings:
@@ -277,6 +280,7 @@ def run_soname(name, verbose, use_soname):
 
 	library_flags = pax.getflags(library)
 	print soname, '\t', library, '(', library_flags, ')'
+	print
 
 	count = 0
 	for binary in linkings:

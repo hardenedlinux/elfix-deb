@@ -24,9 +24,11 @@
 
 
 static PyObject * pax_getflags(PyObject *, PyObject *);
+static PyObject * pax_setflags(PyObject *, PyObject *);
 
 static PyMethodDef PaxMethods[] = {
 	{"getflags",  pax_getflags, METH_VARARGS, "Get the pax flags."},
+	{"setflags",  pax_setflags, METH_VARARGS, "Set the pax flags."},
 	{NULL, NULL, 0, NULL}
 };
 
@@ -159,4 +161,255 @@ pax_getflags(PyObject *self, PyObject *args)
 	close(fd);
 
 	return Py_BuildValue("s", pax_buf);
+}
+
+
+static PyObject *
+pax_setflags(PyObject *self, PyObject *args)
+{
+	const char *f_name;
+	int pax_flags;
+	int fd, sts;
+
+	Elf *elf;
+	GElf_Ehdr ehdr;
+	uint16_t ei_flags;
+
+	GElf_Phdr phdr;
+	size_t i, phnum;
+
+	if (!PyArg_ParseTuple(args, "si", &f_name, &pax_flags))
+	{
+		PyErr_SetString(PaxError, "pax_setflags: PyArg_ParseTuple failed");
+		return NULL;
+	}
+
+	if(elf_version(EV_CURRENT) == EV_NONE)
+	{
+		PyErr_SetString(PaxError, "pax_setflags: library out of date");
+		return NULL;
+	}
+
+	if((fd = open(f_name, O_RDONLY)) < 0)
+	{
+		PyErr_SetString(PaxError, "pax_setflags: open() failed");
+		return NULL;
+	}
+
+	if((elf = elf_begin(fd, ELF_C_READ_MMAP, NULL)) == NULL)
+	{
+		close(fd);
+		PyErr_SetString(PaxError, "pax_setflags: elf_begin() failed");
+		return NULL;
+	}
+
+	if(elf_kind(elf) != ELF_K_ELF)
+	{
+		elf_end(elf);
+		close(fd);
+		PyErr_SetString(PaxError, "pax_setflags: elf_kind() failed: this is not an elf file.");
+		return NULL;
+	}
+
+
+
+	if(gelf_getehdr(elf, &ehdr) != &ehdr)
+	{
+		elf_end(elf);
+		close(fd);
+		PyErr_SetString(PaxError, "pax_setflags: gelf_getehdr() failed");
+		return NULL;
+	}
+
+	ei_flags = ehdr.e_ident[EI_PAX] + (ehdr.e_ident[EI_PAX + 1] << 8);
+
+	//PAGEEXEC
+	if(pax_flags & PF_PAGEEXEC)
+		ei_flags &= ~HF_PAX_PAGEEXEC;
+	if(pax_flags & PF_NOPAGEEXEC)
+		ei_flags |= HF_PAX_PAGEEXEC;
+	if((pax_flags & PF_PAGEEXEC) && (pax_flags & PF_NOPAGEEXEC))
+		ei_flags &= ~HF_PAX_PAGEEXEC;
+
+	//SEGMEXEC
+	if(pax_flags & PF_SEGMEXEC)
+		ei_flags &= ~HF_PAX_SEGMEXEC;
+	if(pax_flags & PF_NOSEGMEXEC)
+		ei_flags |= HF_PAX_SEGMEXEC;
+	if((pax_flags & PF_SEGMEXEC) && (pax_flags & PF_NOSEGMEXEC))
+		ei_flags &= ~HF_PAX_SEGMEXEC;
+
+	//MPROTECT
+	if(pax_flags & PF_MPROTECT)
+		ei_flags &= ~HF_PAX_MPROTECT;
+	if(pax_flags & PF_NOMPROTECT)
+		ei_flags |= HF_PAX_MPROTECT;
+	if((pax_flags & PF_MPROTECT) && (pax_flags & PF_NOMPROTECT))
+		ei_flags &= ~HF_PAX_MPROTECT;
+
+	//EMUTRAMP
+	if(pax_flags & PF_EMUTRAMP)
+		ei_flags |= HF_PAX_EMUTRAMP;
+	if(pax_flags & PF_NOEMUTRAMP)
+		ei_flags &= ~HF_PAX_EMUTRAMP;
+	if((pax_flags & PF_EMUTRAMP) && (pax_flags & PF_NOEMUTRAMP))
+		ei_flags &= ~HF_PAX_EMUTRAMP;
+
+	//RANDMMAP
+	if(pax_flags & PF_RANDMMAP)
+		ei_flags &= ~HF_PAX_RANDMMAP;
+	if(pax_flags & PF_NORANDMMAP)
+		ei_flags |= HF_PAX_RANDMMAP;
+	if((pax_flags & PF_RANDMMAP) && (pax_flags & PF_NORANDMMAP))
+		ei_flags &= ~HF_PAX_RANDMMAP;
+
+	//RANDEXEC
+	if(pax_flags & PF_RANDEXEC)
+		ei_flags |= HF_PAX_RANDEXEC;
+	if(pax_flags & PF_NORANDEXEC)
+		ei_flags &= ~HF_PAX_RANDEXEC;
+	if((pax_flags & PF_RANDEXEC) && (pax_flags & PF_NORANDEXEC))
+		ei_flags |= HF_PAX_RANDEXEC;
+
+
+	ehdr.e_ident[EI_PAX] = (uint8_t)ei_flags  ;
+	ehdr.e_ident[EI_PAX + 1] = (uint8_t)(ei_flags >> 8) ;
+
+	if(!gelf_update_ehdr(elf, &ehdr))
+	{
+		elf_end(elf);
+		close(fd);
+		PyErr_SetString(PaxError, "pax_setflags: gelf_update_ehdr() failed");
+		return NULL;
+	}
+
+	elf_getphdrnum(elf, &phnum);
+	for(i=0; i<phnum; ++i)
+	{
+		if(gelf_getphdr(elf, i, &phdr) != &phdr)
+		{
+			elf_end(elf);
+			close(fd);
+			PyErr_SetString(PaxError, "pax_setflags: gelf_getphdr() failed");
+			return NULL;
+		}
+
+		if(phdr.p_type == PT_PAX_FLAGS)
+		{
+			//PAGEEXEC
+			if(pax_flags & PF_PAGEEXEC)
+			{
+				phdr.p_flags |= PF_PAGEEXEC;
+				phdr.p_flags &= ~PF_NOPAGEEXEC;
+			}
+			if(pax_flags & PF_NOPAGEEXEC)
+			{
+				phdr.p_flags &= ~PF_PAGEEXEC;
+				phdr.p_flags |= PF_NOPAGEEXEC;
+			}
+			if((pax_flags & PF_PAGEEXEC) && (pax_flags & PF_NOPAGEEXEC))
+			{
+				phdr.p_flags &= ~PF_PAGEEXEC;
+				phdr.p_flags &= ~PF_NOPAGEEXEC;
+			}
+
+			//SEGMEXEC
+			if(pax_flags & PF_SEGMEXEC)
+			{
+				phdr.p_flags |= PF_SEGMEXEC;
+				phdr.p_flags &= ~PF_NOSEGMEXEC;
+			}
+			if(pax_flags & PF_NOSEGMEXEC)
+			{
+				phdr.p_flags &= ~PF_SEGMEXEC;
+				phdr.p_flags |= PF_NOSEGMEXEC;
+			}
+			if((pax_flags & PF_SEGMEXEC) && (pax_flags & PF_NOSEGMEXEC))
+			{
+				phdr.p_flags &= ~PF_SEGMEXEC;
+				phdr.p_flags &= ~PF_NOSEGMEXEC;
+			}
+
+			//MPROTECT
+			if(pax_flags & PF_MPROTECT)
+			{
+				phdr.p_flags |= PF_MPROTECT;
+				phdr.p_flags &= ~PF_NOMPROTECT;
+			}
+			if(pax_flags & PF_NOMPROTECT)
+			{
+				phdr.p_flags &= ~PF_MPROTECT;
+				phdr.p_flags |= PF_NOMPROTECT;
+			}
+			if((pax_flags & PF_MPROTECT) && (pax_flags & PF_NOMPROTECT))
+			{
+				phdr.p_flags &= ~PF_MPROTECT;
+				phdr.p_flags &= ~PF_NOMPROTECT;
+			}
+
+			//EMUTRAMP
+			if(pax_flags & PF_EMUTRAMP)
+			{
+				phdr.p_flags |= PF_EMUTRAMP;
+				phdr.p_flags &= ~PF_NOEMUTRAMP;
+			}
+			if(pax_flags & PF_NOEMUTRAMP)
+			{
+				phdr.p_flags &= ~PF_EMUTRAMP;
+				phdr.p_flags |= PF_NOEMUTRAMP;
+			}
+			if((pax_flags & PF_EMUTRAMP) && (pax_flags & PF_NOEMUTRAMP))
+			{
+				phdr.p_flags &= ~PF_EMUTRAMP;
+				phdr.p_flags &= ~PF_NOEMUTRAMP;
+			}
+
+			//RANDMMAP
+			if(pax_flags & PF_RANDMMAP)
+			{
+				phdr.p_flags |= PF_RANDMMAP;
+				phdr.p_flags &= ~PF_NORANDMMAP;
+			}
+			if(pax_flags & PF_NORANDMMAP)
+			{
+				phdr.p_flags &= ~PF_RANDMMAP;
+				phdr.p_flags |= PF_NORANDMMAP;
+			}
+			if((pax_flags & PF_RANDMMAP) && (pax_flags & PF_NORANDMMAP))
+			{
+				phdr.p_flags &= ~PF_RANDMMAP;
+				phdr.p_flags &= ~PF_NORANDMMAP;
+			}
+
+			//RANDEXEC
+			if(pax_flags & PF_RANDEXEC)
+			{
+				phdr.p_flags |= PF_RANDEXEC;
+				phdr.p_flags &= ~PF_NORANDEXEC;
+			}
+			if(pax_flags & PF_NORANDEXEC)
+			{
+				phdr.p_flags &= ~PF_RANDEXEC;
+				phdr.p_flags |= PF_NORANDEXEC;
+			}
+			if((pax_flags & PF_RANDEXEC) && (pax_flags & PF_NORANDEXEC))
+			{
+				phdr.p_flags &= ~PF_RANDEXEC;
+				phdr.p_flags &= ~PF_NORANDEXEC;
+			}
+
+			if(!gelf_update_phdr(elf, i, &phdr))
+			{
+				elf_end(elf);
+				close(fd);
+				PyErr_SetString(PaxError, "pax_setflags: gelf_update_phdr() failed");
+				return NULL;
+			}
+		}
+	}
+
+	elf_end(elf);
+	close(fd);
+
+	return Py_BuildValue("");
 }
