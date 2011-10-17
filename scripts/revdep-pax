@@ -301,20 +301,20 @@ def run_soname(name, verbose, use_soname, mark):
 	print soname, '\t', library, '(', library_flags, ')'
 	print
 
-	count = 0
+	mismatched_binaries = []
 	for binary in linkings:
 		try:
 			( binary_flags, binary_pax_flags ) = pax.getflags(binary)
 			if verbose:
-				print '\t', binary, '(', binary_flags, ')'
-			else:
-				if library_flags != binary_flags:
-					print '\t', binary, '(', binary_flags, ')'
-					count = count + 1
+				print '\t%s ( %s )' % ( binary, binary_flags )
+			if library_flags != binary_flags:
+				mismatched_binaries.append(binary)
+				if not verbose:
+					print '\t%s ( %s )' % ( binary, binary_flags )
 		except:
 			print 'cannot obtain pax flags for %s' % binary
 
-	if count == 0:
+	if len(mismatched_binaries) == 0
 		print
 		print '\tNo mismatches'
 		print
@@ -322,6 +322,26 @@ def run_soname(name, verbose, use_soname, mark):
 		print
 		print '\tMismatches'
 		print
+		if mark:
+			print '\tWill mark binaries with %s' % library_flags
+			print
+			for binary in mismatched_binaries:
+				do_marking = False
+				while True:
+					ans = raw_input('\tSet flags for %s (y/n): ' % binary)
+					if ans == 'y':
+						do_marking = True
+						break
+					elif ans == 'n':
+						do_marking = False
+						break
+					else:
+						print '\t\tPlease enter y or n'
+				if do_marking:
+					pax.setflags(binary, library_pax_flags)
+					( binary_flags, binary_pax_flags ) = pax.getflags(binary)
+					print '\t%s ( %s )' % ( binary, binary_flags )
+					print
 
 
 def main():
