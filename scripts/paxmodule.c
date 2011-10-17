@@ -1,6 +1,5 @@
 #include <Python.h>
 
-#include <stdio.h> //remove when you remove printf
 #include <string.h>
 
 #include <gelf.h>
@@ -53,14 +52,13 @@ static PyObject *
 pax_getflags(PyObject *self, PyObject *args)
 {
 	const char *f_name;
-	int fd, sts;
+	int fd;
 	Elf *elf;
 
 	char pax_buf[BUF_SIZE];
+	uint16_t pax_flags;
 
 	GElf_Ehdr ehdr;
-	uint16_t ei_flags;
-
 	GElf_Phdr phdr;
 	char found_pt_pax;
 	size_t i, phnum;
@@ -102,6 +100,8 @@ pax_getflags(PyObject *self, PyObject *args)
 
 
 	found_pt_pax = 0;
+	pax_flags = 0;
+
 	elf_getphdrnum(elf, &phnum);
 	for(i=0; i<phnum; ++i)
 	{
@@ -116,24 +116,25 @@ pax_getflags(PyObject *self, PyObject *args)
 		if(phdr.p_type == PT_PAX_FLAGS)
 		{
 			found_pt_pax = 1;
+			pax_flags = phdr.p_flags;
 
-			pax_buf[0] = phdr.p_flags & PF_PAGEEXEC ? 'P' :
-				phdr.p_flags & PF_NOPAGEEXEC ? 'p' : '-' ;
+			pax_buf[0] = pax_flags & PF_PAGEEXEC ? 'P' :
+				pax_flags & PF_NOPAGEEXEC ? 'p' : '-' ;
 
-			pax_buf[1] = phdr.p_flags & PF_SEGMEXEC   ? 'S' : 
-				phdr.p_flags & PF_NOSEGMEXEC ? 's' : '-';
+			pax_buf[1] = pax_flags & PF_SEGMEXEC   ? 'S' : 
+				pax_flags & PF_NOSEGMEXEC ? 's' : '-';
 
-			pax_buf[2] = phdr.p_flags & PF_MPROTECT   ? 'M' :
-				phdr.p_flags & PF_NOMPROTECT ? 'm' : '-';
+			pax_buf[2] = pax_flags & PF_MPROTECT   ? 'M' :
+				pax_flags & PF_NOMPROTECT ? 'm' : '-';
 
-			pax_buf[3] = phdr.p_flags & PF_EMUTRAMP   ? 'E' :
-				phdr.p_flags & PF_NOEMUTRAMP ? 'e' : '-';
+			pax_buf[3] = pax_flags & PF_EMUTRAMP   ? 'E' :
+				pax_flags & PF_NOEMUTRAMP ? 'e' : '-';
 
-			pax_buf[4] = phdr.p_flags & PF_RANDMMAP   ? 'R' :
-				phdr.p_flags & PF_NORANDMMAP ? 'r' : '-';
+			pax_buf[4] = pax_flags & PF_RANDMMAP   ? 'R' :
+				pax_flags & PF_NORANDMMAP ? 'r' : '-';
 
-			pax_buf[5] = phdr.p_flags & PF_RANDEXEC   ? 'X' :
-				phdr.p_flags & PF_NORANDEXEC ? 'x' : '-';
+			pax_buf[5] = pax_flags & PF_RANDEXEC   ? 'X' :
+				pax_flags & PF_NORANDEXEC ? 'x' : '-';
 		}
 	}
 
@@ -147,20 +148,20 @@ pax_getflags(PyObject *self, PyObject *args)
 			return NULL;
 		}
 
-		ei_flags = ehdr.e_ident[EI_PAX] + (ehdr.e_ident[EI_PAX + 1] << 8);
+		pax_flags = ehdr.e_ident[EI_PAX] + (ehdr.e_ident[EI_PAX + 1] << 8);
 
-  		pax_buf[0] = ei_flags & HF_PAX_PAGEEXEC ? 'p' : 'P';
-		pax_buf[1] = ei_flags & HF_PAX_SEGMEXEC ? 's' : 'S';
-		pax_buf[2] = ei_flags & HF_PAX_MPROTECT ? 'm' : 'M';
-		pax_buf[3] = ei_flags & HF_PAX_EMUTRAMP ? 'E' : 'e';
-		pax_buf[4] = ei_flags & HF_PAX_RANDMMAP ? 'r' : 'R';
-		pax_buf[5] = ei_flags & HF_PAX_RANDEXEC ? 'X' : 'x';
+  		pax_buf[0] = pax_flags & HF_PAX_PAGEEXEC ? 'p' : 'P';
+		pax_buf[1] = pax_flags & HF_PAX_SEGMEXEC ? 's' : 'S';
+		pax_buf[2] = pax_flags & HF_PAX_MPROTECT ? 'm' : 'M';
+		pax_buf[3] = pax_flags & HF_PAX_EMUTRAMP ? 'E' : 'e';
+		pax_buf[4] = pax_flags & HF_PAX_RANDMMAP ? 'r' : 'R';
+		pax_buf[5] = pax_flags & HF_PAX_RANDEXEC ? 'X' : 'x';
 	}
 
 	elf_end(elf);
 	close(fd);
 
-	return Py_BuildValue("s", pax_buf);
+	return Py_BuildValue("si", pax_buf, pax_flags);
 }
 
 
@@ -168,10 +169,11 @@ static PyObject *
 pax_setflags(PyObject *self, PyObject *args)
 {
 	const char *f_name;
-	int pax_flags;
-	int fd, sts;
+	uint16_t pax_flags;
+	int fd;
 
 	Elf *elf;
+
 	GElf_Ehdr ehdr;
 	uint16_t ei_flags;
 
@@ -190,13 +192,13 @@ pax_setflags(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if((fd = open(f_name, O_RDONLY)) < 0)
+	if((fd = open(f_name, O_RDWR)) < 0)
 	{
 		PyErr_SetString(PaxError, "pax_setflags: open() failed");
 		return NULL;
 	}
 
-	if((elf = elf_begin(fd, ELF_C_READ_MMAP, NULL)) == NULL)
+	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
 	{
 		close(fd);
 		PyErr_SetString(PaxError, "pax_setflags: elf_begin() failed");
@@ -211,8 +213,6 @@ pax_setflags(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-
-
 	if(gelf_getehdr(elf, &ehdr) != &ehdr)
 	{
 		elf_end(elf);
@@ -223,36 +223,35 @@ pax_setflags(PyObject *self, PyObject *args)
 
 	ei_flags = ehdr.e_ident[EI_PAX] + (ehdr.e_ident[EI_PAX + 1] << 8);
 
+	ei_flags &= ~HF_PAX_PAGEEXEC;
+	ei_flags &= ~HF_PAX_SEGMEXEC;
+	ei_flags &= ~HF_PAX_MPROTECT;
+	ei_flags |= HF_PAX_EMUTRAMP;
+	ei_flags &= ~HF_PAX_RANDMMAP;
+	ei_flags |= HF_PAX_RANDEXEC;
+
 	//PAGEEXEC
 	if(pax_flags & PF_PAGEEXEC)
 		ei_flags &= ~HF_PAX_PAGEEXEC;
 	if(pax_flags & PF_NOPAGEEXEC)
 		ei_flags |= HF_PAX_PAGEEXEC;
-	if((pax_flags & PF_PAGEEXEC) && (pax_flags & PF_NOPAGEEXEC))
-		ei_flags &= ~HF_PAX_PAGEEXEC;
 
 	//SEGMEXEC
 	if(pax_flags & PF_SEGMEXEC)
 		ei_flags &= ~HF_PAX_SEGMEXEC;
 	if(pax_flags & PF_NOSEGMEXEC)
 		ei_flags |= HF_PAX_SEGMEXEC;
-	if((pax_flags & PF_SEGMEXEC) && (pax_flags & PF_NOSEGMEXEC))
-		ei_flags &= ~HF_PAX_SEGMEXEC;
 
 	//MPROTECT
 	if(pax_flags & PF_MPROTECT)
 		ei_flags &= ~HF_PAX_MPROTECT;
 	if(pax_flags & PF_NOMPROTECT)
 		ei_flags |= HF_PAX_MPROTECT;
-	if((pax_flags & PF_MPROTECT) && (pax_flags & PF_NOMPROTECT))
-		ei_flags &= ~HF_PAX_MPROTECT;
 
 	//EMUTRAMP
 	if(pax_flags & PF_EMUTRAMP)
 		ei_flags |= HF_PAX_EMUTRAMP;
 	if(pax_flags & PF_NOEMUTRAMP)
-		ei_flags &= ~HF_PAX_EMUTRAMP;
-	if((pax_flags & PF_EMUTRAMP) && (pax_flags & PF_NOEMUTRAMP))
 		ei_flags &= ~HF_PAX_EMUTRAMP;
 
 	//RANDMMAP
@@ -260,17 +259,12 @@ pax_setflags(PyObject *self, PyObject *args)
 		ei_flags &= ~HF_PAX_RANDMMAP;
 	if(pax_flags & PF_NORANDMMAP)
 		ei_flags |= HF_PAX_RANDMMAP;
-	if((pax_flags & PF_RANDMMAP) && (pax_flags & PF_NORANDMMAP))
-		ei_flags &= ~HF_PAX_RANDMMAP;
 
 	//RANDEXEC
 	if(pax_flags & PF_RANDEXEC)
 		ei_flags |= HF_PAX_RANDEXEC;
 	if(pax_flags & PF_NORANDEXEC)
 		ei_flags &= ~HF_PAX_RANDEXEC;
-	if((pax_flags & PF_RANDEXEC) && (pax_flags & PF_NORANDEXEC))
-		ei_flags |= HF_PAX_RANDEXEC;
-
 
 	ehdr.e_ident[EI_PAX] = (uint8_t)ei_flags  ;
 	ehdr.e_ident[EI_PAX + 1] = (uint8_t)(ei_flags >> 8) ;
@@ -282,6 +276,7 @@ pax_setflags(PyObject *self, PyObject *args)
 		PyErr_SetString(PaxError, "pax_setflags: gelf_update_ehdr() failed");
 		return NULL;
 	}
+
 
 	elf_getphdrnum(elf, &phnum);
 	for(i=0; i<phnum; ++i)
@@ -296,107 +291,7 @@ pax_setflags(PyObject *self, PyObject *args)
 
 		if(phdr.p_type == PT_PAX_FLAGS)
 		{
-			//PAGEEXEC
-			if(pax_flags & PF_PAGEEXEC)
-			{
-				phdr.p_flags |= PF_PAGEEXEC;
-				phdr.p_flags &= ~PF_NOPAGEEXEC;
-			}
-			if(pax_flags & PF_NOPAGEEXEC)
-			{
-				phdr.p_flags &= ~PF_PAGEEXEC;
-				phdr.p_flags |= PF_NOPAGEEXEC;
-			}
-			if((pax_flags & PF_PAGEEXEC) && (pax_flags & PF_NOPAGEEXEC))
-			{
-				phdr.p_flags &= ~PF_PAGEEXEC;
-				phdr.p_flags &= ~PF_NOPAGEEXEC;
-			}
-
-			//SEGMEXEC
-			if(pax_flags & PF_SEGMEXEC)
-			{
-				phdr.p_flags |= PF_SEGMEXEC;
-				phdr.p_flags &= ~PF_NOSEGMEXEC;
-			}
-			if(pax_flags & PF_NOSEGMEXEC)
-			{
-				phdr.p_flags &= ~PF_SEGMEXEC;
-				phdr.p_flags |= PF_NOSEGMEXEC;
-			}
-			if((pax_flags & PF_SEGMEXEC) && (pax_flags & PF_NOSEGMEXEC))
-			{
-				phdr.p_flags &= ~PF_SEGMEXEC;
-				phdr.p_flags &= ~PF_NOSEGMEXEC;
-			}
-
-			//MPROTECT
-			if(pax_flags & PF_MPROTECT)
-			{
-				phdr.p_flags |= PF_MPROTECT;
-				phdr.p_flags &= ~PF_NOMPROTECT;
-			}
-			if(pax_flags & PF_NOMPROTECT)
-			{
-				phdr.p_flags &= ~PF_MPROTECT;
-				phdr.p_flags |= PF_NOMPROTECT;
-			}
-			if((pax_flags & PF_MPROTECT) && (pax_flags & PF_NOMPROTECT))
-			{
-				phdr.p_flags &= ~PF_MPROTECT;
-				phdr.p_flags &= ~PF_NOMPROTECT;
-			}
-
-			//EMUTRAMP
-			if(pax_flags & PF_EMUTRAMP)
-			{
-				phdr.p_flags |= PF_EMUTRAMP;
-				phdr.p_flags &= ~PF_NOEMUTRAMP;
-			}
-			if(pax_flags & PF_NOEMUTRAMP)
-			{
-				phdr.p_flags &= ~PF_EMUTRAMP;
-				phdr.p_flags |= PF_NOEMUTRAMP;
-			}
-			if((pax_flags & PF_EMUTRAMP) && (pax_flags & PF_NOEMUTRAMP))
-			{
-				phdr.p_flags &= ~PF_EMUTRAMP;
-				phdr.p_flags &= ~PF_NOEMUTRAMP;
-			}
-
-			//RANDMMAP
-			if(pax_flags & PF_RANDMMAP)
-			{
-				phdr.p_flags |= PF_RANDMMAP;
-				phdr.p_flags &= ~PF_NORANDMMAP;
-			}
-			if(pax_flags & PF_NORANDMMAP)
-			{
-				phdr.p_flags &= ~PF_RANDMMAP;
-				phdr.p_flags |= PF_NORANDMMAP;
-			}
-			if((pax_flags & PF_RANDMMAP) && (pax_flags & PF_NORANDMMAP))
-			{
-				phdr.p_flags &= ~PF_RANDMMAP;
-				phdr.p_flags &= ~PF_NORANDMMAP;
-			}
-
-			//RANDEXEC
-			if(pax_flags & PF_RANDEXEC)
-			{
-				phdr.p_flags |= PF_RANDEXEC;
-				phdr.p_flags &= ~PF_NORANDEXEC;
-			}
-			if(pax_flags & PF_NORANDEXEC)
-			{
-				phdr.p_flags &= ~PF_RANDEXEC;
-				phdr.p_flags |= PF_NORANDEXEC;
-			}
-			if((pax_flags & PF_RANDEXEC) && (pax_flags & PF_NORANDEXEC))
-			{
-				phdr.p_flags &= ~PF_RANDEXEC;
-				phdr.p_flags &= ~PF_NORANDEXEC;
-			}
+			phdr.p_flags = pax_flags;
 
 			if(!gelf_update_phdr(elf, i, &phdr))
 			{

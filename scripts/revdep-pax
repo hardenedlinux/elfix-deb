@@ -8,7 +8,6 @@ import re
 import pax
 
 def get_ldd_linkings(binary):
-
 	try:
 		#TODO: when subprocess.DEVNULL makes it to python, change this: http://bugs.python.org/issue5870
 		ldd_output = subprocess.check_output(['/usr/bin/ldd', binary], stderr=subprocess.PIPE)
@@ -83,8 +82,8 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 	for binary in forward_linkings:
 
 		try:
-			binary_flags = pax.getflags(binary)
-			sv = "%s ( %s )" % ( binary, binary_flags )
+			( binary_flags, binary_pax_flags ) = pax.getflags(binary)
+			sv = '%s ( %s )' % ( binary, binary_flags )
 			s = sv
 		except:
 			missing_binaries.append(binary)
@@ -94,10 +93,10 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 		for soname in forward_linkings[binary]:
 			try:
 				library = so2library_mappings[soname]
-				library_flags = pax.getflags(library)
-				sv = "%s\n\t%s\t%s ( %s )" % ( sv, soname, library, library_flags )
+				( library_flags, library_pax_flags ) = pax.getflags(library)
+				sv = '%s\n\t%s\t%s ( %s )' % ( sv, soname, library, library_flags )
 				if binary_flags != library_flags:
-					s = "%s\n\t%s\t%s ( %s )" % ( s, soname, library, library_flags )
+					s = '%s\n\t%s\t%s ( %s )' % ( s, soname, library, library_flags )
 					count = count + 1
 			except:
 				missing_links.append(soname)
@@ -145,8 +144,8 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose ):
 
 		try:
 			library = so2library_mappings[soname]
-			library_flags = pax.getflags(library)
-			sv = "%s\t%s ( %s )" % ( soname, library, library_flags )
+			( library_flags, library_pax_flags ) = pax.getflags(library)
+			sv = '%s\t%s ( %s )' % ( soname, library, library_flags )
 			s = sv
 		except:
 			missing_sonames.append(soname)
@@ -155,10 +154,10 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose ):
 		count = 0
 		for binary in reverse_linkings[soname]:
 			try:
-				binary_flags = pax.getflags(binary)
-				sv = "%s\n\t%s ( %s )" % ( sv, binary, binary_flags )
+				( binary_flags, binary_pax_flags ) = pax.getflags(binary)
+				sv = '%s\n\t%s ( %s )' % ( sv, binary, binary_flags )
 				if library_flags != binary_flags:
-					s = "%s\n\t%s ( %s )" % ( s, binary, binary_flags )
+					s = '%s\n\t%s ( %s )' % ( s, binary, binary_flags )
 					count = count + 1
 			except:
 				missing_links.append(binary)
@@ -203,12 +202,13 @@ def run_usage():
 	print 'Program Name : revdep-pax'
 	print 'Description  : Get or set pax flags on an ELF object'
 	print
-	print 'Usage        : revdep-pax -f [-v]         print out all forward mappings for all system binaries'
-	print '             : revdep-pax -r [-v]         print out all reverse mappints for all system sonames'
-	print '             : revdep-pax -b BINARY [-v]  print all forward mappings only for BINARY'
-	print '             : revdep-pax -s SONAME [-v]  print all reverse mappings only for SONAME'
-	print '             : revdep-pax [-h]            print out this help'
-	print '             : -v                         verbose, otherwise just print mismatched flags'
+	print 'Usage        : revdep-pax -f [-mv]         print out all forward mappings for all system binaries'
+	print '             : revdep-pax -r [-mv]         print out all reverse mappints for all system sonames'
+	print '             : revdep-pax -b BINARY [-mv]  print all forward mappings only for BINARY'
+	print '             : revdep-pax -s SONAME [-mv]  print all reverse mappings only for SONAME'
+	print '             : revdep-pax [-h]             print out this help'
+	print '             : -v                          verbose, otherwise just print mismatched flags'
+	print '             : -m                          prompt to mark the found objects'
 	print
 
 
@@ -225,28 +225,28 @@ def run_reverse(verbose):
 	print
 
 
-def run_binary(binary, verbose):
+def run_binary(binary, verbose, mark):
 	( linkings, mappings ) = get_ldd_linkings(binary)
-
-	binary_flags = pax.getflags(binary)
-	print binary, '(', binary_flags, ')'
+	( binary_flags, binary_pax_flags ) = pax.getflags(binary)
+	print '%s (%s)' % ( binary, binary_flags )
 	print
 
-	count = 0
+	mismatched_libraries = []
+
 	for soname in linkings:
 		try:
 			library = mappings[soname]
-			library_flags = pax.getflags(library)
+			( library_flags, library_pax_flags ) = pax.getflags(library)
 			if verbose:
-				print '\t', soname, '\t', library, '(', library_flags, ')'
-			else:
-				if binary_flags != library_flags:
-					print '\t', soname, '\t', library, '(', library_flags, ')'
-					count = count + 1
+				print '\t%s\t%s ( %s )' % ( soname, library, library_flags )
+			if binary_flags != library_flags:
+				mismatched_libraries.append(library)
+				if not verbose:
+					print '\t%s\t%s ( %s )' % ( soname, library, library_flags )
 		except:
-			print "file for soname %s not found" % soname
+			print 'file for soname %s not found' % soname
 
-	if count == 0:
+	if len(mismatched_libraries) == 0:
 		print
 		print '\tNo mismatches'
 		print
@@ -254,6 +254,27 @@ def run_binary(binary, verbose):
 		print
 		print '\tMismatches'
 		print
+		if mark:
+			print '\tWill mark libraries with %s' % binary_flags
+			print
+			for library in mismatched_libraries:
+				do_marking = False
+				while True:
+					ans = raw_input('\tSet flags for %s (y/n): ' % library)
+					if ans == 'y':
+						do_marking = True
+						break
+					elif ans == 'n':
+						do_marking = False
+						break
+					else:
+						print '\t\tPlease enter y or n'
+
+				if do_marking:
+					pax.setflags(library, binary_pax_flags)
+					( library_flags, library_pax_flags ) = pax.getflags(library)
+					print '\t%s ( %s )' % ( library, library_flags )
+					print
 
 
 def invert_so2library_mappings( so2library_mappings ):
@@ -263,7 +284,7 @@ def invert_so2library_mappings( so2library_mappings ):
 	return library2soname_mappings
 
 
-def run_soname(name, verbose, use_soname):
+def run_soname(name, verbose, use_soname, mark):
 	( forward_linkings, so2library_mappings ) = get_forward_linkings()
 	reverse_linkings = invert_linkings( forward_linkings )
 
@@ -276,14 +297,14 @@ def run_soname(name, verbose, use_soname):
 	linkings = reverse_linkings[soname]
 	library = so2library_mappings[soname]
 
-	library_flags = pax.getflags(library)
+	( library_flags, library_pax_flags ) = pax.getflags(library)
 	print soname, '\t', library, '(', library_flags, ')'
 	print
 
 	count = 0
 	for binary in linkings:
 		try:
-			binary_flags = pax.getflags(binary)
+			( binary_flags, binary_pax_flags ) = pax.getflags(binary)
 			if verbose:
 				print '\t', binary, '(', binary_flags, ')'
 			else:
@@ -291,7 +312,7 @@ def run_soname(name, verbose, use_soname):
 					print '\t', binary, '(', binary_flags, ')'
 					count = count + 1
 		except:
-			print "cannot obtain pax flags for %s" % binary
+			print 'cannot obtain pax flags for %s' % binary
 
 	if count == 0:
 		print
@@ -305,7 +326,7 @@ def run_soname(name, verbose, use_soname):
 
 def main():
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], 'hfrb:s:l:v')
+		opts, args = getopt.getopt(sys.argv[1:], 'hfrb:s:l:vm')
 	except getopt.GetoptError, err:
 		print str(err) # will print something like 'option -a not recognized'
 		run_usage()
@@ -324,6 +345,7 @@ def main():
 	library = None
 
 	verbose = False
+	mark = False
 
 	opt_count = 0
 
@@ -348,6 +370,8 @@ def main():
 			opt_count += 1
 		elif o == '-v':
 			verbose = True
+		elif o == '-m':
+			mark = True
 		else:
 			print 'Option included in getopt but not handled here!'
 			print 'Please file a bug'
@@ -361,12 +385,12 @@ def main():
 	elif do_reverse:
 		run_reverse(verbose)
 	elif binary != None:
-		run_binary(binary, verbose)
+		run_binary(binary, verbose, mark)
 	elif soname != None:
-		run_soname(soname, verbose, True)
+		run_soname(soname, verbose, True, mark)
 	elif library != None:
 		library = os.path.realpath(library)
-		run_soname(library, verbose, False)
+		run_soname(library, verbose, False, mark)
 
 if __name__ == '__main__':
     main()
