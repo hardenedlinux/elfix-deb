@@ -314,7 +314,7 @@ def run_soname(name, verbose, use_soname, mark):
 		except:
 			print 'cannot obtain pax flags for %s' % binary
 
-	if len(mismatched_binaries) == 0
+	if len(mismatched_binaries) == 0:
 		print
 		print '\tNo mismatches'
 		print

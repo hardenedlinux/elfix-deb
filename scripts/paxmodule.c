@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+/* Gentoo bug #387459
 
 #define HF_PAX_PAGEEXEC		1
 #define HF_PAX_EMUTRAMP		2
@@ -18,6 +19,7 @@
 #define HF_PAX_SEGMEXEC		32
 
 #define EI_PAX			14	// Index to read the PaX flags into ELF header e_ident[] array
+*/
 
 #define BUF_SIZE		7	//Buffer for holding human readable flags
 
@@ -58,7 +60,9 @@ pax_getflags(PyObject *self, PyObject *args)
 	char pax_buf[BUF_SIZE];
 	uint16_t pax_flags;
 
-	GElf_Ehdr ehdr;
+	/* Gentoo bug #387459
+	GElf_Ehdr ehdr; 
+	*/
 	GElf_Phdr phdr;
 	char found_pt_pax;
 	size_t i, phnum;
@@ -140,6 +144,12 @@ pax_getflags(PyObject *self, PyObject *args)
 
 	if(!found_pt_pax)
 	{
+		//Set to the strictest possible
+	}
+
+	/* Gentoo bug #387459
+	if(!found_pt_pax)
+	{
 		if(gelf_getehdr(elf, &ehdr) != &ehdr)
 		{
 			elf_end(elf);
@@ -157,6 +167,7 @@ pax_getflags(PyObject *self, PyObject *args)
 		pax_buf[4] = pax_flags & HF_PAX_RANDMMAP ? 'r' : 'R';
 		pax_buf[5] = pax_flags & HF_PAX_RANDEXEC ? 'X' : 'x';
 	}
+	*/
 
 	elf_end(elf);
 	close(fd);
@@ -174,8 +185,10 @@ pax_setflags(PyObject *self, PyObject *args)
 
 	Elf *elf;
 
+	/* Gentoo bug #387459
 	GElf_Ehdr ehdr;
 	uint16_t ei_flags;
+	*/
 
 	GElf_Phdr phdr;
 	size_t i, phnum;
@@ -212,6 +225,8 @@ pax_setflags(PyObject *self, PyObject *args)
 		PyErr_SetString(PaxError, "pax_setflags: elf_kind() failed: this is not an elf file.");
 		return NULL;
 	}
+
+	/* Gentoo bug #387459
 
 	if(gelf_getehdr(elf, &ehdr) != &ehdr)
 	{
@@ -276,6 +291,7 @@ pax_setflags(PyObject *self, PyObject *args)
 		PyErr_SetString(PaxError, "pax_setflags: gelf_update_ehdr() failed");
 		return NULL;
 	}
+	*/
 
 
 	elf_getphdrnum(elf, &phnum);
