@@ -24,6 +24,7 @@
 #include <libgen.h>
 
 #include <gelf.h>
+#include <attr/xattr.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -31,6 +32,10 @@
 #include <unistd.h>
 
 #include <config.h>
+
+
+#define PAX_NAMESPACE	"trusted.pax"
+#define BUF_SIZE	7
 
 void
 print_help(char *v)
@@ -61,7 +66,7 @@ print_help(char *v)
 
 
 char *
-parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
+parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags)
 {
 	int i, oc;
 	int compat;
@@ -151,174 +156,285 @@ parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 }
 
 
-#define BUF_SIZE 7
-
-void
-print_flags(Elf *elf)
+uint16_t
+read_pt_flags(Elf *elf)
 {
 	GElf_Phdr phdr;
-	char pt_buf[BUF_SIZE];
-	char found_pt_pax;
 	size_t i, phnum;
 
-	memset(pt_buf, 0, BUF_SIZE);
+	uint16_t pt_flags;
+	char found_pt_pax;
 
 	found_pt_pax = 0;
 	elf_getphdrnum(elf, &phnum);
-	for(i=0; i<phnum; ++i)
+
+	for(i=0; i<phnum; i++)
 	{
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
 			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
+
 		if(phdr.p_type == PT_PAX_FLAGS)
 		{
 			found_pt_pax = 1;
-
-			pt_buf[0] = phdr.p_flags & PF_PAGEEXEC ? 'P' :
-				phdr.p_flags & PF_NOPAGEEXEC ? 'p' : '-' ;
-
-			pt_buf[1] = phdr.p_flags & PF_SEGMEXEC   ? 'S' : 
-				phdr.p_flags & PF_NOSEGMEXEC ? 's' : '-';
-
-			pt_buf[2] = phdr.p_flags & PF_MPROTECT   ? 'M' :
-				phdr.p_flags & PF_NOMPROTECT ? 'm' : '-';
-
-			pt_buf[3] = phdr.p_flags & PF_EMUTRAMP   ? 'E' :
-				phdr.p_flags & PF_NOEMUTRAMP ? 'e' : '-';
-
-			pt_buf[4] = phdr.p_flags & PF_RANDMMAP   ? 'R' :
-				phdr.p_flags & PF_NORANDMMAP ? 'r' : '-';
-
-			pt_buf[5] = phdr.p_flags & PF_RANDEXEC   ? 'X' :
-				phdr.p_flags & PF_NORANDEXEC ? 'x' : '-';
+			pt_flags = phdr.p_flags;
 		}
 	}
 
-	if(found_pt_pax)
-		printf("PT_PAX: %s\n", pt_buf);
-	else
+	if(!found_pt_pax)
+	{
 		printf("PT_PAX: not found\n");
+		pt_flags = UINT16_MAX;
+	}
+
+	return pt_flags;
+}
+
+
+uint16_t
+read_xt_flags(int fd)
+{
+	uint16_t xt_flags;
+
+	if(fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t)) == -1)
+	{
+
+		// ERANGE  = xattrs supported, PAX_NAMESPACE present, but wrong size
+		// ENOATTR = xattrs supported, PAX_NAMESPACE not present
+		if(errno == ERANGE || errno == ENOATTR)
+		{
+			printf("XT_PAX: creating/repairing flags\n");
+			xt_flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
+			if(fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0) == -1)
+			{
+				if(errno == ENOSPC || errno == EDQUOT)
+					printf("XT_PAX: access error\n");
+				if(errno == ENOTSUP)
+					printf("XT_PAX: not supported\n");
+			}
+		}
+
+		// ENOTSUP = xattrs not supported
+		if(errno == ENOTSUP)
+		{
+			xt_flags = UINT16_MAX; //invalid value
+			printf("XT_PAX: not supported\n");
+		}
+	}
+
+	return xt_flags;
 }
 
 
 void
-set_flags(Elf *elf, int *pax_flags)
+bin2string(uint16_t flags, char *buf)
+{
+	buf[0] = flags & PF_PAGEEXEC ? 'P' :
+		flags & PF_NOPAGEEXEC ? 'p' : '-' ;
+
+	buf[1] = flags & PF_SEGMEXEC   ? 'S' : 
+		flags & PF_NOSEGMEXEC ? 's' : '-';
+
+	buf[2] = flags & PF_MPROTECT   ? 'M' :
+		flags & PF_NOMPROTECT ? 'm' : '-';
+
+	buf[3] = flags & PF_EMUTRAMP   ? 'E' :
+		flags & PF_NOEMUTRAMP ? 'e' : '-';
+
+	buf[4] = flags & PF_RANDMMAP   ? 'R' :
+		flags & PF_NORANDMMAP ? 'r' : '-';
+
+	buf[5] = flags & PF_RANDEXEC   ? 'X' :
+		flags & PF_NORANDEXEC ? 'x' : '-';
+}
+
+
+void
+print_flags(int fd, Elf *elf)
+{
+	uint16_t flags;
+	char buf[BUF_SIZE];
+
+	flags = read_pt_flags(elf);
+	if( flags != UINT16_MAX )
+	{
+		memset(buf, 0, BUF_SIZE);
+		bin2string(flags, buf);
+		printf("PT_PAX: %s\n", buf);
+	}
+
+	flags = read_xt_flags(fd);
+	if( flags != UINT16_MAX )
+	{
+		memset(buf, 0, BUF_SIZE);
+		bin2string(flags, buf);
+		printf("XT_PAX: %s\n", buf);
+	}
+}
+
+
+
+uint16_t
+new_flags(uint16_t flags, uint16_t pax_flags)
+{
+	//PAGEEXEC
+	if(pax_flags & PF_PAGEEXEC)
+	{
+		flags |= PF_PAGEEXEC;
+		flags &= ~PF_NOPAGEEXEC;
+	}
+	if(pax_flags & PF_NOPAGEEXEC)
+	{
+		flags &= ~PF_PAGEEXEC;
+		flags |= PF_NOPAGEEXEC;
+	}
+	if((pax_flags & PF_PAGEEXEC) && (pax_flags & PF_NOPAGEEXEC))
+	{
+		flags &= ~PF_PAGEEXEC;
+		flags &= ~PF_NOPAGEEXEC;
+	}
+
+	//SEGMEXEC
+	if(pax_flags & PF_SEGMEXEC)
+	{
+		flags |= PF_SEGMEXEC;
+		flags &= ~PF_NOSEGMEXEC;
+	}
+	if(pax_flags & PF_NOSEGMEXEC)
+	{
+		flags &= ~PF_SEGMEXEC;
+		flags |= PF_NOSEGMEXEC;
+	}
+	if((pax_flags & PF_SEGMEXEC) && (pax_flags & PF_NOSEGMEXEC))
+	{
+		flags &= ~PF_SEGMEXEC;
+		flags &= ~PF_NOSEGMEXEC;
+	}
+
+	//MPROTECT
+	if(pax_flags & PF_MPROTECT)
+	{
+		flags |= PF_MPROTECT;
+		flags &= ~PF_NOMPROTECT;
+	}
+	if(pax_flags & PF_NOMPROTECT)
+	{
+		flags &= ~PF_MPROTECT;
+		flags |= PF_NOMPROTECT;
+	}
+	if((pax_flags & PF_MPROTECT) && (pax_flags & PF_NOMPROTECT))
+	{
+		flags &= ~PF_MPROTECT;
+		flags &= ~PF_NOMPROTECT;
+	}
+
+	//EMUTRAMP
+	if(pax_flags & PF_EMUTRAMP)
+	{
+		flags |= PF_EMUTRAMP;
+		flags &= ~PF_NOEMUTRAMP;
+	}
+	if(pax_flags & PF_NOEMUTRAMP)
+	{
+		flags &= ~PF_EMUTRAMP;
+		flags |= PF_NOEMUTRAMP;
+	}
+	if((pax_flags & PF_EMUTRAMP) && (pax_flags & PF_NOEMUTRAMP))
+	{
+		flags &= ~PF_EMUTRAMP;
+		flags &= ~PF_NOEMUTRAMP;
+	}
+
+	//RANDMMAP
+	if(pax_flags & PF_RANDMMAP)
+	{
+		flags |= PF_RANDMMAP;
+		flags &= ~PF_NORANDMMAP;
+	}
+	if(pax_flags & PF_NORANDMMAP)
+	{
+		flags &= ~PF_RANDMMAP;
+		flags |= PF_NORANDMMAP;
+	}
+	if((pax_flags & PF_RANDMMAP) && (pax_flags & PF_NORANDMMAP))
+	{
+		flags &= ~PF_RANDMMAP;
+		flags &= ~PF_NORANDMMAP;
+	}
+
+	//RANDEXEC
+	if(pax_flags & PF_RANDEXEC)
+	{
+		flags |= PF_RANDEXEC;
+		flags &= ~PF_NORANDEXEC;
+	}
+	if(pax_flags & PF_NORANDEXEC)
+	{
+		flags &= ~PF_RANDEXEC;
+		flags |= PF_NORANDEXEC;
+	}
+	if((pax_flags & PF_RANDEXEC) && (pax_flags & PF_NORANDEXEC))
+	{
+		flags &= ~PF_RANDEXEC;
+		flags &= ~PF_NORANDEXEC;
+	}
+
+	return flags;
+}
+
+
+void
+set_pt_flags(Elf *elf, uint16_t pt_flags)
 {
 	GElf_Phdr phdr;
 	size_t i, phnum;
 
 	elf_getphdrnum(elf, &phnum);
-	for(i=0; i<phnum; ++i)
+
+	for(i=0; i<phnum; i++)
 	{
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
 			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
 
 		if(phdr.p_type == PT_PAX_FLAGS)
 		{
-			//PAGEEXEC
-			if(*pax_flags & PF_PAGEEXEC)
-			{
-				phdr.p_flags |= PF_PAGEEXEC;
-				phdr.p_flags &= ~PF_NOPAGEEXEC;
-			}
-			if(*pax_flags & PF_NOPAGEEXEC)
-			{
-				phdr.p_flags &= ~PF_PAGEEXEC;
-				phdr.p_flags |= PF_NOPAGEEXEC;
-			}
-			if((*pax_flags & PF_PAGEEXEC) && (*pax_flags & PF_NOPAGEEXEC))
-			{
-				phdr.p_flags &= ~PF_PAGEEXEC;
-				phdr.p_flags &= ~PF_NOPAGEEXEC;
-			}
-
-			//SEGMEXEC
-			if(*pax_flags & PF_SEGMEXEC)
-			{
-				phdr.p_flags |= PF_SEGMEXEC;
-				phdr.p_flags &= ~PF_NOSEGMEXEC;
-			}
-			if(*pax_flags & PF_NOSEGMEXEC)
-			{
-				phdr.p_flags &= ~PF_SEGMEXEC;
-				phdr.p_flags |= PF_NOSEGMEXEC;
-			}
-			if((*pax_flags & PF_SEGMEXEC) && (*pax_flags & PF_NOSEGMEXEC))
-			{
-				phdr.p_flags &= ~PF_SEGMEXEC;
-				phdr.p_flags &= ~PF_NOSEGMEXEC;
-			}
-
-			//MPROTECT
-			if(*pax_flags & PF_MPROTECT)
-			{
-				phdr.p_flags |= PF_MPROTECT;
-				phdr.p_flags &= ~PF_NOMPROTECT;
-			}
-			if(*pax_flags & PF_NOMPROTECT)
-			{
-				phdr.p_flags &= ~PF_MPROTECT;
-				phdr.p_flags |= PF_NOMPROTECT;
-			}
-			if((*pax_flags & PF_MPROTECT) && (*pax_flags & PF_NOMPROTECT))
-			{
-				phdr.p_flags &= ~PF_MPROTECT;
-				phdr.p_flags &= ~PF_NOMPROTECT;
-			}
-
-			//EMUTRAMP
-			if(*pax_flags & PF_EMUTRAMP)
-			{
-				phdr.p_flags |= PF_EMUTRAMP;
-				phdr.p_flags &= ~PF_NOEMUTRAMP;
-			}
-			if(*pax_flags & PF_NOEMUTRAMP)
-			{
-				phdr.p_flags &= ~PF_EMUTRAMP;
-				phdr.p_flags |= PF_NOEMUTRAMP;
-			}
-			if((*pax_flags & PF_EMUTRAMP) && (*pax_flags & PF_NOEMUTRAMP))
-			{
-				phdr.p_flags &= ~PF_EMUTRAMP;
-				phdr.p_flags &= ~PF_NOEMUTRAMP;
-			}
-
-			//RANDMMAP
-			if(*pax_flags & PF_RANDMMAP)
-			{
-				phdr.p_flags |= PF_RANDMMAP;
-				phdr.p_flags &= ~PF_NORANDMMAP;
-			}
-			if(*pax_flags & PF_NORANDMMAP)
-			{
-				phdr.p_flags &= ~PF_RANDMMAP;
-				phdr.p_flags |= PF_NORANDMMAP;
-			}
-			if((*pax_flags & PF_RANDMMAP) && (*pax_flags & PF_NORANDMMAP))
-			{
-				phdr.p_flags &= ~PF_RANDMMAP;
-				phdr.p_flags &= ~PF_NORANDMMAP;
-			}
-
-			//RANDEXEC
-			if(*pax_flags & PF_RANDEXEC)
-			{
-				phdr.p_flags |= PF_RANDEXEC;
-				phdr.p_flags &= ~PF_NORANDEXEC;
-			}
-			if(*pax_flags & PF_NORANDEXEC)
-			{
-				phdr.p_flags &= ~PF_RANDEXEC;
-				phdr.p_flags |= PF_NORANDEXEC;
-			}
-			if((*pax_flags & PF_RANDEXEC) && (*pax_flags & PF_NORANDEXEC))
-			{
-				phdr.p_flags &= ~PF_RANDEXEC;
-				phdr.p_flags &= ~PF_NORANDEXEC;
-			}
-
+			phdr.p_flags = pt_flags;
 			if(!gelf_update_phdr(elf, i, &phdr))
 				error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
 		}
+	}
+}
+
+
+void
+set_xt_flags(int fd, uint16_t xt_flags)
+{
+	if(fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0) == -1)
+	{
+		if(errno == ENOSPC || errno == EDQUOT)
+			printf("XT_PAX: access error\n");
+		if(errno == ENOTSUP)
+			printf("XT_PAX: not supported\n");
+	}
+}
+
+
+void
+set_flags(int fd, Elf *elf, uint16_t *pax_flags)
+{
+	uint16_t flags;
+
+	flags = read_pt_flags(elf);
+	if( flags != UINT16_MAX )
+	{
+		flags = new_flags( flags, *pax_flags);
+		set_pt_flags(elf, flags);
+	}
+
+	flags = read_xt_flags(fd);
+	if( flags != UINT16_MAX )
+	{
+		flags = new_flags( flags, *pax_flags);
+		set_xt_flags(fd, flags);
 	}
 }
 
@@ -327,7 +443,8 @@ int
 main( int argc, char *argv[])
 {
 	int fd;
-	int pax_flags, view_flags;
+	uint16_t pax_flags;
+	int view_flags;
 	char *f_name;
 
 	Elf *elf;
@@ -347,10 +464,10 @@ main( int argc, char *argv[])
 		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
 
 	if(pax_flags != 0)
-		set_flags(elf, &pax_flags);
+		set_flags(fd, elf, &pax_flags);
 
 	if(view_flags == 1)
-		print_flags(elf);
+		print_flags(fd, elf);
 
 	elf_end(elf);
 	close(fd);
