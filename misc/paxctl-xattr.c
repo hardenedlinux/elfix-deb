@@ -32,8 +32,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <config.h>
-
 #define PAX_NAMESPACE "user.pax"
 
 void
@@ -41,8 +39,6 @@ print_help(char *v)
 {
 	printf(
 		"\n"
-		"Package Name : " PACKAGE_STRING "\n"
-		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
 		"Program Name : %s\n"
 		"Description  : Get or set xattr pax flags on an ELF object\n\n"
 		"Usage        : %s [-PpEeMmRrXxSsv ELF] | [-Z ELF] | [-z ELF] | [-h]\n\n"

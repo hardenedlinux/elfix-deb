@@ -1,8 +1,7 @@
-noinst_PROGRAMS = bad-mmap mangle-paxflags paxctl-xattr
+noinst_PROGRAMS = bad-mmap mangle-paxflags
 bad_mmap_SOURCES = bad-mmap.c
 mangle_paxflags_SOURCES = mangle-paxflags.c
 mangle_paxflags_LDADD = -lelf
-paxctl_xattr_SOURCES = paxctl-xattr.c
 
 check_SCRIPTS = poc.sh
 
