@@ -32,16 +32,6 @@
 
 #include <config.h>
 
-#define HF_PAX_PAGEEXEC		1
-#define HF_PAX_EMUTRAMP		2
-#define HF_PAX_MPROTECT		4
-#define HF_PAX_RANDMMAP		8
-#define HF_PAX_RANDEXEC		16
-#define HF_PAX_SEGMEXEC		32
-
-#define EI_PAX			14   // Index to read the PaX flags into ELF header e_ident[] array
-
-
 void
 print_help(char *v)
 {
@@ -162,35 +152,16 @@ parse_cmd_args(int c, char *v[], int *pax_flags, int *view_flags)
 
 
 #define BUF_SIZE 7
+
 void
 print_flags(Elf *elf)
 {
-	GElf_Ehdr ehdr;
-	char ei_buf[BUF_SIZE];
-	uint16_t ei_flags;
-
 	GElf_Phdr phdr;
 	char pt_buf[BUF_SIZE];
 	char found_pt_pax;
 	size_t i, phnum;
 
-
-	memset(ei_buf, 0, BUF_SIZE);
 	memset(pt_buf, 0, BUF_SIZE);
-
-	if(gelf_getehdr(elf, &ehdr) != &ehdr)
-		error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
-
-	ei_flags = ehdr.e_ident[EI_PAX] + (ehdr.e_ident[EI_PAX + 1] << 8);
-
-  	ei_buf[0] = ei_flags & HF_PAX_PAGEEXEC ? 'p' : 'P';
-	ei_buf[1] = ei_flags & HF_PAX_SEGMEXEC ? 's' : 'S';
-	ei_buf[2] = ei_flags & HF_PAX_MPROTECT ? 'm' : 'M';
-	ei_buf[3] = ei_flags & HF_PAX_EMUTRAMP ? 'E' : 'e';
-	ei_buf[4] = ei_flags & HF_PAX_RANDMMAP ? 'r' : 'R';
-	ei_buf[5] = ei_flags & HF_PAX_RANDEXEC ? 'X' : 'x';
-
-	printf("EI_PAX: %s\n", ei_buf);
 
 	found_pt_pax = 0;
 	elf_getphdrnum(elf, &phnum);
@@ -226,81 +197,14 @@ print_flags(Elf *elf)
 		printf("PT_PAX: %s\n", pt_buf);
 	else
 		printf("PT_PAX: not found\n");
-
-	//Only compare non default flags
-	//if(strcmp(ei_buf, pt_buf))
-	//	printf("EI_PAX != PT_PAX\n");
 }
 
 
 void
 set_flags(Elf *elf, int *pax_flags)
 {
-	GElf_Ehdr ehdr;
-	uint16_t ei_flags;
-
 	GElf_Phdr phdr;
 	size_t i, phnum;
-
-	if(gelf_getehdr(elf, &ehdr) != &ehdr)
-		error(EXIT_FAILURE, 0, "gelf_getehdr(): %s", elf_errmsg(elf_errno()));
-
-	ei_flags = ehdr.e_ident[EI_PAX] + (ehdr.e_ident[EI_PAX + 1] << 8);
-
-	//PAGEEXEC
-	if(*pax_flags & PF_PAGEEXEC)
-		ei_flags &= ~HF_PAX_PAGEEXEC;
-	if(*pax_flags & PF_NOPAGEEXEC)
-		ei_flags |= HF_PAX_PAGEEXEC;
-	if((*pax_flags & PF_PAGEEXEC) && (*pax_flags & PF_NOPAGEEXEC))
-		ei_flags &= ~HF_PAX_PAGEEXEC;
-
-	//SEGMEXEC
-	if(*pax_flags & PF_SEGMEXEC)
-		ei_flags &= ~HF_PAX_SEGMEXEC;
-	if(*pax_flags & PF_NOSEGMEXEC)
-		ei_flags |= HF_PAX_SEGMEXEC;
-	if((*pax_flags & PF_SEGMEXEC) && (*pax_flags & PF_NOSEGMEXEC))
-		ei_flags &= ~HF_PAX_SEGMEXEC;
-
-	//MPROTECT
-	if(*pax_flags & PF_MPROTECT)
-		ei_flags &= ~HF_PAX_MPROTECT;
-	if(*pax_flags & PF_NOMPROTECT)
-		ei_flags |= HF_PAX_MPROTECT;
-	if((*pax_flags & PF_MPROTECT) && (*pax_flags & PF_NOMPROTECT))
-		ei_flags &= ~HF_PAX_MPROTECT;
-
-	//EMUTRAMP
-	if(*pax_flags & PF_EMUTRAMP)
-		ei_flags |= HF_PAX_EMUTRAMP;
-	if(*pax_flags & PF_NOEMUTRAMP)
-		ei_flags &= ~HF_PAX_EMUTRAMP;
-	if((*pax_flags & PF_EMUTRAMP) && (*pax_flags & PF_NOEMUTRAMP))
-		ei_flags &= ~HF_PAX_EMUTRAMP;
-
-	//RANDMMAP
-	if(*pax_flags & PF_RANDMMAP)
-		ei_flags &= ~HF_PAX_RANDMMAP;
-	if(*pax_flags & PF_NORANDMMAP)
-		ei_flags |= HF_PAX_RANDMMAP;
-	if((*pax_flags & PF_RANDMMAP) && (*pax_flags & PF_NORANDMMAP))
-		ei_flags &= ~HF_PAX_RANDMMAP;
-
-	//RANDEXEC
-	if(*pax_flags & PF_RANDEXEC)
-		ei_flags |= HF_PAX_RANDEXEC;
-	if(*pax_flags & PF_NORANDEXEC)
-		ei_flags &= ~HF_PAX_RANDEXEC;
-	if((*pax_flags & PF_RANDEXEC) && (*pax_flags & PF_NORANDEXEC))
-		ei_flags |= HF_PAX_RANDEXEC;
-
-
-	ehdr.e_ident[EI_PAX] = (uint8_t)ei_flags  ;
-	ehdr.e_ident[EI_PAX + 1] = (uint8_t)(ei_flags >> 8) ;
-
-	if(!gelf_update_ehdr(elf, &ehdr))
-		error(EXIT_FAILURE, 0, "gelf_update_ehdr(): %s", elf_errmsg(elf_errno()));
 
 	elf_getphdrnum(elf, &phnum);
 	for(i=0; i<phnum; ++i)

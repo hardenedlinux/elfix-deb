@@ -9,19 +9,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-/* Gentoo bug #387459
-
-#define HF_PAX_PAGEEXEC		1
-#define HF_PAX_EMUTRAMP		2
-#define HF_PAX_MPROTECT		4
-#define HF_PAX_RANDMMAP		8
-#define HF_PAX_RANDEXEC		16
-#define HF_PAX_SEGMEXEC		32
-
-#define EI_PAX			14	// Index to read the PaX flags into ELF header e_ident[] array
-*/
-
-#define BUF_SIZE		7	//Buffer for holding human readable flags
+#define BUF_SIZE	7	//Buffer for holding human readable flags
 
 
 static PyObject * pax_getflags(PyObject *, PyObject *);
@@ -60,9 +48,6 @@ pax_getflags(PyObject *self, PyObject *args)
 	char pax_buf[BUF_SIZE];
 	uint16_t pax_flags;
 
-	/* Gentoo bug #387459
-	GElf_Ehdr ehdr; 
-	*/
 	GElf_Phdr phdr;
 	char found_pt_pax;
 	size_t i, phnum;
@@ -142,33 +127,6 @@ pax_getflags(PyObject *self, PyObject *args)
 		}
 	}
 
-	if(!found_pt_pax)
-	{
-		//Set to the strictest possible
-	}
-
-	/* Gentoo bug #387459
-	if(!found_pt_pax)
-	{
-		if(gelf_getehdr(elf, &ehdr) != &ehdr)
-		{
-			elf_end(elf);
-			close(fd);
-			PyErr_SetString(PaxError, "pax_getflags: gelf_getehdr() failed");
-			return NULL;
-		}
-
-		pax_flags = ehdr.e_ident[EI_PAX] + (ehdr.e_ident[EI_PAX + 1] << 8);
-
-  		pax_buf[0] = pax_flags & HF_PAX_PAGEEXEC ? 'p' : 'P';
-		pax_buf[1] = pax_flags & HF_PAX_SEGMEXEC ? 's' : 'S';
-		pax_buf[2] = pax_flags & HF_PAX_MPROTECT ? 'm' : 'M';
-		pax_buf[3] = pax_flags & HF_PAX_EMUTRAMP ? 'E' : 'e';
-		pax_buf[4] = pax_flags & HF_PAX_RANDMMAP ? 'r' : 'R';
-		pax_buf[5] = pax_flags & HF_PAX_RANDEXEC ? 'X' : 'x';
-	}
-	*/
-
 	elf_end(elf);
 	close(fd);
 
@@ -184,12 +142,6 @@ pax_setflags(PyObject *self, PyObject *args)
 	int fd;
 
 	Elf *elf;
-
-	/* Gentoo bug #387459
-	GElf_Ehdr ehdr;
-	uint16_t ei_flags;
-	*/
-
 	GElf_Phdr phdr;
 	size_t i, phnum;
 
@@ -225,74 +177,6 @@ pax_setflags(PyObject *self, PyObject *args)
 		PyErr_SetString(PaxError, "pax_setflags: elf_kind() failed: this is not an elf file.");
 		return NULL;
 	}
-
-	/* Gentoo bug #387459
-
-	if(gelf_getehdr(elf, &ehdr) != &ehdr)
-	{
-		elf_end(elf);
-		close(fd);
-		PyErr_SetString(PaxError, "pax_setflags: gelf_getehdr() failed");
-		return NULL;
-	}
-
-	ei_flags = ehdr.e_ident[EI_PAX] + (ehdr.e_ident[EI_PAX + 1] << 8);
-
-	ei_flags &= ~HF_PAX_PAGEEXEC;
-	ei_flags &= ~HF_PAX_SEGMEXEC;
-	ei_flags &= ~HF_PAX_MPROTECT;
-	ei_flags |= HF_PAX_EMUTRAMP;
-	ei_flags &= ~HF_PAX_RANDMMAP;
-	ei_flags |= HF_PAX_RANDEXEC;
-
-	//PAGEEXEC
-	if(pax_flags & PF_PAGEEXEC)
-		ei_flags &= ~HF_PAX_PAGEEXEC;
-	if(pax_flags & PF_NOPAGEEXEC)
-		ei_flags |= HF_PAX_PAGEEXEC;
-
-	//SEGMEXEC
-	if(pax_flags & PF_SEGMEXEC)
-		ei_flags &= ~HF_PAX_SEGMEXEC;
-	if(pax_flags & PF_NOSEGMEXEC)
-		ei_flags |= HF_PAX_SEGMEXEC;
-
-	//MPROTECT
-	if(pax_flags & PF_MPROTECT)
-		ei_flags &= ~HF_PAX_MPROTECT;
-	if(pax_flags & PF_NOMPROTECT)
-		ei_flags |= HF_PAX_MPROTECT;
-
-	//EMUTRAMP
-	if(pax_flags & PF_EMUTRAMP)
-		ei_flags |= HF_PAX_EMUTRAMP;
-	if(pax_flags & PF_NOEMUTRAMP)
-		ei_flags &= ~HF_PAX_EMUTRAMP;
-
-	//RANDMMAP
-	if(pax_flags & PF_RANDMMAP)
-		ei_flags &= ~HF_PAX_RANDMMAP;
-	if(pax_flags & PF_NORANDMMAP)
-		ei_flags |= HF_PAX_RANDMMAP;
-
-	//RANDEXEC
-	if(pax_flags & PF_RANDEXEC)
-		ei_flags |= HF_PAX_RANDEXEC;
-	if(pax_flags & PF_NORANDEXEC)
-		ei_flags &= ~HF_PAX_RANDEXEC;
-
-	ehdr.e_ident[EI_PAX] = (uint8_t)ei_flags  ;
-	ehdr.e_ident[EI_PAX + 1] = (uint8_t)(ei_flags >> 8) ;
-
-	if(!gelf_update_ehdr(elf, &ehdr))
-	{
-		elf_end(elf);
-		close(fd);
-		PyErr_SetString(PaxError, "pax_setflags: gelf_update_ehdr() failed");
-		return NULL;
-	}
-	*/
-
 
 	elf_getphdrnum(elf, &phnum);
 	for(i=0; i<phnum; ++i)
