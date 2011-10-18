@@ -30,8 +30,6 @@
 #include <unistd.h>
 
 
-#include <config.h>
-
 // From chpax.h
 #define EI_PAX			14	// Index in e_ident[] where to read flags
 #define HF_PAX_PAGEEXEC		1	// 0: Paging based non-exec pages
@@ -51,11 +49,9 @@ void
 print_help(char *v)
 {
 	printf(
-		"Package Name : " PACKAGE_STRING "\n"
-		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
 		"Program Name : %s\n"
 		"Description  : Check for, or conditionally remove, executable flag from PT_GNU_STACK\n\n"
-		"Usage        : %s {[-e] [-p] [-v] [-q] ELFfile | [-h]}\n"
+		"Usage        : %s [-e] [-p] [-v] [-q] ELFfile | [-h]\n"
 		"options      :     Print out EI_PAX and PT_PAX_FLAGS information\n"
 		"             : -e  Set all EI_PAX flags to least secure setting, pEmrXs\n"
 		"             : -p  Remove PT_PAX_FLAGS program header\n"

@@ -25,15 +25,6 @@ AC_ARG_ENABLE(
 )
 AM_CONDITIONAL([TEST],[test "x$has_yasm" = "xyes"])
 
-AC_ARG_ENABLE(
-	[poc],
-	AS_HELP_STRING(
-		[--enable-poc],
-		[build proof of concept code]
-	)
-)
-AM_CONDITIONAL([POC],[test "x$enable_poc" = "xyes"])
-
 # Checks for programs.
 AC_PROG_CC
 AC_CHECK_FUNCS([strerror])
@@ -66,7 +57,6 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  scripts/Makefile
                  doc/Makefile
-                 poc/Makefile
                  tests/Makefile])
 
 AC_OUTPUT
