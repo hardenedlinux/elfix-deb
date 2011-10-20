@@ -34,7 +34,7 @@
 #include <config.h>
 
 
-#define PAX_NAMESPACE	"trusted.pax"
+#define PAX_NAMESPACE	"user.pax"
 #define BUF_SIZE	7
 
 void
@@ -197,11 +197,12 @@ read_xt_flags(int fd)
 
 	if(fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t)) == -1)
 	{
-
 		// ERANGE  = xattrs supported, PAX_NAMESPACE present, but wrong size
 		// ENOATTR = xattrs supported, PAX_NAMESPACE not present
 		if(errno == ERANGE || errno == ENOATTR)
 		{
+			printf("XT_PAX: not present or corrupted\n");
+			/*
 			printf("XT_PAX: creating/repairing flags\n");
 			xt_flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
 			if(fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0) == -1)
@@ -211,6 +212,7 @@ read_xt_flags(int fd)
 				if(errno == ENOTSUP)
 					printf("XT_PAX: not supported\n");
 			}
+			*/
 		}
 
 		// ENOTSUP = xattrs not supported
