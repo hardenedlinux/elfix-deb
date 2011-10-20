@@ -27,28 +27,24 @@ AM_CONDITIONAL([TEST],[test "x$has_yasm" = "xyes"])
 
 # Checks for programs.
 AC_PROG_CC
-AC_CHECK_FUNCS([strerror])
+AC_CHECK_FUNCS([memset strerror])
 AC_FUNC_MMAP
 
 # Checks for libraries.
 AC_CHECK_LIB([elf], [elf_begin])
+AC_CHECK_LIB([attr], [fgetxattr])
 
 # Checks for header files.
-AC_CHECK_HEADERS([errno.h])
-AC_CHECK_HEADERS([error.h])
-AC_CHECK_HEADERS([fcntl.h])
-AC_CHECK_HEADERS([gelf.h])
-AC_CHECK_HEADERS([libgen.h])
-AC_CHECK_HEADERS([stdio.h])
-AC_CHECK_HEADERS([stdlib.h])
-AC_CHECK_HEADERS([string.h])
-AC_CHECK_HEADERS([sys/mman.h])
-AC_CHECK_HEADERS([sys/stat.h])
-AC_CHECK_HEADERS([sys/types.h])
-AC_CHECK_HEADERS([unistd.h])
+
+AC_CHECK_HEADERS([attr/xattr.h errno.h error.h fcntl.h gelf.h libgen.h stdio.h \
+	stdlib.h string.h sys/mman.h sys/stat.h sys/types.h unistd.h
+],
+[], [AC_MSG_ERROR(["Missing necessary header"])])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
+AC_TYPE_UINT8_T
+AC_TYPE_UINT16_T
 
 # Checks for library functions.
 AC_FUNC_ERROR_AT_LINE

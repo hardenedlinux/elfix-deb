@@ -205,10 +205,8 @@ get_xt_flags(int fd)
 	{
 		if(errno == ERANGE )
 			printf("XT_PAX: corrupted\n");
-
 		if( errno == ENOATTR)
 			printf("XT_PAX: not present\n");
-
 		if(errno == ENOTSUP)
 			printf("XT_PAX: not supported\n");
 	}
@@ -390,7 +388,7 @@ set_pt_flags(int fd, uint16_t pt_flags)
 
 	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
 		error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
-	}
+
 	if(elf_kind(elf) != ELF_K_ELF)
 	{
 		elf_end(elf);
