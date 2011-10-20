@@ -1,16 +1,16 @@
 =head1 NAME
 
-B<paxctl-ng> - get or consistently set the pax flags for both EI_PAX and PT_PAX
+B<paxctl-ng> - get or set the PaX flags for both PT_PAX and XT_PAX
 
 =head1 SYNOPSIS
-
-B<paxctl-ng> [-h]
 
 B<paxctl-ng> [-PpEeMmRrXxSs] [-v] ELF
 
 B<paxctl-ng> -Z [-v] ELF
 
 B<paxctl-ng> -z [-v] ELF
+
+B<paxctl-ng> [-h]
 
 =head1 DESCRIPTION
 
@@ -19,10 +19,6 @@ B<paxctl-ng> scans the program headers of ELF binaries or shared
 =head1 OPTIONS
 
 =over
-
-=item B<-h>   Print out a short help message and exit.
-
-=item
 
 =item B<-P> or B<-p>   Enable or disable PAGEEXEC
 
@@ -36,17 +32,18 @@ B<paxctl-ng> scans the program headers of ELF binaries or shared
 
 =item B<-X> or B<-x>   Enable or disable RANDEXEC
 
+=item
+
 If both enabling and disabling flags are set for one item, 
-eg. -Pp for PAGEEXEC, then the default setting - is used is
-for PT_PAX, while the most secure setting is used for EI_PAX. 
+eg. -Pp for PAGEEXEC, then the default setting - is used.
 
-=item B<-Z> Enable most secure settings (PSMeRX)
+=item B<-Z> Set most secure settings (PSMeRX)
 
-=item B<-z> Enable default setting (PT_PAX) or most secure setting (EI_PAX)
+=item B<-z> Set default setting (------)
 
 =item B<-v> View the flags
 
-
+=item B<-h> Print out a short help message and exit.
 
 =back
 

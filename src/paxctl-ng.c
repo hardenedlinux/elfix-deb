@@ -46,7 +46,7 @@ print_help(char *v)
 		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
 		"Program Name : %s\n"
 		"Description  : Get or set pax flags on an ELF object\n\n"
-		"Usage        : %s [-PpEeMmRrXxSsv ELF] | [-Z ELF] | [-z ELF] | [-h]\n\n"
+		"Usage        : %s -PpEeMmRrXxSsv ELF | -Zv ELF | -zv ELF | -h\n\n"
 		"Options      : -P enable PAGEEXEC\t-p disable  PAGEEXEC\n"
 		"             : -S enable SEGMEXEC\t-s disable  SEGMEXEC\n"
 		"             : -M enable MPROTECT\t-m disable  MPROTECT\n"

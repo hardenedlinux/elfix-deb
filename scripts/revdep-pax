@@ -202,13 +202,14 @@ def run_usage():
 	print 'Program Name : revdep-pax'
 	print 'Description  : Get or set pax flags on an ELF object'
 	print
-	print 'Usage        : revdep-pax -f [-v]          print out all forward mappings for all system binaries'
-	print '             : revdep-pax -r [-v]          print out all reverse mappints for all system sonames'
-	print '             : revdep-pax -b BINARY [-mv]  print all forward mappings only for BINARY'
-	print '             : revdep-pax -s SONAME [-mv]  print all reverse mappings only for SONAME'
-	print '             : revdep-pax [-h]             print out this help'
-	print '             : -v                          verbose, otherwise just print mismatched flags'
-	print '             : -m                          prompt to mark the mismatching objects'
+	print 'Usage        : revdep-pax -f [-v]           print out all forward mappings for all system binaries'
+	print '             : revdep-pax -r [-v]           print out all reverse mappints for all system sonames'
+	print '             : revdep-pax -b OBJECT  [-mv]  print all forward mappings only for OBJECT'
+	print '             : revdep-pax -s SONAME  [-mv]  print all reverse mappings only for SONAME'
+	print '             : revdep-pax -l LIBRARY [-mv]  print all reverse mappings only for LIBRARY file'
+	print '             : revdep-pax [-h]              print out this help'
+	print '             : -v                           verbose, otherwise just print mismatching objects'
+	print '             : -m                           don\'t just report, but mark the mismatching objects'
 	print
 
 

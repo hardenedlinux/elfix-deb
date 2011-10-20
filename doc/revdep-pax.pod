@@ -1,0 +1,90 @@
+=head1 NAME
+
+B<revdep-pax> - find mismatching PaX markings between ELF objects and their libraries
+
+=head1 SYNOPSIS
+
+B<revdep-pax> -f [-v]
+
+B<revdep-pax> -r [-v]
+
+B<revdep-pax> -b OBJECT [-mv]
+
+B<revdep-pax> -s SONAME [-mv]
+
+B<revdep-pax> -l LIBRARY [-mv]
+
+B<revdep-pax> [-h]
+
+=head1 DESCRIPTION
+
+B<revdep-pax> finds mismatching PaX markings between an ELF object and the
+libraries that object dynamically links against.  When executing an ELF binary
+that links against libraries, the PaX hardened kernel ignores the library
+markings and uses the executable markings for enforcing PaX restrictions.
+It is desireable in some circumstances to migrate back the library markings
+to the binaries.  
+
+revdep-pax can do its work by either starting from the object and mapping
+forwards to its libraries, or by starting from a library and mapping
+backwards to all the objects that link against it.  The library can either
+be specified by the SONAME as it is reported by B<ldd>(1), or by the full
+path to the LIBRARY file.  Symbolic links are dereferenced.  The user can
+optionally scan for all forward mappings on the system (-f), for all reverse
+mappings (-r), for forward mappings of just one OBJECT (-b), for reverse
+mappings of just one SONAME (-s) or one LIBRARY (-l).  In verbose mode (-v),
+all mappings are reported, not just mismatching ones, and in mark mode (-m),
+the user is prompted whether to proceed with marking the found object so
+its PaX flags match its source.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-f>   Scan the system for all forward mappings
+
+=item
+
+=item B<-r>   Scan the system for all reverse mappings
+
+=item
+
+=item B<-b>   OBJECT  Retrieve only the forward mappings for this ELF OBJECT
+
+=item
+
+=item B<-s>   SONAME  Retrieve only the reverse mappings for this SONAME
+
+=item
+
+=item B<-l>   LIBRARY Retrieve only the reverse mappings for this LIBRARY
+
+=item
+
+=item B<-v>   Report all mappings, not just the mismatched ones
+
+=item
+
+=item B<-m>   Prompt the user to mark the found object with the PaX flags of the source
+
+=item
+
+=item B<-h>   Print out a short help message and exit.
+
+=back
+
+=head1 HOMEPAGE
+
+http://dev.gentoo.org/~blueness/elfix
+
+=head1 REPORTING BUGS
+
+Please report bugs at http://bugs.gentoo.org.
+
+=head1 SEE ALSO
+
+B<scanelf>(1), B<dumpelf>(1), B<paxctl>(1), B<pspax>(1), B<fix-gnustack>(1), B<ldd>(1)
+
+=head1 AUTHORS
+
+B<Anthony G. Basile> <blueness@gentoo.org>

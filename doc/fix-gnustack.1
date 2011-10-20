@@ -135,16 +135,16 @@ fix\-gnustack \- query or clear any ELF GNU_STACK executable flag
 .IX Header "SYNOPSIS"
 \&\fBfix-gnustack\fR \-h
 .PP
-\&\fBfix-gnustack\fR [\-f] ELFfile
+\&\fBfix-gnustack\fR [\-f] \s-1ELF\s0
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
 \&\fBfix-gnustack\fR scans the program headers of an \s-1ELF\s0 binary or shared
-object library and reports if it has a \s-1GNU_STACK\s0 entry and if it is
+object library, reports if it has a \s-1GNU_STACK\s0 entry and if it is
 marked both writeable and executable.  On PaX hardened kernels where
 memory protection (\s-1MPROTECT\s0) is enforced, execution of binaries with
-\&\s-1WX\s0 marked \s-1GNU_STACKS\s0, or of binaries linking against libraries with
-\&\s-1WX\s0 makred \s-1GNU_STACKS\s0, is terminated by the kernel.  When \fBfix-gnustack\fR
-is called without the \fB\-f\fR option on an ELFfile, it simply reports the
+\&\s-1GNU_STACKS\s0 marked \s-1WX\s0, or execution of binaries linking against libraries
+with \s-1GNU_STACKS\s0 marked \s-1WX\s0, is terminated by the kernel.  When \fBfix-gnustack\fR
+is called without the \fB\-f\fR option on an \s-1ELF\s0, it simply reports the
 \&\s-1RWX\s0 (read/write/execute) flags on any \s-1GNU_STACK\s0 entry found.  When called
 with \fB\-f\fR, it clears the X flag if a \s-1GNU_STACK\s0 entry is found and it
 has both W and X flags.
@@ -153,9 +153,9 @@ has both W and X flags.
 .IP "\fB\-h\fR" 4
 .IX Item "-h"
 Print out a short help message and exit.
-.IP "[\fB\-f\fR] ELFfile" 4
-.IX Item "[-f] ELFfile"
-\&\*(L"Fix\*(R" the ELFfile, ie, remove the X flag from any \s-1GNU_STACK\s0 entry found
+.IP "[\fB\-f\fR] \s-1ELF\s0" 4
+.IX Item "[-f] ELF"
+\&\*(L"Fix\*(R" the \s-1ELF\s0, ie, remove the X flag from any \s-1GNU_STACK\s0 entry found
 if it has both W and X flags.  When called without, it simply reports
 what flags it found.
 .SH "HOMEPAGE"

@@ -6,17 +6,17 @@ B<fix-gnustack> - query or clear any ELF GNU_STACK executable flag
 
 B<fix-gnustack> -h
 
-B<fix-gnustack> [-f] ELFfile
+B<fix-gnustack> [-f] ELF
 
 =head1 DESCRIPTION
 
 B<fix-gnustack> scans the program headers of an ELF binary or shared
-object library and reports if it has a GNU_STACK entry and if it is
+object library, reports if it has a GNU_STACK entry and if it is
 marked both writeable and executable.  On PaX hardened kernels where
 memory protection (MPROTECT) is enforced, execution of binaries with
-WX marked GNU_STACKS, or of binaries linking against libraries with
-WX makred GNU_STACKS, is terminated by the kernel.  When B<fix-gnustack>
-is called without the B<-f> option on an ELFfile, it simply reports the
+GNU_STACKS marked WX, or execution of binaries linking against libraries
+with GNU_STACKS marked WX, is terminated by the kernel.  When B<fix-gnustack>
+is called without the B<-f> option on an ELF, it simply reports the
 RWX (read/write/execute) flags on any GNU_STACK entry found.  When called
 with B<-f>, it clears the X flag if a GNU_STACK entry is found and it
 has both W and X flags.
@@ -29,9 +29,9 @@ has both W and X flags.
 
 Print out a short help message and exit.
 
-=item [B<-f>] ELFfile
+=item [B<-f>] ELF
 
-"Fix" the ELFfile, ie, remove the X flag from any GNU_STACK entry found
+"Fix" the ELF, ie, remove the X flag from any GNU_STACK entry found
 if it has both W and X flags.  When called without, it simply reports
 what flags it found.
 
