@@ -65,9 +65,7 @@ get_pt_flags(int fd)
 	GElf_Phdr phdr;
 	size_t i, phnum;
 
-	uint16_t pt_flags;
-
-	pt_flags = UINT16_MAX;
+	uint16_t pt_flags = UINT16_MAX;
 
 	if(elf_version(EV_CURRENT) == EV_NONE)
 	{
@@ -93,7 +91,10 @@ get_pt_flags(int fd)
 	for(i=0; i<phnum; i++)
 	{
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
+		{
 			PyErr_SetString(PaxError, "get_pt_flags: gelf_getphdr() failed: could not get phdr.");
+			return pt_flags;
+		}
 
 		if(phdr.p_type == PT_PAX_FLAGS)
 			pt_flags = phdr.p_flags;
@@ -108,38 +109,9 @@ get_pt_flags(int fd)
 uint16_t
 get_xt_flags(int fd)
 {
-	uint16_t xt_flags;
+	uint16_t xt_flags = UINT16_MAX;
 
-	xt_flags = UINT16_MAX;
-
-	if(fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t)) == -1)
-	{
-		/*
-		// ERANGE  = xattrs supported, PAX_NAMESPACE present, but wrong size
-		// ENOATTR = xattrs supported, PAX_NAMESPACE not present
-		if(errno == ERANGE || errno == ENOATTR)
-		{
-			//XT_PAX: not present or corrupted
-
-			//BEGIN: create flags
-			PyErr_SetString(PaxError, "XT_PAX: creating/repairing flags");
-			xt_flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
-			if(fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0) == -1)
-			{
-				xt_flags = UINT16_MAX;
-				if(errno == ENOSPC || errno == EDQUOT)
-					PyErr_SetString(PaxError, "XT_PAX: access error");
-				if(errno == ENOTSUP)
-					PyErr_SetString(PaxError, "XT_PAX: not supported");
-			}
-			// END: create flags
-		}
-
-		// ENOTSUP = xattrs not supported
-		if(errno == ENOTSUP)
-			PyErr_SetString(PaxError, "XT_PAX: not supported\n");
-		*/
-	}
+	fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t));
 
 	return xt_flags;
 }
@@ -269,15 +241,7 @@ set_pt_flags(int fd, uint16_t pt_flags)
 void
 set_xt_flags(int fd, uint16_t xt_flags)
 {
-	if(fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0) == -1)
-	{
-		/*
-		if(errno == ENOSPC || errno == EDQUOT)
-			 PyErr_SetString(PaxError, "XT_PAX: access error");
-		if(errno == ENOTSUP)
-			 PyErr_SetString(PaxError, "XT_PAX: not supported\n");
-		*/
-	}
+	fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0);
 }
 
 
