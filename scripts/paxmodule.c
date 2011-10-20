@@ -1,3 +1,21 @@
+/*
+	paxmodule.c: python module to get/set pax flags on an ELF object
+	Copyright (C) 2011  Anthony G. Basile
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <Python.h>
 
 #include <string.h>
@@ -41,63 +59,54 @@ initpax(void)
 
 
 uint16_t
-read_pt_flags(int fd)
+get_pt_flags(int fd)
 {
 	Elf *elf;
 	GElf_Phdr phdr;
 	size_t i, phnum;
 
 	uint16_t pt_flags;
-	char found_pt_pax;
 
 	pt_flags = UINT16_MAX;
 
 	if(elf_version(EV_CURRENT) == EV_NONE)
 	{
-		close(fd);
-		PyErr_SetString(PaxError, "pax_getflags: library out of date");
+		PyErr_SetString(PaxError, "get_pt_flags: library out of date");
 		return pt_flags;
 	}
 
 	if((elf = elf_begin(fd, ELF_C_READ_MMAP, NULL)) == NULL)
 	{
-		close(fd);
-		PyErr_SetString(PaxError, "pax_getflags: elf_begin() failed");
+		PyErr_SetString(PaxError, "get_pt_flags: elf_begin() failed");
 		return pt_flags;
 	}
 
 	if(elf_kind(elf) != ELF_K_ELF)
 	{
 		elf_end(elf);
-		close(fd);
-		PyErr_SetString(PaxError, "pax_getflags: elf_kind() failed: this is not an elf file.");
+		PyErr_SetString(PaxError, "get_pt_flags: elf_kind() failed: this is not an elf file.");
 		return pt_flags;
 	}
 
-	found_pt_pax = 0;
 	elf_getphdrnum(elf, &phnum);
 
 	for(i=0; i<phnum; i++)
 	{
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
-			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
+			PyErr_SetString(PaxError, "get_pt_flags: gelf_getphdr() failed: could not get phdr.");
 
 		if(phdr.p_type == PT_PAX_FLAGS)
-		{
-			found_pt_pax = 1;
 			pt_flags = phdr.p_flags;
-		}
 	}
 
-	if(!found_pt_pax)
-		printf("PT_PAX: not found\n");
+	elf_end(elf);
 
 	return pt_flags;
 }
 
 
 uint16_t
-read_xt_flags(int fd)
+get_xt_flags(int fd)
 {
 	uint16_t xt_flags;
 
@@ -105,28 +114,31 @@ read_xt_flags(int fd)
 
 	if(fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t)) == -1)
 	{
+		/*
 		// ERANGE  = xattrs supported, PAX_NAMESPACE present, but wrong size
 		// ENOATTR = xattrs supported, PAX_NAMESPACE not present
 		if(errno == ERANGE || errno == ENOATTR)
 		{
-			printf("XT_PAX: not present or corrupted\n");
-			/*
-			printf("XT_PAX: creating/repairing flags\n");
+			//XT_PAX: not present or corrupted
+
+			//BEGIN: create flags
+			PyErr_SetString(PaxError, "XT_PAX: creating/repairing flags");
 			xt_flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
 			if(fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0) == -1)
 			{
 				xt_flags = UINT16_MAX;
 				if(errno == ENOSPC || errno == EDQUOT)
-					printf("XT_PAX: access error\n");
+					PyErr_SetString(PaxError, "XT_PAX: access error");
 				if(errno == ENOTSUP)
-					printf("XT_PAX: not supported\n");
+					PyErr_SetString(PaxError, "XT_PAX: not supported");
 			}
-			*/
+			// END: create flags
 		}
 
 		// ENOTSUP = xattrs not supported
 		if(errno == ENOTSUP)
-			printf("XT_PAX: not supported\n");
+			PyErr_SetString(PaxError, "XT_PAX: not supported\n");
+		*/
 	}
 
 	return xt_flags;
@@ -161,9 +173,8 @@ pax_getflags(PyObject *self, PyObject *args)
 {
 	const char *f_name;
 	int fd;
-
-        uint16_t flags;
-        char buf[BUF_SIZE];
+	uint16_t flags;
+	char buf[BUF_SIZE];
 
 	memset(buf, 0, BUF_SIZE);
 
@@ -179,23 +190,94 @@ pax_getflags(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-        flags = read_xt_flags(fd);
-        if( flags != UINT16_MAX )
-        {
-                memset(buf, 0, BUF_SIZE);
-                bin2string(flags, buf);
-        }
+	flags = get_xt_flags(fd);
+	if( flags != UINT16_MAX )
+	{
+		memset(buf, 0, BUF_SIZE);
+		bin2string(flags, buf);
+	}
 	else
 	{
-       		flags = read_pt_flags(fd);
-	        if( flags != UINT16_MAX )
+		flags = get_pt_flags(fd);
+		if( flags != UINT16_MAX )
 		{
 			memset(buf, 0, BUF_SIZE);
 			bin2string(flags, buf);
 		}
 	}
 
+	close(fd);
+
 	return Py_BuildValue("si", buf, flags);
+}
+
+
+void
+set_pt_flags(int fd, uint16_t pt_flags)
+{
+	Elf *elf;
+	GElf_Phdr phdr;
+	size_t i, phnum;
+
+	if(elf_version(EV_CURRENT) == EV_NONE)
+	{
+		PyErr_SetString(PaxError, "set_pt_flags: library out of date");
+		return;
+	}
+
+	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
+	{
+		PyErr_SetString(PaxError, "set_pt_flags: elf_begin() failed");
+		return;
+	}
+
+	if(elf_kind(elf) != ELF_K_ELF)
+	{
+		elf_end(elf);
+		PyErr_SetString(PaxError, "set_pt_flags: elf_kind() failed: this is not an elf file.");
+		return;
+	}
+
+	elf_getphdrnum(elf, &phnum);
+
+	for(i=0; i<phnum; i++)
+	{
+		if(gelf_getphdr(elf, i, &phdr) != &phdr)
+		{
+			elf_end(elf);
+			PyErr_SetString(PaxError, "set_pt_flags: gelf_getphdr() failed");
+			return;
+		}
+
+		if(phdr.p_type == PT_PAX_FLAGS)
+		{
+			phdr.p_flags = pt_flags;
+
+			if(!gelf_update_phdr(elf, i, &phdr))
+			{
+				elf_end(elf);
+				PyErr_SetString(PaxError, "set_pt_flags: gelf_update_phdr() failed");
+				return;
+			}
+		}
+	}
+
+	elf_end(elf);
+}
+
+
+void
+set_xt_flags(int fd, uint16_t xt_flags)
+{
+	if(fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0) == -1)
+	{
+		/*
+		if(errno == ENOSPC || errno == EDQUOT)
+			 PyErr_SetString(PaxError, "XT_PAX: access error");
+		if(errno == ENOTSUP)
+			 PyErr_SetString(PaxError, "XT_PAX: not supported\n");
+		*/
+	}
 }
 
 
@@ -203,22 +285,12 @@ static PyObject *
 pax_setflags(PyObject *self, PyObject *args)
 {
 	const char *f_name;
-	uint16_t pax_flags;
-	int fd;
+	int fd, iflags;
+	uint16_t flags;
 
-	Elf *elf;
-	GElf_Phdr phdr;
-	size_t i, phnum;
-
-	if (!PyArg_ParseTuple(args, "si", &f_name, &pax_flags))
+	if (!PyArg_ParseTuple(args, "si", &f_name, &iflags))
 	{
 		PyErr_SetString(PaxError, "pax_setflags: PyArg_ParseTuple failed");
-		return NULL;
-	}
-
-	if(elf_version(EV_CURRENT) == EV_NONE)
-	{
-		PyErr_SetString(PaxError, "pax_setflags: library out of date");
 		return NULL;
 	}
 
@@ -228,47 +300,11 @@ pax_setflags(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
-	{
-		close(fd);
-		PyErr_SetString(PaxError, "pax_setflags: elf_begin() failed");
-		return NULL;
-	}
+	flags = (uint16_t) iflags;
 
-	if(elf_kind(elf) != ELF_K_ELF)
-	{
-		elf_end(elf);
-		close(fd);
-		PyErr_SetString(PaxError, "pax_setflags: elf_kind() failed: this is not an elf file.");
-		return NULL;
-	}
+	set_pt_flags(fd, flags);
+	set_xt_flags(fd, flags);
 
-	elf_getphdrnum(elf, &phnum);
-	for(i=0; i<phnum; ++i)
-	{
-		if(gelf_getphdr(elf, i, &phdr) != &phdr)
-		{
-			elf_end(elf);
-			close(fd);
-			PyErr_SetString(PaxError, "pax_setflags: gelf_getphdr() failed");
-			return NULL;
-		}
-
-		if(phdr.p_type == PT_PAX_FLAGS)
-		{
-			phdr.p_flags = pax_flags;
-
-			if(!gelf_update_phdr(elf, i, &phdr))
-			{
-				elf_end(elf);
-				close(fd);
-				PyErr_SetString(PaxError, "pax_setflags: gelf_update_phdr() failed");
-				return NULL;
-			}
-		}
-	}
-
-	elf_end(elf);
 	close(fd);
 
 	return Py_BuildValue("");

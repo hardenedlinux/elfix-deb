@@ -128,7 +128,7 @@ parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags)
 				break ;
 			case 'Z':
 				*pax_flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
-					PF_NOEMUTRAMP | PF_RANDMMAP | PF_RANDEXEC;
+					PF_NOEMUTRAMP | PF_RANDMMAP | PF_NORANDEXEC;
 				compat += 1;
 				break ;
 			case 'z':
@@ -157,15 +157,35 @@ parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags)
 
 
 uint16_t
-read_pt_flags(Elf *elf)
+get_pt_flags(int fd)
 {
+	Elf *elf;
 	GElf_Phdr phdr;
 	size_t i, phnum;
 
 	uint16_t pt_flags;
-	char found_pt_pax;
 
-	found_pt_pax = 0;
+	pt_flags = UINT16_MAX;
+
+	if(elf_version(EV_CURRENT) == EV_NONE)
+	{
+		error(EXIT_FAILURE, 0, "Library out of date.");
+		return;
+	}
+
+	if((elf = elf_begin(fd, ELF_C_READ_MMAP, NULL)) == NULL)
+	{
+		error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
+		return;
+	}
+
+	if(elf_kind(elf) != ELF_K_ELF)
+	{
+		elf_end(elf);
+		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
+		return;
+	}
+
 	elf_getphdrnum(elf, &phnum);
 
 	for(i=0; i<phnum; i++)
@@ -174,26 +194,21 @@ read_pt_flags(Elf *elf)
 			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
 
 		if(phdr.p_type == PT_PAX_FLAGS)
-		{
-			found_pt_pax = 1;
 			pt_flags = phdr.p_flags;
-		}
 	}
 
-	if(!found_pt_pax)
-	{
-		printf("PT_PAX: not found\n");
-		pt_flags = UINT16_MAX;
-	}
+	elf_end(elf);
 
 	return pt_flags;
 }
 
 
 uint16_t
-read_xt_flags(int fd)
+get_xt_flags(int fd)
 {
 	uint16_t xt_flags;
+
+	xt_flags = UINT16_MAX;
 
 	if(fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t)) == -1)
 	{
@@ -207,6 +222,7 @@ read_xt_flags(int fd)
 			xt_flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
 			if(fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0) == -1)
 			{
+				xt_flags = UINT16_MAX;
 				if(errno == ENOSPC || errno == EDQUOT)
 					printf("XT_PAX: access error\n");
 				if(errno == ENOTSUP)
@@ -217,10 +233,7 @@ read_xt_flags(int fd)
 
 		// ENOTSUP = xattrs not supported
 		if(errno == ENOTSUP)
-		{
-			xt_flags = UINT16_MAX; //invalid value
 			printf("XT_PAX: not supported\n");
-		}
 	}
 
 	return xt_flags;
@@ -251,21 +264,29 @@ bin2string(uint16_t flags, char *buf)
 
 
 void
-print_flags(int fd, Elf *elf)
+print_flags(int fd)
 {
 	uint16_t flags;
 	char buf[BUF_SIZE];
 
-	flags = read_pt_flags(elf);
-	if( flags != UINT16_MAX )
+	flags = get_pt_flags(fd);
+	if( flags == UINT16_MAX )
+	{
+		printf("PT_PAX: not found\n");
+	}
+	else
 	{
 		memset(buf, 0, BUF_SIZE);
 		bin2string(flags, buf);
 		printf("PT_PAX: %s\n", buf);
 	}
 
-	flags = read_xt_flags(fd);
-	if( flags != UINT16_MAX )
+	flags = get_xt_flags(fd);
+	if( flags == UINT16_MAX )
+	{
+		printf("XT_PAX: not found\n");
+	}
+	else
 	{
 		memset(buf, 0, BUF_SIZE);
 		bin2string(flags, buf);
@@ -385,25 +406,56 @@ new_flags(uint16_t flags, uint16_t pax_flags)
 
 
 void
-set_pt_flags(Elf *elf, uint16_t pt_flags)
+set_pt_flags(int fd, uint16_t pt_flags)
 {
+	Elf *elf;
 	GElf_Phdr phdr;
 	size_t i, phnum;
+
+	if(elf_version(EV_CURRENT) == EV_NONE)
+	{
+		error(EXIT_FAILURE, 0, "Library out of date.");
+		return;
+	}
+
+	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
+	{
+		error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
+		return;
+	}
+
+	if(elf_kind(elf) != ELF_K_ELF)
+	{
+		elf_end(elf);
+		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
+		return;
+	}
 
 	elf_getphdrnum(elf, &phnum);
 
 	for(i=0; i<phnum; i++)
 	{
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
+		{
+			elf_end(elf);
 			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
+			return;
+		}
 
 		if(phdr.p_type == PT_PAX_FLAGS)
 		{
 			phdr.p_flags = pt_flags;
+
 			if(!gelf_update_phdr(elf, i, &phdr))
+			{
+				elf_end(elf);
 				error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
+				return;
+			}
 		}
 	}
+
+	elf_end(elf);
 }
 
 
@@ -421,56 +473,46 @@ set_xt_flags(int fd, uint16_t xt_flags)
 
 
 void
-set_flags(int fd, Elf *elf, uint16_t *pax_flags)
+set_flags(int fd, uint16_t *pax_flags)
 {
 	uint16_t flags;
 
-	flags = read_pt_flags(elf);
-	if( flags != UINT16_MAX )
-	{
-		flags = new_flags( flags, *pax_flags);
-		set_pt_flags(elf, flags);
-	}
+	flags = get_pt_flags(fd);
+	if( flags == UINT16_MAX )
+		flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
+			PF_NOEMUTRAMP | PF_RANDMMAP | PF_NORANDEXEC;
+	flags = new_flags( flags, *pax_flags);
+	set_pt_flags(fd, flags);
 
-	flags = read_xt_flags(fd);
-	if( flags != UINT16_MAX )
-	{
-		flags = new_flags( flags, *pax_flags);
-		set_xt_flags(fd, flags);
-	}
+	flags = get_xt_flags(fd);
+	if( flags == UINT16_MAX )
+		flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
+			PF_NOEMUTRAMP | PF_RANDMMAP | PF_NORANDEXEC;
+	flags = new_flags( flags, *pax_flags);
+	set_xt_flags(fd, flags);
 }
 
 
 int
 main( int argc, char *argv[])
 {
+	const char *f_name;
 	int fd;
-	uint16_t pax_flags;
+	uint16_t flags;
 	int view_flags;
-	char *f_name;
 
 	Elf *elf;
 
-	f_name = parse_cmd_args(argc, argv, &pax_flags, &view_flags);
-
-	if(elf_version(EV_CURRENT) == EV_NONE)
-		error(EXIT_FAILURE, 0, "Library out of date.");
+	f_name = parse_cmd_args(argc, argv, &flags, &view_flags);
 
 	if((fd = open(f_name, O_RDWR)) < 0)
 		error(EXIT_FAILURE, 0, "open() fail.");
 
-	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
-		error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
-
-	if(elf_kind(elf) != ELF_K_ELF)
-		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
-
-	if(pax_flags != 0)
-		set_flags(fd, elf, &pax_flags);
+	if(flags != 0)
+		set_flags(fd, &flags);
 
 	if(view_flags == 1)
-		print_flags(fd, elf);
+		print_flags(fd);
 
-	elf_end(elf);
 	close(fd);
 }
