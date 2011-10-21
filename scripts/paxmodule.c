@@ -112,7 +112,6 @@ get_xt_flags(int fd)
 	uint16_t xt_flags = UINT16_MAX;
 
 	fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t));
-
 	return xt_flags;
 }
 

@@ -46,7 +46,9 @@ print_help(char *v)
 		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
 		"Program Name : %s\n"
 		"Description  : Get or set pax flags on an ELF object\n\n"
-		"Usage        : %s -PpEeMmRrXxSsv ELF | -Zv ELF | -zv ELF | -h\n\n"
+		"Usage        : %s -PpEeMmRrXxSsv ELF | -Zv ELF | -zv ELF\n"
+		"             : %s -Cv ELF | -cv ELF | Fv ELF | -fv ELF\n"
+		"             : %s -v ELF | -h\n\n"
 		"Options      : -P enable PAGEEXEC\t-p disable  PAGEEXEC\n"
 		"             : -S enable SEGMEXEC\t-s disable  SEGMEXEC\n"
 		"             : -M enable MPROTECT\t-m disable  MPROTECT\n"
@@ -54,9 +56,15 @@ print_help(char *v)
 		"             : -R enable RANDMMAP\t-r disable  RANDMMAP\n"
 		"             : -X enable RANDEXEC\t-x disable  RANDEXEC\n"
 		"             : -Z most secure settings\t-z all default settings\n"
-		"             : -v view the flags\n"
+		"             : -C create XT_PAX with most secure setting\n"
+		"             : -c create XT_PAX all default settings\n"
+		"             : -F copy PT_PAX to XT_PAX\n"
+		"             : -f copy XT_PAX to PT_PAX\n"
+		"             : -v view the flags, along with any accompanying operation\n"
 		"             : -h print out this help\n\n"
 		"Note         :  If both enabling and disabling flags are set, the default - is used\n\n",
+		basename(v),
+		basename(v),
 		basename(v),
 		basename(v)
 	);
@@ -69,13 +77,13 @@ char *
 parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags)
 {
 	int i, oc;
-	int compat;
+	int compat, solitaire;
 
 	compat = 0;
-
+	solitaire = 0;
 	*pax_flags = 0;
 	*view_flags = 0;
-	while((oc = getopt(c, v,":PpEeMmRrXxSsZzvh")) != -1)
+	while((oc = getopt(c, v,":PpEeMmRrXxSsZzCcFfvh")) != -1)
 		switch(oc)
 		{
 			case 'P':
@@ -129,17 +137,28 @@ parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags)
 			case 'Z':
 				*pax_flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
 					PF_NOEMUTRAMP | PF_RANDMMAP | PF_NORANDEXEC;
-				compat += 1;
+				solitaire += 1;
 				break ;
 			case 'z':
 				*pax_flags = PF_PAGEEXEC | PF_NOPAGEEXEC | PF_SEGMEXEC | PF_NOSEGMEXEC |
 					PF_MPROTECT | PF_NOMPROTECT | PF_EMUTRAMP | PF_NOEMUTRAMP |
 					PF_RANDMMAP | PF_NORANDMMAP | PF_RANDEXEC | PF_NORANDEXEC;
-				compat += 1;
+				solitaire += 1;
+				break;
+			case 'C':
+				solitaire += 1;
+				break;
+			case 'c':
+				solitaire += 1;
+				break;
+			case 'F':
+				solitaire += 1;
+				break;
+			case 'f':
+				solitaire += 1;
 				break;
 			case 'v':
 				*view_flags = 1;
-				compat |= 1;
 				break;
 			case 'h':
 				print_help(v[0]);
@@ -149,10 +168,17 @@ parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags)
 				error(EXIT_FAILURE, 0, "option -%c is invalid: ignored.", optopt ) ;
 		}
 
-	if(compat != 1 || v[optind] == NULL)
+	if
+	(
+		(
+			(compat == 1 && solitaire == 0) ||
+			(compat == 0 && solitaire == 1) ||
+			(compat == 0 && solitaire == 0 && *view_flags == 1)
+		) && v[optind] != NULL
+	)
+		return v[optind] ;
+	else
 		print_help(v[0]);
-
-	return v[optind] ;
 }
 
 
@@ -201,16 +227,7 @@ get_xt_flags(int fd)
 {
 	uint16_t xt_flags = UINT16_MAX;
 
-	if(fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t)) == -1)
-	{
-		if(errno == ERANGE )
-			printf("XT_PAX: corrupted\n");
-		if( errno == ENOATTR)
-			printf("XT_PAX: not present\n");
-		if(errno == ENOTSUP)
-			printf("XT_PAX: not supported\n");
-	}
-
+	fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t));
 	return xt_flags;
 }
 
@@ -268,7 +285,7 @@ print_flags(int fd)
 
 
 uint16_t
-new_flags(uint16_t flags, uint16_t pax_flags)
+update_flags(uint16_t flags, uint16_t pax_flags)
 {
 	//PAGEEXEC
 	if(pax_flags & PF_PAGEEXEC)
@@ -424,13 +441,7 @@ set_pt_flags(int fd, uint16_t pt_flags)
 void
 set_xt_flags(int fd, uint16_t xt_flags)
 {
-	if(fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0) == -1)
-	{
-		if(errno == ENOSPC || errno == EDQUOT)
-			printf("XT_PAX: insufficient space\n");
-		if(errno == ENOTSUP)
-			printf("XT_PAX: not supported\n");
-	}
+	fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), XATTR_REPLACE);
 }
 
 
@@ -441,16 +452,14 @@ set_flags(int fd, uint16_t *pax_flags)
 
 	flags = get_pt_flags(fd);
 	if( flags == UINT16_MAX )
-		flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
-			PF_NOEMUTRAMP | PF_RANDMMAP | PF_NORANDEXEC;
-	flags = new_flags( flags, *pax_flags);
+		flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
+	flags = update_flags( flags, *pax_flags);
 	set_pt_flags(fd, flags);
 
 	flags = get_xt_flags(fd);
 	if( flags == UINT16_MAX )
-		flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
-			PF_NOEMUTRAMP | PF_RANDMMAP | PF_NORANDEXEC;
-	flags = new_flags( flags, *pax_flags);
+		flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
+	flags = update_flags( flags, *pax_flags);
 	set_xt_flags(fd, flags);
 }
 
@@ -468,7 +477,7 @@ main( int argc, char *argv[])
 	if((fd = open(f_name, O_RDWR)) < 0)
 		error(EXIT_FAILURE, 0, "open() fail.");
 
-	if(flags != 0)
+	if(flags != 1)
 		set_flags(fd, &flags);
 
 	if(view_flags == 1)
