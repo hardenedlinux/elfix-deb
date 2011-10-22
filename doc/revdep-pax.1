@@ -124,7 +124,7 @@
 .\" ========================================================================
 .\"
 .IX Title "REVDEP-PAX 1"
-.TH REVDEP-PAX 1 "2011-10-19" "elfix 0.2" "Documentation for elfix"
+.TH REVDEP-PAX 1 "2011-10-19" "elfix 0.3" "Documentation for elfix"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -147,23 +147,22 @@ revdep\-pax \- find mismatching PaX markings between ELF objects and their libra
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
 \&\fBrevdep-pax\fR finds mismatching PaX markings between an \s-1ELF\s0 object and the
-libraries that object dynamically links against.  When executing an \s-1ELF\s0 binary
-that links against libraries, the PaX hardened kernel ignores the library
-markings and uses the executable markings for enforcing PaX restrictions.
-It is desireable in some circumstances to migrate back the library markings
-to the binaries.
+libraries which that object dynamically links against.  When executing an \s-1ELF\s0
+binary that links against libraries, the PaX hardened kernel ignores the libraries'
+markings and uses the executable's markings to enforce PaX restrictions.
+It is desireable in some circumstances to reverse migrate a library's markings
+to the binaries that link against it.
 .PP
-revdep-pax can do its work by either starting from the object and mapping
-forwards to its libraries, or by starting from a library and mapping
-backwards to all the objects that link against it.  The library can either
-be specified by the \s-1SONAME\s0 as it is reported by \fBldd\fR(1), or by the full
-path to the \s-1LIBRARY\s0 file.  Symbolic links are dereferenced.  The user can
-optionally scan for all forward mappings on the system (\-f), for all reverse
-mappings (\-r), for forward mappings of just one \s-1OBJECT\s0 (\-b), for reverse
-mappings of just one \s-1SONAME\s0 (\-s) or one \s-1LIBRARY\s0 (\-l).  In verbose mode (\-v),
-all mappings are reported, not just mismatching ones, and in mark mode (\-m),
-the user is prompted whether to proceed with marking the found object so
-its PaX flags match its source.
+revdep-pax can either forward migrate PaX markings from an \s-1ELF\s0 object to its
+libraries, or reverse migrate from a library to all the objects that link
+against it.  The library can either be specified by its \s-1SONAME\s0 as it is reported
+by \fBldd\fR(1), or by the full path to the \s-1LIBRARY\s0 file.  Symbolic links are
+dereferenced.  The user can optionally scan for all forward mappings on the
+system (\-f), for all reverse mappings (\-r), for forward mappings of just one
+\&\s-1OBJECT\s0 (\-b), for reverse mappings of just one \s-1SONAME\s0 (\-s) or one \s-1LIBRARY\s0 (\-l).
+In verbose mode (\-v), all mappings are reported, not just mismatching ones,
+and in mark mode (\-m), the user is prompted whether to proceed with the migration, 
+so that the PaX flags of the target inherit the flags of the source.
 .SH "OPTIONS"
 .IX Header "OPTIONS"
 .IP "\fB\-f\fR   Scan the system for all forward mappings" 4

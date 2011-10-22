@@ -8,7 +8,7 @@ rm -f fix-gnustack.1
 pod2man \
  --official \
  --section="1" \
- --release="elfix 0.2" \
+ --release="elfix 0.3" \
  --center="Documentation for elfix" \
  --date="2011-04-14" \
  fix-gnustack.pod > fix-gnustack.1
@@ -16,7 +16,7 @@ pod2man \
 pod2man \
  --official \
  --section="1" \
- --release="elfix 0.2" \
+ --release="elfix 0.3" \
  --center="Documentation for elfix" \
  --date="2011-08-18" \
  paxctl-ng.pod > paxctl-ng.1
@@ -24,7 +24,7 @@ pod2man \
 pod2man \
  --official \
  --section="1" \
- --release="elfix 0.2" \
+ --release="elfix 0.3" \
  --center="Documentation for elfix" \
  --date="2011-10-19" \
  revdep-pax.pod > revdep-pax.1
