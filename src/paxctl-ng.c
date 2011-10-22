@@ -74,7 +74,7 @@ print_help(char *v)
 
 
 char *
-parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags)
+parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags, int *cp_flags)
 {
 	int i, oc;
 	int compat, solitaire;
@@ -83,6 +83,7 @@ parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags)
 	solitaire = 0;
 	*pax_flags = 0;
 	*view_flags = 0;
+	*cp_flags = 0; 
 	while((oc = getopt(c, v,":PpEeMmRrXxSsZzCcFfvh")) != -1)
 		switch(oc)
 		{
@@ -147,15 +148,19 @@ parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags)
 				break;
 			case 'C':
 				solitaire += 1;
+				*cp_flags = 1;
 				break;
 			case 'c':
 				solitaire += 1;
+				*cp_flags = 2;
 				break;
 			case 'F':
 				solitaire += 1;
+				*cp_flags = 3;
 				break;
 			case 'f':
 				solitaire += 1;
+				*cp_flags = 4;
 				break;
 			case 'v':
 				*view_flags = 1;
@@ -464,18 +469,56 @@ set_flags(int fd, uint16_t *pax_flags)
 }
 
 
+void
+create_xt_flag(fd, cp_flags)
+{
+	uint16_t xt_flags;
+
+	if(cp_flags == 1)
+		xt_flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
+			PF_NOEMUTRAMP | PF_RANDMMAP | PF_NORANDEXEC;
+	else if(cp_flags == 2)
+		xt_flags = 0;
+
+	fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), XATTR_CREATE);
+}
+
+
+void
+copy_xt_flag(fd, cp_flags)
+{
+	uint16_t flags;
+	if(cp_flags == 3)
+	{
+		flags = get_pt_flags(fd);
+		set_xt_flags(fd, flags);
+	}
+	else if(cp_flags == 4)
+	{
+		flags = get_xt_flags(fd);
+		set_pt_flags(fd, flags);
+	}
+}
+
+
 int
 main( int argc, char *argv[])
 {
 	const char *f_name;
 	int fd;
 	uint16_t flags;
-	int view_flags;
+	int view_flags, cp_flags;
 
-	f_name = parse_cmd_args(argc, argv, &flags, &view_flags);
+	f_name = parse_cmd_args(argc, argv, &flags, &view_flags, &cp_flags);
 
 	if((fd = open(f_name, O_RDWR)) < 0)
 		error(EXIT_FAILURE, 0, "open() fail.");
+
+	if(cp_flags == 1 || cp_flags == 2)
+		create_xt_flag(fd, cp_flags);
+
+	if(cp_flags == 3 || cp_flags == 4)
+		copy_xt_flag(fd, cp_flags);
 
 	if(flags != 1)
 		set_flags(fd, &flags);
