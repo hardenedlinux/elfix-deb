@@ -1,7 +1,8 @@
 2011-10-23
 
+	* Release 0.3.0
 	* add XT_PAX read/write in paxct-ng.c and paxmodule.c
-	* create and/or copy XT_PAX flags from PT_PAX in paxctl-ng.c
+	* create and/or copy XT_PAX flags to/from PT_PAX in paxctl-ng.c
 	* clean up error handling in paxctl-ng.c
 	* remove EI_PAX doc and add XT_PAX doc
 
