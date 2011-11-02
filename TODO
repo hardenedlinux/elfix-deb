@@ -1,3 +1,5 @@
+2011-11-02  Anthony G. Basile <blueness@gentoo.org>
 
-Nothing for now, but I'm sure there will be some soon.
-
+	* paxctl-ng: add file globbing
+	* paxctl-ng: if a file fails to open O_RDWR then
+	don't do PT_PAX markings but continue with XT_PAX
