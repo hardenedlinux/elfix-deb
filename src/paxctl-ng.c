@@ -35,7 +35,8 @@
 
 
 #define PAX_NAMESPACE	"user.pax"
-#define BUF_SIZE	7
+#define BUF_SIZE	8
+#define FILE_NAME_SIZE	32768
 
 #define CREATE_XT_FLAGS_SECURE		1
 #define CREATE_XT_FLAGS_DEFAULT		2
@@ -43,7 +44,7 @@
 #define COPY_XT_TO_PT_FLAGS		4
 
 void
-print_help(char *v)
+print_help_exit(char *v)
 {
 	printf(
 		"\n"
@@ -78,8 +79,9 @@ print_help(char *v)
 }
 
 
-char *
-parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags, int *cp_flags)
+void
+parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *view_flags, int *cp_flags,
+	int *begin, int *end)
 {
 	int i, oc;
 	int compat, solitaire;
@@ -89,7 +91,7 @@ parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags, int *cp_f
 	*pax_flags = 0;
 	*view_flags = 0;
 	*cp_flags = 0; 
-	while((oc = getopt(c, v,":PpEeMmRrXxSsZzCcFfvh")) != -1)
+	while((oc = getopt(argc, argv,":PpEeMmRrXxSsZzCcFfvh")) != -1)
 	{
 		switch(oc)
 		{
@@ -172,7 +174,7 @@ parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags, int *cp_f
 				*view_flags = 1;
 				break;
 			case 'h':
-				print_help(v[0]);
+				print_help_exit(argv[0]);
 				break;
 			case '?':
 			default:
@@ -180,17 +182,16 @@ parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags, int *cp_f
 		}
 	}
 
-	if
-	(
-		(
-			(compat == 1 && solitaire == 0) ||
-			(compat == 0 && solitaire == 1) ||
-			(compat == 0 && solitaire == 0 && *view_flags == 1)
-		) && v[optind] != NULL
-	)
-		return v[optind] ;
+	if(	((compat == 1 && solitaire == 0) ||
+		 (compat == 0 && solitaire == 1) ||
+		 (compat == 0 && solitaire == 0 && *view_flags == 1)
+		) && argv[optind] != NULL)
+	{
+		*begin = optind;
+		*end = argc;
+	}
 	else
-		print_help(v[0]);
+		print_help_exit(argv[0]);
 }
 
 
@@ -204,15 +205,22 @@ get_pt_flags(int fd)
 	uint16_t pt_flags = UINT16_MAX;
 
 	if(elf_version(EV_CURRENT) == EV_NONE)
-		error(EXIT_FAILURE, 0, "Library out of date.");
+	{
+		printf("\tELF ERROR: Library out of date.\n");
+		return pt_flags;
+	}
 
 	if((elf = elf_begin(fd, ELF_C_READ_MMAP, NULL)) == NULL)
-		error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
+	{
+		printf("\tELF ERROR: elf_begin() fail: %s\n", elf_errmsg(elf_errno()));
+		return pt_flags;
+	}
 
 	if(elf_kind(elf) != ELF_K_ELF)
 	{
 		elf_end(elf);
-		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
+		printf("\tELF ERROR: elf_kind() fail: this is not an elf file.\n");
+		return pt_flags;
 	}
 
 	elf_getphdrnum(elf, &phnum);
@@ -222,7 +230,8 @@ get_pt_flags(int fd)
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
 		{
 			elf_end(elf);
-			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
+			printf("\tELF ERROR: gelf_getphdr(): %s\n", elf_errmsg(elf_errno()));
+			return pt_flags;
 		}
 
 		if(phdr.p_type == PT_PAX_FLAGS)
@@ -275,23 +284,25 @@ print_flags(int fd)
 
 	flags = get_pt_flags(fd);
 	if( flags == UINT16_MAX )
-		printf("PT_PAX: not found\n");
+		printf("\tPT_PAX: not found\n");
 	else
 	{
 		memset(buf, 0, BUF_SIZE);
 		bin2string(flags, buf);
-		printf("PT_PAX: %s\n", buf);
+		printf("\tPT_PAX: %s\n", buf);
 	}
 
 	flags = get_xt_flags(fd);
 	if( flags == UINT16_MAX )
-		printf("XT_PAX: not found\n");
+		printf("\tXT_PAX: not found\n");
 	else
 	{
 		memset(buf, 0, BUF_SIZE);
 		bin2string(flags, buf);
-		printf("XT_PAX: %s\n", buf);
+		printf("\tXT_PAX: %s\n", buf);
 	}
+
+	printf("\n");
 }
 
 
@@ -413,15 +424,22 @@ set_pt_flags(int fd, uint16_t pt_flags)
 	size_t i, phnum;
 
 	if(elf_version(EV_CURRENT) == EV_NONE)
-		error(EXIT_FAILURE, 0, "Library out of date.");
+	{
+		printf("\tELF ERROR: Library out of date.\n");
+		return;
+	}
 
 	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
-		error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
+	{
+		printf("\tELF ERROR: elf_begin() fail: %s\n", elf_errmsg(elf_errno()));
+		return;
+	}
 
 	if(elf_kind(elf) != ELF_K_ELF)
 	{
 		elf_end(elf);
-		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
+		printf("\tELF ERROR: elf_kind() fail: this is not an elf file.\n");
+		return; 
 	}
 
 	elf_getphdrnum(elf, &phnum);
@@ -431,7 +449,8 @@ set_pt_flags(int fd, uint16_t pt_flags)
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
 		{
 			elf_end(elf);
-			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
+			printf("\tELF ERROR: gelf_getphdr(): %s\n", elf_errmsg(elf_errno()));
+			return;
 		}
 
 		if(phdr.p_type == PT_PAX_FLAGS)
@@ -441,7 +460,7 @@ set_pt_flags(int fd, uint16_t pt_flags)
 			if(!gelf_update_phdr(elf, i, &phdr))
 			{
 				elf_end(elf);
-				error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
+				printf("\tELF ERROR: gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
 			}
 		}
 	}
@@ -514,33 +533,37 @@ copy_xt_flags(fd, cp_flags)
 int
 main( int argc, char *argv[])
 {
-	const char *f_name;
-	int fd;
+	int fd, fi;
 	uint16_t pax_flags;
-	int view_flags, cp_flags;
+	int view_flags, cp_flags, begin, end;
 	int rdwr_pt_pax = 1;
 
-	f_name = parse_cmd_args(argc, argv, &pax_flags, &view_flags, &cp_flags);
+	parse_cmd_args(argc, argv, &pax_flags, &view_flags, &cp_flags, &begin, &end);
 
-	if((fd = open(f_name, O_RDWR)) < 0)
+	for(fi = begin; fi < end; fi++)
 	{
-		rdwr_pt_pax = 0;
-		printf("open(O_RDWR) failed: cannot change PT_PAX flags\n");
-		if((fd = open(f_name, O_RDONLY)) < 0)
-			error(EXIT_FAILURE, 0, "open() failed");
+		printf("%s:\n", argv[fi]);
+
+		if((fd = open(argv[fi], O_RDWR)) < 0)
+		{
+			rdwr_pt_pax = 0;
+			printf("\topen(O_RDWR) failed: cannot change PT_PAX flags\n");
+			if((fd = open(argv[fi], O_RDONLY)) < 0)
+				error(EXIT_FAILURE, 0, "open() failed");
+		}
+
+		if(cp_flags == CREATE_XT_FLAGS_SECURE || cp_flags == CREATE_XT_FLAGS_DEFAULT)
+			create_xt_flags(fd, cp_flags);
+
+		if(cp_flags == COPY_PT_TO_XT_FLAGS || (cp_flags == COPY_XT_TO_PT_FLAGS && rdwr_pt_pax))
+			copy_xt_flags(fd, cp_flags);
+
+		if(pax_flags != 1)
+			set_flags(fd, &pax_flags, rdwr_pt_pax);
+
+		if(view_flags == 1)
+			print_flags(fd);
+
+		close(fd);
 	}
-
-	if(cp_flags == CREATE_XT_FLAGS_SECURE || cp_flags == CREATE_XT_FLAGS_DEFAULT)
-		create_xt_flags(fd, cp_flags);
-
-	if(cp_flags == COPY_PT_TO_XT_FLAGS || (cp_flags == COPY_XT_TO_PT_FLAGS && rdwr_pt_pax))
-		copy_xt_flags(fd, cp_flags);
-
-	if(pax_flags != 1)
-		set_flags(fd, &pax_flags, rdwr_pt_pax);
-
-	if(view_flags == 1)
-		print_flags(fd);
-
-	close(fd);
 }
