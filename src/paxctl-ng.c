@@ -301,8 +301,6 @@ print_flags(int fd)
 		bin2string(flags, buf);
 		printf("\tXT_PAX: %s\n", buf);
 	}
-
-	printf("\n");
 }
 
 
@@ -549,7 +547,10 @@ main( int argc, char *argv[])
 			rdwr_pt_pax = 0;
 			printf("\topen(O_RDWR) failed: cannot change PT_PAX flags\n");
 			if((fd = open(argv[fi], O_RDONLY)) < 0)
-				error(EXIT_FAILURE, 0, "open() failed");
+			{
+				printf("\topen(O_RDONLY) failed: cannot change PT_PAX flags\n\n");
+				continue;
+			}
 		}
 
 		if(cp_flags == CREATE_XT_FLAGS_SECURE || cp_flags == CREATE_XT_FLAGS_DEFAULT)
@@ -565,5 +566,7 @@ main( int argc, char *argv[])
 			print_flags(fd);
 
 		close(fd);
+
+		printf("\n");
 	}
 }
