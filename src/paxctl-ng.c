@@ -451,15 +451,18 @@ set_xt_flags(int fd, uint16_t xt_flags)
 
 
 void
-set_flags(int fd, uint16_t *pax_flags)
+set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax)
 {
 	uint16_t flags;
 
-	flags = get_pt_flags(fd);
-	if( flags == UINT16_MAX )
-		flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
-	flags = update_flags( flags, *pax_flags);
-	set_pt_flags(fd, flags);
+	if(rdwr_pt_pax)
+	{
+		flags = get_pt_flags(fd);
+		if( flags == UINT16_MAX )
+			flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
+		flags = update_flags( flags, *pax_flags);
+		set_pt_flags(fd, flags);
+	}
 
 	flags = get_xt_flags(fd);
 	if( flags == UINT16_MAX )
@@ -470,7 +473,7 @@ set_flags(int fd, uint16_t *pax_flags)
 
 
 void
-create_xt_flag(fd, cp_flags)
+create_xt_flags(fd, cp_flags)
 {
 	uint16_t xt_flags;
 
@@ -485,7 +488,7 @@ create_xt_flag(fd, cp_flags)
 
 
 void
-copy_xt_flag(fd, cp_flags)
+copy_xt_flags(fd, cp_flags)
 {
 	uint16_t flags;
 	if(cp_flags == 3)
@@ -508,20 +511,26 @@ main( int argc, char *argv[])
 	int fd;
 	uint16_t flags;
 	int view_flags, cp_flags;
+	int rdwr_pt_pax = 1;
 
 	f_name = parse_cmd_args(argc, argv, &flags, &view_flags, &cp_flags);
 
 	if((fd = open(f_name, O_RDWR)) < 0)
-		error(EXIT_FAILURE, 0, "open() fail.");
+	{
+		rdwr_pt_pax = 0;
+		printf("open(O_RDWR) failed: cannot change PT_PAX flags\n");
+		if((fd = open(f_name, O_RDONLY)) < 0)
+			error(EXIT_FAILURE, 0, "open() failed");
+	}
 
 	if(cp_flags == 1 || cp_flags == 2)
-		create_xt_flag(fd, cp_flags);
+		create_xt_flags(fd, cp_flags);
 
-	if(cp_flags == 3 || cp_flags == 4)
-		copy_xt_flag(fd, cp_flags);
+	if(cp_flags == 3 || (cp_flags == 4 && rdwr_pt_pax))
+		copy_xt_flags(fd, cp_flags);
 
 	if(flags != 1)
-		set_flags(fd, &flags);
+		set_flags(fd, &flags, rdwr_pt_pax);
 
 	if(view_flags == 1)
 		print_flags(fd);

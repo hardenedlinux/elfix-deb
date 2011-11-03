@@ -1,3 +1,7 @@
+
+	* paxctl-ng: if a file fails to open O_RDWR then
+	don't do PT_PAX markings but continue with XT_PAX
+
 2011-10-23
 
 	* add XT_PAX read/write in paxct-ng.c and paxmodule.c
