@@ -37,6 +37,11 @@
 #define PAX_NAMESPACE	"user.pax"
 #define BUF_SIZE	7
 
+#define CREATE_XT_FLAGS_SECURE		1
+#define CREATE_XT_FLAGS_DEFAULT		2
+#define COPY_PT_TO_XT_FLAGS		3
+#define COPY_XT_TO_PT_FLAGS		4
+
 void
 print_help(char *v)
 {
@@ -85,6 +90,7 @@ parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags, int *cp_f
 	*view_flags = 0;
 	*cp_flags = 0; 
 	while((oc = getopt(c, v,":PpEeMmRrXxSsZzCcFfvh")) != -1)
+	{
 		switch(oc)
 		{
 			case 'P':
@@ -148,19 +154,19 @@ parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags, int *cp_f
 				break;
 			case 'C':
 				solitaire += 1;
-				*cp_flags = 1;
+				*cp_flags = CREATE_XT_FLAGS_SECURE;
 				break;
 			case 'c':
 				solitaire += 1;
-				*cp_flags = 2;
+				*cp_flags = CREATE_XT_FLAGS_DEFAULT;
 				break;
 			case 'F':
 				solitaire += 1;
-				*cp_flags = 3;
+				*cp_flags = COPY_PT_TO_XT_FLAGS;
 				break;
 			case 'f':
 				solitaire += 1;
-				*cp_flags = 4;
+				*cp_flags = COPY_XT_TO_PT_FLAGS;
 				break;
 			case 'v':
 				*view_flags = 1;
@@ -172,6 +178,7 @@ parse_cmd_args(int c, char *v[], uint16_t *pax_flags, int *view_flags, int *cp_f
 			default:
 				error(EXIT_FAILURE, 0, "option -%c is invalid: ignored.", optopt ) ;
 		}
+	}
 
 	if
 	(
@@ -509,11 +516,11 @@ main( int argc, char *argv[])
 {
 	const char *f_name;
 	int fd;
-	uint16_t flags;
+	uint16_t pax_flags;
 	int view_flags, cp_flags;
 	int rdwr_pt_pax = 1;
 
-	f_name = parse_cmd_args(argc, argv, &flags, &view_flags, &cp_flags);
+	f_name = parse_cmd_args(argc, argv, &pax_flags, &view_flags, &cp_flags);
 
 	if((fd = open(f_name, O_RDWR)) < 0)
 	{
@@ -523,14 +530,14 @@ main( int argc, char *argv[])
 			error(EXIT_FAILURE, 0, "open() failed");
 	}
 
-	if(cp_flags == 1 || cp_flags == 2)
+	if(cp_flags == CREATE_XT_FLAGS_SECURE || cp_flags == CREATE_XT_FLAGS_DEFAULT)
 		create_xt_flags(fd, cp_flags);
 
-	if(cp_flags == 3 || (cp_flags == 4 && rdwr_pt_pax))
+	if(cp_flags == COPY_PT_TO_XT_FLAGS || (cp_flags == COPY_XT_TO_PT_FLAGS && rdwr_pt_pax))
 		copy_xt_flags(fd, cp_flags);
 
-	if(flags != 1)
-		set_flags(fd, &flags, rdwr_pt_pax);
+	if(pax_flags != 1)
+		set_flags(fd, &pax_flags, rdwr_pt_pax);
 
 	if(view_flags == 1)
 		print_flags(fd);
