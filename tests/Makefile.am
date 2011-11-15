@@ -1,1 +1,1 @@
-SUBDIRS = gnustack xtpax
+SUBDIRS = gnustack pxtpax

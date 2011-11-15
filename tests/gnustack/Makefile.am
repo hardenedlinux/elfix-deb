@@ -18,10 +18,10 @@ test.sh:
 	@echo "================================================================================"
 	@echo
 	@echo "Fixing Bad GNU_STACK Elf"
-	@../src/fix-gnustack -f bad-gnustack
+	@../../src/fix-gnustack -f bad-gnustack
 	@echo
 	@echo "Fixed Bad GNU_STACK Elf"
-	@../src/fix-gnustack bad-gnustack
+	@../../src/fix-gnustack bad-gnustack
 	@echo
 	@echo "================================================================================"
 

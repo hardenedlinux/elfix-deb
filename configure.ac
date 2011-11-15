@@ -56,7 +56,6 @@ AC_CONFIG_FILES([
 	doc/Makefile
 	tests/Makefile
 	tests/gnustack/Makefile
-	tests/gnustack/Makefile
 	tests/pxtpax/Makefile
 ])
 
