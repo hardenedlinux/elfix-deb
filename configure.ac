@@ -49,10 +49,15 @@ AC_TYPE_UINT16_T
 # Checks for library functions.
 AC_FUNC_ERROR_AT_LINE
 
-AC_CONFIG_FILES([Makefile
-                 src/Makefile
-                 scripts/Makefile
-                 doc/Makefile
-                 tests/Makefile])
+AC_CONFIG_FILES([
+	Makefile
+	src/Makefile
+	scripts/Makefile
+	doc/Makefile
+	tests/Makefile
+	tests/gnustack/Makefile
+	tests/gnustack/Makefile
+	tests/pxtpax/Makefile
+])
 
 AC_OUTPUT
