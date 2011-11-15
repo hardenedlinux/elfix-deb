@@ -139,4 +139,6 @@ main( int argc, char *argv[])
 
 	elf_end(elf);
 	close(fd);
+
+	exit(EXIT_SUCCESS);
 }
