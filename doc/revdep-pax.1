@@ -181,15 +181,15 @@ so that the PaX flags of the target inherit the flags of the source.
 .IP "\fB\-l\fR   \s-1LIBRARY\s0 Retrieve only the reverse mappings for this \s-1LIBRARY\s0." 4
 .IX Item "-l   LIBRARY Retrieve only the reverse mappings for this LIBRARY."
 .IP "" 4
-.IP "\fB\-m\fR   Prompt the user to mark the found object with the PaX flags of the source" 4
-.IX Item "-m   Prompt the user to mark the found object with the PaX flags of the source"
+.IP "\fB\-m\fR   Prompt the user to mark the found object with the PaX flags of the source." 4
+.IX Item "-m   Prompt the user to mark the found object with the PaX flags of the source."
 .IP "" 4
 .IP "\fB\-v\fR   Report all mappings, not just the mismatched ones." 4
 .IX Item "-v   Report all mappings, not just the mismatched ones."
 .IP "" 4
-.ie n .IP "\fB\-e\fR   If \-v is chosen, then limit the report to only those executables in the current shell's $PATH.  If \-m is chosen, then limit the markings to only those executables.  This flag only has effect for reverse mappings, i.e., for \-r, \-s or \-l." 4
-.el .IP "\fB\-e\fR   If \-v is chosen, then limit the report to only those executables in the current shell's \f(CW$PATH\fR.  If \-m is chosen, then limit the markings to only those executables.  This flag only has effect for reverse mappings, i.e., for \-r, \-s or \-l." 4
-.IX Item "-e   If -v is chosen, then limit the report to only those executables in the current shell's $PATH.  If -m is chosen, then limit the markings to only those executables.  This flag only has effect for reverse mappings, i.e., for -r, -s or -l."
+.ie n .IP "\fB\-e\fR   If \-m is chosen, then limit the markings to only those executables in the current shell's $PATH.  If \-v is chosen, then similarly limit the report.  This flag only has effect for reverse mappings, i.e., for \-r, \-s or \-l." 4
+.el .IP "\fB\-e\fR   If \-m is chosen, then limit the markings to only those executables in the current shell's \f(CW$PATH\fR.  If \-v is chosen, then similarly limit the report.  This flag only has effect for reverse mappings, i.e., for \-r, \-s or \-l." 4
+.IX Item "-e   If -m is chosen, then limit the markings to only those executables in the current shell's $PATH.  If -v is chosen, then similarly limit the report.  This flag only has effect for reverse mappings, i.e., for -r, -s or -l."
 .IP "" 4
 .IP "\fB\-h\fR   Print out a short help message and exit." 4
 .IX Item "-h   Print out a short help message and exit."

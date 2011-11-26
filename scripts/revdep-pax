@@ -192,24 +192,6 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, exec
 	print
 
 
-def run_usage():
-	print 'Package Name : elfix'
-	print 'Bug Reports  : http://bugs.gentoo.org/'
-	print 'Program Name : revdep-pax'
-	print 'Description  : Get or set pax flags on an ELF object'
-	print
-	print 'Usage        : revdep-pax -f [-v]            print out all forward mappings for all system binaries'
-	print '             : revdep-pax -r [-ve]           print out all reverse mappings for all system sonames'
-	print '             : revdep-pax -b OBJECT  [-mv]   print all forward mappings only for OBJECT'
-	print '             : revdep-pax -s SONAME  [-mve]  print all reverse mappings only for SONAME'
-	print '             : revdep-pax -l LIBRARY [-mve]  print all reverse mappings only for LIBRARY file'
-	print '             : revdep-pax [-h]               print out this help'
-	print '             : -v                            verbose, otherwise just print mismatching objects'
-	print '             : -e                            assuming verbose, only print out executables in shell $PATH'
-	print '             : -m                            don\'t just report, but mark the mismatching objects'
-	print
-
-
 def run_forward(verbose):
 	( forward_linkings, so2library_mappings ) = get_forward_linkings()
 	print_forward_linkings( forward_linkings, so2library_mappings, verbose)
@@ -346,6 +328,24 @@ def run_soname(name, verbose, use_soname, executable_only, mark):
 					( binary_flags, binary_pax_flags ) = pax.getflags(binary)
 					print '\t%s ( %s )' % ( binary, binary_flags )
 					print
+
+
+def run_usage():
+	print 'Package Name : elfix'
+	print 'Bug Reports  : http://bugs.gentoo.org/'
+	print 'Program Name : revdep-pax'
+	print 'Description  : Get or set pax flags on an ELF object'
+	print
+	print 'Usage        : revdep-pax -f [-v]            print out all forward mappings for all system binaries'
+	print '             : revdep-pax -r [-ve]           print out all reverse mappings for all system sonames'
+	print '             : revdep-pax -b OBJECT  [-mv]   print all forward mappings only for OBJECT'
+	print '             : revdep-pax -s SONAME  [-mve]  print all reverse mappings only for SONAME'
+	print '             : revdep-pax -l LIBRARY [-mve]  print all reverse mappings only for LIBRARY file'
+	print '             : revdep-pax [-h]               print out this help'
+	print '             : -v                            verbose, otherwise just print mismatching objects'
+	print '             : -e                            assuming verbose, only print out executables in shell $PATH'
+	print '             : -m                            don\'t just report, but mark the mismatching objects'
+	print
 
 
 def main():
