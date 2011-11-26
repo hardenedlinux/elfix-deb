@@ -262,7 +262,7 @@ def invert_so2library_mappings( so2library_mappings ):
 	return library2soname_mappings
 
 
-def run_soname(name, verbose, use_soname, executable_only, mark):
+def run_soname(name, verbose, use_soname, mark, executable_only):
 	shell_path = path = os.getenv('PATH').split(':')
 
 	( forward_linkings, so2library_mappings ) = get_forward_linkings()
@@ -415,10 +415,10 @@ def main():
 	elif binary != None:
 		run_binary(binary, verbose, mark)
 	elif soname != None:
-		run_soname(soname, verbose, executable_only, True, mark)
+		run_soname(soname, verbose, True, mark, executable_only)
 	elif library != None:
 		library = os.path.realpath(library)
-		run_soname(library, verbose, executable_only, False, mark)
+		run_soname(library, verbose, False, mark, executable_only)
 
 if __name__ == '__main__':
     main()
