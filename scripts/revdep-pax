@@ -112,8 +112,7 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 		else:
 			if count != 0:
 				print s
-
-	print
+				print
 
 	missing_binaries = set(missing_binaries)
 	print
@@ -173,8 +172,7 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, exec
 		else:
 			if count != 0:
 				print s
-
-	print
+				print
 
 	missing_sonames = set(missing_sonames)
 	print
