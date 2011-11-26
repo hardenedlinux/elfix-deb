@@ -25,29 +25,66 @@ AC_ARG_ENABLE(
 )
 AM_CONDITIONAL([TEST],[test "x$has_yasm" = "xyes"])
 
+AC_ARG_ENABLE(
+	[xattr],
+	AS_HELP_STRING(
+		[--enable-xattr],
+		[enable support for pax markings in xattrs]
+	),
+	[
+		AS_IF(
+			[test "x$enable_xattr" = "xyes"],
+			[
+				AC_CHECK_HEADERS(
+					[attr/xattr.h],
+					[],
+					[AC_MSG_ERROR(["Missing necessary attr/xattr.h"])]
+				)
+				AC_CHECK_LIB(
+					[attr],
+					[fgetxattr],
+					[],
+					[AC_MSG_ERROR(["Missing necessary function fgetxattr in libattr"])]
+				)
+				CFLAGS+=" -DXATTR"
+			],
+			[
+				CFLAGS+=" -UXATTR"
+			]
+		)
+	],
+	[
+		CFLAGS+=" -DXATTR"
+	]
+)
+
 # Checks for programs.
+AC_PROG_AWK
 AC_PROG_CC
-AC_CHECK_FUNCS([memset strerror])
-AC_FUNC_MMAP
 
 # Checks for libraries.
-AC_CHECK_LIB([elf], [elf_begin])
-AC_CHECK_LIB([attr], [fgetxattr])
+AC_CHECK_LIB([elf], [elf_begin],[],[AC_MSG_ERROR(["Missing necessary function elf_begin in libelf"])])
 
 # Checks for header files.
 
-AC_CHECK_HEADERS([attr/xattr.h errno.h error.h fcntl.h gelf.h libgen.h stdio.h \
-	stdlib.h string.h sys/mman.h sys/stat.h sys/types.h unistd.h
-],
-[], [AC_MSG_ERROR(["Missing necessary header"])])
+AC_CHECK_HEADERS(
+	[errno.h error.h fcntl.h gelf.h libgen.h stdio.h stdlib.h string.h \
+	sys/mman.h sys/stat.h sys/types.h unistd.h],
+	[],
+	[AC_MSG_ERROR(["Missing necessary header"])]
+)
 
 # Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_PID_T
 AC_TYPE_SIZE_T
 AC_TYPE_UINT8_T
 AC_TYPE_UINT16_T
 
 # Checks for library functions.
 AC_FUNC_ERROR_AT_LINE
+AC_FUNC_FORK
+AC_FUNC_MMAP
+AC_CHECK_FUNCS([memset strerror])
 
 AC_CONFIG_FILES([
 	Makefile
