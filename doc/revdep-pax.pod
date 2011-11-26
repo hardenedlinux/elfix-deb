@@ -6,13 +6,13 @@ B<revdep-pax> - find mismatching PaX markings between ELF objects and their libr
 
 B<revdep-pax> -f [-v]
 
-B<revdep-pax> -r [-v]
+B<revdep-pax> -r [-ve]
 
 B<revdep-pax> -b OBJECT [-mv]
 
-B<revdep-pax> -s SONAME [-mv]
+B<revdep-pax> -s SONAME [-mve]
 
-B<revdep-pax> -l LIBRARY [-mv]
+B<revdep-pax> -l LIBRARY [-mve]
 
 B<revdep-pax> [-h]
 
@@ -40,31 +40,35 @@ so that the PaX flags of the target inherit the flags of the source.
 
 =over
 
-=item B<-f>   Scan the system for all forward mappings
+=item B<-f>   Scan the system for all forward mappings.
 
 =item
 
-=item B<-r>   Scan the system for all reverse mappings
+=item B<-r>   Scan the system for all reverse mappings.
 
 =item
 
-=item B<-b>   OBJECT  Retrieve only the forward mappings for this ELF OBJECT
+=item B<-b>   OBJECT  Retrieve only the forward mappings for this ELF OBJECT.
 
 =item
 
-=item B<-s>   SONAME  Retrieve only the reverse mappings for this SONAME
+=item B<-s>   SONAME  Retrieve only the reverse mappings for this SONAME.
 
 =item
 
-=item B<-l>   LIBRARY Retrieve only the reverse mappings for this LIBRARY
+=item B<-l>   LIBRARY Retrieve only the reverse mappings for this LIBRARY.
 
 =item
 
-=item B<-v>   Report all mappings, not just the mismatched ones
+=item B<-m>   Prompt the user to mark the found object with the PaX flags of the source.
 
 =item
 
-=item B<-m>   Prompt the user to mark the found object with the PaX flags of the source
+=item B<-v>   Report all mappings, not just the mismatched ones.
+
+=item
+
+=item B<-e>   If -v is chosen, then limit the report to only those executables in the current shell's $PATH.  If -m is chosen, then limit the markings to only those executables.  This flag only has effect for reverse mappings, i.e., for -r, -s or -l.
 
 =item
 

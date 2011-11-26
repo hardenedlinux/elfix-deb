@@ -135,13 +135,13 @@ revdep\-pax \- find mismatching PaX markings between ELF objects and their libra
 .IX Header "SYNOPSIS"
 \&\fBrevdep-pax\fR \-f [\-v]
 .PP
-\&\fBrevdep-pax\fR \-r [\-v]
+\&\fBrevdep-pax\fR \-r [\-ve]
 .PP
 \&\fBrevdep-pax\fR \-b \s-1OBJECT\s0 [\-mv]
 .PP
-\&\fBrevdep-pax\fR \-s \s-1SONAME\s0 [\-mv]
+\&\fBrevdep-pax\fR \-s \s-1SONAME\s0 [\-mve]
 .PP
-\&\fBrevdep-pax\fR \-l \s-1LIBRARY\s0 [\-mv]
+\&\fBrevdep-pax\fR \-l \s-1LIBRARY\s0 [\-mve]
 .PP
 \&\fBrevdep-pax\fR [\-h]
 .SH "DESCRIPTION"
@@ -165,27 +165,31 @@ and in mark mode (\-m), the user is prompted whether to proceed with the migrati
 so that the PaX flags of the target inherit the flags of the source.
 .SH "OPTIONS"
 .IX Header "OPTIONS"
-.IP "\fB\-f\fR   Scan the system for all forward mappings" 4
-.IX Item "-f   Scan the system for all forward mappings"
+.IP "\fB\-f\fR   Scan the system for all forward mappings." 4
+.IX Item "-f   Scan the system for all forward mappings."
 .PD 0
 .IP "" 4
-.IP "\fB\-r\fR   Scan the system for all reverse mappings" 4
-.IX Item "-r   Scan the system for all reverse mappings"
+.IP "\fB\-r\fR   Scan the system for all reverse mappings." 4
+.IX Item "-r   Scan the system for all reverse mappings."
 .IP "" 4
-.IP "\fB\-b\fR   \s-1OBJECT\s0  Retrieve only the forward mappings for this \s-1ELF\s0 \s-1OBJECT\s0" 4
-.IX Item "-b   OBJECT  Retrieve only the forward mappings for this ELF OBJECT"
+.IP "\fB\-b\fR   \s-1OBJECT\s0  Retrieve only the forward mappings for this \s-1ELF\s0 \s-1OBJECT\s0." 4
+.IX Item "-b   OBJECT  Retrieve only the forward mappings for this ELF OBJECT."
 .IP "" 4
-.IP "\fB\-s\fR   \s-1SONAME\s0  Retrieve only the reverse mappings for this \s-1SONAME\s0" 4
-.IX Item "-s   SONAME  Retrieve only the reverse mappings for this SONAME"
+.IP "\fB\-s\fR   \s-1SONAME\s0  Retrieve only the reverse mappings for this \s-1SONAME\s0." 4
+.IX Item "-s   SONAME  Retrieve only the reverse mappings for this SONAME."
 .IP "" 4
-.IP "\fB\-l\fR   \s-1LIBRARY\s0 Retrieve only the reverse mappings for this \s-1LIBRARY\s0" 4
-.IX Item "-l   LIBRARY Retrieve only the reverse mappings for this LIBRARY"
-.IP "" 4
-.IP "\fB\-v\fR   Report all mappings, not just the mismatched ones" 4
-.IX Item "-v   Report all mappings, not just the mismatched ones"
+.IP "\fB\-l\fR   \s-1LIBRARY\s0 Retrieve only the reverse mappings for this \s-1LIBRARY\s0." 4
+.IX Item "-l   LIBRARY Retrieve only the reverse mappings for this LIBRARY."
 .IP "" 4
 .IP "\fB\-m\fR   Prompt the user to mark the found object with the PaX flags of the source" 4
 .IX Item "-m   Prompt the user to mark the found object with the PaX flags of the source"
+.IP "" 4
+.IP "\fB\-v\fR   Report all mappings, not just the mismatched ones." 4
+.IX Item "-v   Report all mappings, not just the mismatched ones."
+.IP "" 4
+.ie n .IP "\fB\-e\fR   If \-v is chosen, then limit the report to only those executables in the current shell's $PATH.  If \-m is chosen, then limit the markings to only those executables.  This flag only has effect for reverse mappings, i.e., for \-r, \-s or \-l." 4
+.el .IP "\fB\-e\fR   If \-v is chosen, then limit the report to only those executables in the current shell's \f(CW$PATH\fR.  If \-m is chosen, then limit the markings to only those executables.  This flag only has effect for reverse mappings, i.e., for \-r, \-s or \-l." 4
+.IX Item "-e   If -v is chosen, then limit the report to only those executables in the current shell's $PATH.  If -m is chosen, then limit the markings to only those executables.  This flag only has effect for reverse mappings, i.e., for -r, -s or -l."
 .IP "" 4
 .IP "\fB\-h\fR   Print out a short help message and exit." 4
 .IX Item "-h   Print out a short help message and exit."
