@@ -1,4 +1,12 @@
 
+2011-11-26
+
+	* src/paxctl-ng.c: made verbosity more consistant
+	* src/paxctl-ng.c: build with/without xattr support
+	* scripts/{setup.py,paxmodule.c}: build with/without xattr support
+	* configure.ac: added --enable-xattr switch
+	* scripts/revdep-pax: add -e switch to only mark (-m) or to
+	only report on (-v) binaries that are in the shell's PATH
 	* tests/pxtpax: compare pax flags on binary and process
 	* fix-gnustack and paxctl-ng: fix exit code on success
 	* paxctl-ng: add file globbing

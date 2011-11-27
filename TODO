@@ -1,0 +1,3 @@
+
+	src/paxctl-ng.c: add verbose error reporting for xattr (like for set/get phdr)
+
