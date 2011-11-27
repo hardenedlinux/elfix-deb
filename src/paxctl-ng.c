@@ -24,7 +24,10 @@
 #include <libgen.h>
 
 #include <gelf.h>
+
+#ifdef XATTR
 #include <attr/xattr.h>
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -33,15 +36,16 @@
 
 #include <config.h>
 
-
+#ifdef XATTR
 #define PAX_NAMESPACE	"user.pax"
-#define BUF_SIZE	8
-#define FILE_NAME_SIZE	32768
 
 #define CREATE_XT_FLAGS_SECURE		1
 #define CREATE_XT_FLAGS_DEFAULT		2
 #define COPY_PT_TO_XT_FLAGS		3
 #define COPY_XT_TO_PT_FLAGS		4
+#endif
+
+#define BUF_SIZE	8
 
 void
 print_help_exit(char *v)
@@ -53,7 +57,9 @@ print_help_exit(char *v)
 		"Program Name : %s\n"
 		"Description  : Get or set pax flags on an ELF object\n\n"
 		"Usage        : %s -PpEeMmRrXxSsv ELF | -Zv ELF | -zv ELF\n"
+#ifdef XATTR
 		"             : %s -Cv ELF | -cv ELF | Fv ELF | -fv ELF\n"
+#endif
 		"             : %s -v ELF | -h\n\n"
 		"Options      : -P enable PAGEEXEC\t-p disable  PAGEEXEC\n"
 		"             : -S enable SEGMEXEC\t-s disable  SEGMEXEC\n"
@@ -62,10 +68,12 @@ print_help_exit(char *v)
 		"             : -R enable RANDMMAP\t-r disable  RANDMMAP\n"
 		"             : -X enable RANDEXEC\t-x disable  RANDEXEC\n"
 		"             : -Z most secure settings\t-z all default settings\n"
+#ifdef XATTR
 		"             : -C create XT_PAX with most secure setting\n"
 		"             : -c create XT_PAX all default settings\n"
 		"             : -F copy PT_PAX to XT_PAX\n"
 		"             : -f copy XT_PAX to PT_PAX\n"
+#endif
 		"             : -v view the flags, along with any accompanying operation\n"
 		"             : -h print out this help\n\n"
 		"Note         :  If both enabling and disabling flags are set, the default - is used\n\n",
@@ -154,6 +162,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *view_flags, int
 					PF_RANDMMAP | PF_NORANDMMAP | PF_RANDEXEC | PF_NORANDEXEC;
 				solitaire += 1;
 				break;
+#ifdef XATTR
 			case 'C':
 				solitaire += 1;
 				*cp_flags = CREATE_XT_FLAGS_SECURE;
@@ -170,6 +179,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *view_flags, int
 				solitaire += 1;
 				*cp_flags = COPY_XT_TO_PT_FLAGS;
 				break;
+#endif
 			case 'v':
 				*view_flags = 1;
 				break;
@@ -243,6 +253,7 @@ get_pt_flags(int fd)
 }
 
 
+#ifdef XATTR
 uint16_t
 get_xt_flags(int fd)
 {
@@ -251,6 +262,7 @@ get_xt_flags(int fd)
 	fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t));
 	return xt_flags;
 }
+#endif
 
 
 void
@@ -292,6 +304,7 @@ print_flags(int fd)
 		printf("\tPT_PAX: %s\n", buf);
 	}
 
+#ifdef XATTR
 	flags = get_xt_flags(fd);
 	if( flags == UINT16_MAX )
 		printf("\tXT_PAX: not found\n");
@@ -301,6 +314,7 @@ print_flags(int fd)
 		bin2string(flags, buf);
 		printf("\tXT_PAX: %s\n", buf);
 	}
+#endif
 }
 
 
@@ -467,11 +481,13 @@ set_pt_flags(int fd, uint16_t pt_flags)
 }
 
 
+#ifdef XATTR
 void
 set_xt_flags(int fd, uint16_t xt_flags)
 {
 	fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), XATTR_REPLACE);
 }
+#endif
 
 
 void
@@ -488,14 +504,17 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax)
 		set_pt_flags(fd, flags);
 	}
 
+#ifdef XATTR
 	flags = get_xt_flags(fd);
 	if( flags == UINT16_MAX )
 		flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
 	flags = update_flags( flags, *pax_flags);
 	set_xt_flags(fd, flags);
+#endif
 }
 
 
+#ifdef XATTR
 void
 create_xt_flags(fd, cp_flags)
 {
@@ -526,6 +545,7 @@ copy_xt_flags(fd, cp_flags)
 		set_pt_flags(fd, flags);
 	}
 }
+#endif
 
 
 int
@@ -553,11 +573,13 @@ main( int argc, char *argv[])
 			}
 		}
 
+#ifdef XATTR
 		if(cp_flags == CREATE_XT_FLAGS_SECURE || cp_flags == CREATE_XT_FLAGS_DEFAULT)
 			create_xt_flags(fd, cp_flags);
 
 		if(cp_flags == COPY_PT_TO_XT_FLAGS || (cp_flags == COPY_XT_TO_PT_FLAGS && rdwr_pt_pax))
 			copy_xt_flags(fd, cp_flags);
+#endif
 
 		if(pax_flags != 1)
 			set_flags(fd, &pax_flags, rdwr_pt_pax);
