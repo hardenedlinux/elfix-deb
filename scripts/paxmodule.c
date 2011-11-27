@@ -21,7 +21,10 @@
 #include <string.h>
 
 #include <gelf.h>
+
+#ifdef XATTR
 #include <attr/xattr.h>
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -29,7 +32,10 @@
 #include <unistd.h>
 
 #define BUF_SIZE	7	//Buffer size for holding human readable flags
+
+#ifdef XATTR
 #define PAX_NAMESPACE	"user.pax"
+#endif
 
 
 static PyObject * pax_getflags(PyObject *, PyObject *);
@@ -106,6 +112,7 @@ get_pt_flags(int fd)
 }
 
 
+#ifdef XATTR
 uint16_t
 get_xt_flags(int fd)
 {
@@ -114,6 +121,7 @@ get_xt_flags(int fd)
 	fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t));
 	return xt_flags;
 }
+#endif
 
 
 void
@@ -161,6 +169,7 @@ pax_getflags(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
+#ifdef XATTR
 	flags = get_xt_flags(fd);
 	if( flags != UINT16_MAX )
 	{
@@ -169,13 +178,16 @@ pax_getflags(PyObject *self, PyObject *args)
 	}
 	else
 	{
+#endif
 		flags = get_pt_flags(fd);
 		if( flags != UINT16_MAX )
 		{
 			memset(buf, 0, BUF_SIZE);
 			bin2string(flags, buf);
 		}
+#ifdef XATTR
 	}
+#endif
 
 	close(fd);
 
@@ -237,11 +249,13 @@ set_pt_flags(int fd, uint16_t pt_flags)
 }
 
 
+#ifdef XATTR
 void
 set_xt_flags(int fd, uint16_t xt_flags)
 {
 	fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0);
 }
+#endif
 
 
 static PyObject *
@@ -266,7 +280,10 @@ pax_setflags(PyObject *self, PyObject *args)
 	flags = (uint16_t) iflags;
 
 	set_pt_flags(fd, flags);
+
+#ifdef XATTR
 	set_xt_flags(fd, flags);
+#endif
 
 	close(fd);
 
