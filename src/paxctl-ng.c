@@ -56,7 +56,7 @@ print_help_exit(char *v)
 		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
 		"Program Name : %s\n"
 		"Description  : Get or set pax flags on an ELF object\n\n"
-		"Usage        : %s -PpEeMmRrXxSsv ELF | -Zv ELF | -zv ELF\n"
+		"Usage        : %s -PpSsMmEeRrXxv ELF | -Zv ELF | -zv ELF\n"
 #ifdef XATTR
 		"             : %s -Cv ELF | -cv ELF | Fv ELF | -fv ELF\n"
 #endif
@@ -88,7 +88,7 @@ print_help_exit(char *v)
 
 
 void
-parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *view_flags, int *cp_flags,
+parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *cp_flags,
 	int *begin, int *end)
 {
 	int i, oc;
@@ -97,9 +97,13 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *view_flags, int
 	compat = 0;
 	solitaire = 0;
 	*pax_flags = 0;
-	*view_flags = 0;
+	*verbose = 0;
 	*cp_flags = 0; 
-	while((oc = getopt(argc, argv,":PpEeMmRrXxSsZzCcFfvh")) != -1)
+#ifdef XATTR
+	while((oc = getopt(argc, argv,":PpSsMmEeRrXxZzCcFfvh")) != -1)
+#else
+	while((oc = getopt(argc, argv,":PpSsMmEeRrXxZzvh")) != -1)
+#endif
 	{
 		switch(oc)
 		{
@@ -181,7 +185,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *view_flags, int
 				break;
 #endif
 			case 'v':
-				*view_flags = 1;
+				*verbose = 1;
 				break;
 			case 'h':
 				print_help_exit(argv[0]);
@@ -194,7 +198,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *view_flags, int
 
 	if(	((compat == 1 && solitaire == 0) ||
 		 (compat == 0 && solitaire == 1) ||
-		 (compat == 0 && solitaire == 0 && *view_flags == 1)
+		 (compat == 0 && solitaire == 0 && *verbose == 1)
 		) && argv[optind] != NULL)
 	{
 		*begin = optind;
@@ -206,7 +210,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *view_flags, int
 
 
 uint16_t
-get_pt_flags(int fd)
+get_pt_flags(int fd, int verbose)
 {
 	Elf *elf;
 	GElf_Phdr phdr;
@@ -216,20 +220,23 @@ get_pt_flags(int fd)
 
 	if(elf_version(EV_CURRENT) == EV_NONE)
 	{
-		printf("\tELF ERROR: Library out of date.\n");
+		if(verbose)
+			printf("\tELF ERROR: Library out of date.\n");
 		return pt_flags;
 	}
 
 	if((elf = elf_begin(fd, ELF_C_READ_MMAP, NULL)) == NULL)
 	{
-		printf("\tELF ERROR: elf_begin() fail: %s\n", elf_errmsg(elf_errno()));
+		if(verbose)
+			printf("\tELF ERROR: elf_begin() fail: %s\n", elf_errmsg(elf_errno()));
 		return pt_flags;
 	}
 
 	if(elf_kind(elf) != ELF_K_ELF)
 	{
 		elf_end(elf);
-		printf("\tELF ERROR: elf_kind() fail: this is not an elf file.\n");
+		if(verbose)
+			printf("\tELF ERROR: elf_kind() fail: this is not an elf file.\n");
 		return pt_flags;
 	}
 
@@ -240,7 +247,8 @@ get_pt_flags(int fd)
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
 		{
 			elf_end(elf);
-			printf("\tELF ERROR: gelf_getphdr(): %s\n", elf_errmsg(elf_errno()));
+			if(verbose)
+				printf("\tELF ERROR: gelf_getphdr(): %s\n", elf_errmsg(elf_errno()));
 			return pt_flags;
 		}
 
@@ -289,12 +297,12 @@ bin2string(uint16_t flags, char *buf)
 
 
 void
-print_flags(int fd)
+print_flags(int fd, int verbose)
 {
 	uint16_t flags;
 	char buf[BUF_SIZE];
 
-	flags = get_pt_flags(fd);
+	flags = get_pt_flags(fd, verbose);
 	if( flags == UINT16_MAX )
 		printf("\tPT_PAX: not found\n");
 	else
@@ -429,7 +437,7 @@ update_flags(uint16_t flags, uint16_t pax_flags)
 
 
 void
-set_pt_flags(int fd, uint16_t pt_flags)
+set_pt_flags(int fd, uint16_t pt_flags, int verbose)
 {
 	Elf *elf;
 	GElf_Phdr phdr;
@@ -437,20 +445,23 @@ set_pt_flags(int fd, uint16_t pt_flags)
 
 	if(elf_version(EV_CURRENT) == EV_NONE)
 	{
-		printf("\tELF ERROR: Library out of date.\n");
+		if(verbose)
+			printf("\tELF ERROR: Library out of date.\n");
 		return;
 	}
 
 	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
 	{
-		printf("\tELF ERROR: elf_begin() fail: %s\n", elf_errmsg(elf_errno()));
+		if(verbose)
+			printf("\tELF ERROR: elf_begin() fail: %s\n", elf_errmsg(elf_errno()));
 		return;
 	}
 
 	if(elf_kind(elf) != ELF_K_ELF)
 	{
 		elf_end(elf);
-		printf("\tELF ERROR: elf_kind() fail: this is not an elf file.\n");
+		if(verbose)
+			printf("\tELF ERROR: elf_kind() fail: this is not an elf file.\n");
 		return; 
 	}
 
@@ -461,7 +472,8 @@ set_pt_flags(int fd, uint16_t pt_flags)
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
 		{
 			elf_end(elf);
-			printf("\tELF ERROR: gelf_getphdr(): %s\n", elf_errmsg(elf_errno()));
+			if(verbose)
+				printf("\tELF ERROR: gelf_getphdr(): %s\n", elf_errmsg(elf_errno()));
 			return;
 		}
 
@@ -472,7 +484,8 @@ set_pt_flags(int fd, uint16_t pt_flags)
 			if(!gelf_update_phdr(elf, i, &phdr))
 			{
 				elf_end(elf);
-				printf("\tELF ERROR: gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
+				if(verbose)
+					printf("\tELF ERROR: gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
 			}
 		}
 	}
@@ -491,17 +504,17 @@ set_xt_flags(int fd, uint16_t xt_flags)
 
 
 void
-set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax)
+set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int verbose)
 {
 	uint16_t flags;
 
 	if(rdwr_pt_pax)
 	{
-		flags = get_pt_flags(fd);
+		flags = get_pt_flags(fd, verbose);
 		if( flags == UINT16_MAX )
 			flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
 		flags = update_flags( flags, *pax_flags);
-		set_pt_flags(fd, flags);
+		set_pt_flags(fd, flags, verbose);
 	}
 
 #ifdef XATTR
@@ -516,7 +529,7 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax)
 
 #ifdef XATTR
 void
-create_xt_flags(fd, cp_flags)
+create_xt_flags(int fd, int cp_flags)
 {
 	uint16_t xt_flags;
 
@@ -531,18 +544,18 @@ create_xt_flags(fd, cp_flags)
 
 
 void
-copy_xt_flags(fd, cp_flags)
+copy_xt_flags(int fd, int cp_flags, int verbose)
 {
 	uint16_t flags;
 	if(cp_flags == 3)
 	{
-		flags = get_pt_flags(fd);
+		flags = get_pt_flags(fd, verbose);
 		set_xt_flags(fd, flags);
 	}
 	else if(cp_flags == 4)
 	{
 		flags = get_xt_flags(fd);
-		set_pt_flags(fd, flags);
+		set_pt_flags(fd, flags, verbose);
 	}
 }
 #endif
@@ -553,22 +566,25 @@ main( int argc, char *argv[])
 {
 	int fd, fi;
 	uint16_t pax_flags;
-	int view_flags, cp_flags, begin, end;
+	int verbose, cp_flags, begin, end;
 	int rdwr_pt_pax = 1;
 
-	parse_cmd_args(argc, argv, &pax_flags, &view_flags, &cp_flags, &begin, &end);
+	parse_cmd_args(argc, argv, &pax_flags, &verbose, &cp_flags, &begin, &end);
 
 	for(fi = begin; fi < end; fi++)
 	{
-		printf("%s:\n", argv[fi]);
+		if(verbose)
+			printf("%s:\n", argv[fi]);
 
 		if((fd = open(argv[fi], O_RDWR)) < 0)
 		{
 			rdwr_pt_pax = 0;
-			printf("\topen(O_RDWR) failed: cannot change PT_PAX flags\n");
+			if(verbose)
+				printf("\topen(O_RDWR) failed: cannot change PT_PAX flags\n");
 			if((fd = open(argv[fi], O_RDONLY)) < 0)
 			{
-				printf("\topen(O_RDONLY) failed: cannot change PT_PAX flags\n\n");
+				if(verbose)
+					printf("\topen(O_RDONLY) failed: cannot change PT_PAX flags\n\n");
 				continue;
 			}
 		}
@@ -578,18 +594,19 @@ main( int argc, char *argv[])
 			create_xt_flags(fd, cp_flags);
 
 		if(cp_flags == COPY_PT_TO_XT_FLAGS || (cp_flags == COPY_XT_TO_PT_FLAGS && rdwr_pt_pax))
-			copy_xt_flags(fd, cp_flags);
+			copy_xt_flags(fd, cp_flags, verbose);
 #endif
 
 		if(pax_flags != 1)
-			set_flags(fd, &pax_flags, rdwr_pt_pax);
+			set_flags(fd, &pax_flags, rdwr_pt_pax, verbose);
 
-		if(view_flags == 1)
-			print_flags(fd);
+		if(verbose == 1)
+			print_flags(fd, verbose);
 
 		close(fd);
 
-		printf("\n");
+		if(verbose)
+			printf("\n");
 	}
 
 	exit(EXIT_SUCCESS);
