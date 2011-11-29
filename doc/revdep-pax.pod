@@ -68,7 +68,7 @@ so that the PaX flags of the target inherit the flags of the source.
 
 =item
 
-=item B<-e>   If -m is chosen, then limit the markings to only those executables in the current shell's $PATH.  If -v is chosen, then similarly limit the report.  This flag only has effect for reverse mappings, i.e., for -r, -s or -l.
+=item B<-e>   Limit the markings or report to only those executables in the current shell's $PATH.
 
 =item
 

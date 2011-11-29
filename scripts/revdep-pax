@@ -83,7 +83,7 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 
 		try:
 			( binary_flags, binary_pax_flags ) = pax.getflags(binary)
-			sv = '%s ( %s )' % ( binary, binary_flags )
+			sv = '%s ( %s )\n' % ( binary, binary_flags )
 			s = sv
 		except:
 			missing_binaries.append(binary)
@@ -102,31 +102,25 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 				missing_links.append(soname)
 
 		if verbose:
-			print sv
-			print
+			print '%s\n' % sv
 			if count == 0:
-				print '\tNo mismatches'
+				print '\tNo mismatches\n\n'
 			else:
-				print '\tMismatches'
-			print
+				print '\tMismatches\n\n'
 		else:
 			if count != 0:
-				print s
-				print
+				print '%s\n\n' % s
 
 	missing_binaries = set(missing_binaries)
-	print
-	print '**** Missing binaries ****'
+	print '\n**** Missing binaries ****\n'
 	for m in missing_binaries:
-		print m
+		print '\t%s' % m
+	print
 
 	missing_links = set(missing_links)
-	print
-	print '**** Missing forward linkings ****'
+	print '\n**** Missing forward linkings ****\n'
 	for m in missing_links:
-		print m
-
-	print
+		print '\t%s' % m
 	print
 
 
@@ -136,11 +130,10 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, exec
 	missing_links = []
 
 	for soname in reverse_linkings:
-
 		try:
 			library = so2library_mappings[soname]
 			( library_flags, library_pax_flags ) = pax.getflags(library)
-			sv = '%s\t%s ( %s )' % ( soname, library, library_flags )
+			sv = '%s\t%s ( %s )\n' % ( soname, library, library_flags )
 			s = sv
 		except:
 			missing_sonames.append(soname)
@@ -153,54 +146,49 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, exec
 				if executable_only:
 					if os.path.dirname(binary) in shell_path:	
 						sv = '%s\n\t%s ( %s )' % ( sv, binary, binary_flags )
+						if library_flags != binary_flags:
+							s = '%s\n\t%s ( %s )' % ( s, binary, binary_flags )
+							count = count + 1
 				else:
 					sv = '%s\n\t%s ( %s )' % ( sv, binary, binary_flags )
-				if library_flags != binary_flags:
-					s = '%s\n\t%s ( %s )' % ( s, binary, binary_flags )
-					count = count + 1
+					if library_flags != binary_flags:
+						s = '%s\n\t%s ( %s )' % ( s, binary, binary_flags )
+						count = count + 1
 			except:
 				missing_links.append(binary)
 
 		if verbose:
-			print sv
-			print
+			print '%s\n' % sv
 			if count == 0:
-				print '\tNo mismatches'
+				print '\tNo mismatches\n\n'
 			else:
-				print '\tMismatches'
-			print
+				print '\tMismatches\n\n'
 		else:
 			if count != 0:
-				print s
-				print
+				print '%s\n\n' % s
 
 	missing_sonames = set(missing_sonames)
-	print
-	print '**** Missing sonames ****'
+	print '\n**** Missing sonames ****\n'
 	for m in missing_sonames:
-		print m
+		print '\t%s' % m
+	print
 
 	missing_links = set(missing_links)
-	print
-	print '**** Missing reverse linkings ****'
+	print '\n**** Missing reverse linkings ****\n'
 	for m in missing_links:
-		print m
-
-	print
+		print '\t%s' % m
 	print
 
 
 def run_forward(verbose):
 	( forward_linkings, so2library_mappings ) = get_forward_linkings()
 	print_forward_linkings( forward_linkings, so2library_mappings, verbose)
-	print
 
 
 def run_reverse(verbose, executable_only):
 	( forward_linkings, so2library_mappings ) = get_forward_linkings()
 	reverse_linkings = invert_linkings( forward_linkings )
 	print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, executable_only)
-	print
 
 
 def run_binary(binary, verbose, mark):
@@ -225,12 +213,10 @@ def run_binary(binary, verbose, mark):
 			print 'file for soname %s not found' % soname
 
 	if len(mismatched_libraries) == 0:
-		print
-		print '\tNo mismatches'
+		if not verbose:
+			print '\tNo mismatches'
 		print
 	else:
-		print
-		print '\tMismatches'
 		print
 		if mark:
 			print '\tWill mark libraries with %s' % binary_flags
@@ -292,19 +278,23 @@ def run_soname(name, verbose, use_soname, mark, executable_only):
 				else:
 					print '\t%s ( %s )' % ( binary, binary_flags )
 			if library_flags != binary_flags:
-				mismatched_binaries.append(binary)
-				if not verbose:
-					print '\t%s ( %s )' % ( binary, binary_flags )
+				if executable_only:
+					if os.path.dirname(binary) in shell_path:	
+						mismatched_binaries.append(binary)
+						if not verbose:
+							print '\t%s ( %s )' % ( binary, binary_flags )
+				else:
+					mismatched_binaries.append(binary)
+					if not verbose:
+						print '\t%s ( %s )' % ( binary, binary_flags )
 		except:
 			print 'cannot obtain pax flags for %s' % binary
 
 	if len(mismatched_binaries) == 0:
-		print
-		print '\tNo mismatches'
+		if not verbose:
+			print '\tNo mismatches'
 		print
 	else:
-		print
-		print '\tMismatches'
 		print
 		if mark:
 			print '\tWill mark binaries with %s' % library_flags
@@ -344,7 +334,7 @@ def run_usage():
 	print '             : revdep-pax -l LIBRARY [-mve]  print all reverse mappings only for LIBRARY file'
 	print '             : revdep-pax [-h]               print out this help'
 	print '             : -v                            verbose, otherwise just print mismatching objects'
-	print '             : -e                            assuming verbose, only print out executables in shell $PATH'
+	print '             : -e                            only print out executables in shell $PATH'
 	print '             : -m                            don\'t just report, but mark the mismatching objects'
 	print
 
