@@ -2,6 +2,8 @@
 2011-12-04
 
 	* src/paxctl-ng.c: add exception handling when trying to pax.setflags
+	* src/paxctl-ng.c: make -e (report/mark only executables) filter output
+	from either verbose or non-verbose output
 
 2011-11-26
 
