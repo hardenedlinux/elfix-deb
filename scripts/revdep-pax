@@ -114,14 +114,12 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 	missing_binaries = set(missing_binaries)
 	print '\n**** Missing binaries ****\n'
 	for m in missing_binaries:
-		print '\t%s' % m
-	print
+		print '\t%s\n' % m
 
 	missing_links = set(missing_links)
 	print '\n**** Missing forward linkings ****\n'
 	for m in missing_links:
-		print '\t%s' % m
-	print
+		print '\t%s\n' % m
 
 
 def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, executable_only ):
@@ -170,14 +168,12 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, exec
 	missing_sonames = set(missing_sonames)
 	print '\n**** Missing sonames ****\n'
 	for m in missing_sonames:
-		print '\t%s' % m
-	print
+		print '\t%s\n' % m
 
 	missing_links = set(missing_links)
 	print '\n**** Missing reverse linkings ****\n'
 	for m in missing_links:
-		print '\t%s' % m
-	print
+		print '\t%s\n' % m
 
 
 def run_forward(verbose):
@@ -194,8 +190,7 @@ def run_reverse(verbose, executable_only):
 def run_binary(binary, verbose, mark):
 	( linkings, mappings ) = get_ldd_linkings(binary)
 	( binary_flags, binary_pax_flags ) = pax.getflags(binary)
-	print '%s (%s)' % ( binary, binary_flags )
-	print
+	print '%s (%s)\n' % ( binary, binary_flags )
 
 	mismatched_libraries = []
 
@@ -214,8 +209,7 @@ def run_binary(binary, verbose, mark):
 
 	if len(mismatched_libraries) == 0:
 		if not verbose:
-			print '\tNo mismatches'
-		print
+			print '\tNo mismatches\n'
 	else:
 		print
 		if mark:
@@ -235,10 +229,13 @@ def run_binary(binary, verbose, mark):
 						print '\t\tPlease enter y or n'
 
 				if do_marking:
-					pax.setflags(library, binary_pax_flags)
+					try:
+						pax.setflags(library, binary_pax_flags)
+					except:
+						print "\n\tCould not set pax flags on %s, file is probably busy" % library
+						print "\tShut down all processes that use it and try again"
 					( library_flags, library_pax_flags ) = pax.getflags(library)
-					print '\t%s ( %s )' % ( library, library_flags )
-					print
+					print '\n\t\t%s ( %s )\n' % ( library, library_flags )
 
 
 def invert_so2library_mappings( so2library_mappings ):
@@ -264,8 +261,7 @@ def run_soname(name, verbose, use_soname, mark, executable_only):
 	library = so2library_mappings[soname]
 
 	( library_flags, library_pax_flags ) = pax.getflags(library)
-	print '%s\t%s (%s)' % ( soname, library, library_flags )
-	print
+	print '%s\t%s (%s)\n' % ( soname, library, library_flags )
 
 	mismatched_binaries = []
 	for binary in linkings:
@@ -292,13 +288,11 @@ def run_soname(name, verbose, use_soname, mark, executable_only):
 
 	if len(mismatched_binaries) == 0:
 		if not verbose:
-			print '\tNo mismatches'
-		print
+			print '\tNo mismatches\n'
 	else:
 		print
 		if mark:
-			print '\tWill mark binaries with %s' % library_flags
-			print
+			print '\tWill mark binaries with %s\n' % library_flags
 			for binary in mismatched_binaries:
 				if executable_only:
 					if not os.path.dirname(binary) in shell_path:
@@ -315,10 +309,13 @@ def run_soname(name, verbose, use_soname, mark, executable_only):
 					else:
 						print '\t\tPlease enter y or n'
 				if do_marking:
-					pax.setflags(binary, library_pax_flags)
+					try:
+						pax.setflags(binary, library_pax_flags)
+					except:
+						print "\n\tCould not set pax flags on %s, file is probably busy" % binary
+						print "\tShut down all processes that use it and try again"
 					( binary_flags, binary_pax_flags ) = pax.getflags(binary)
-					print '\t%s ( %s )' % ( binary, binary_flags )
-					print
+					print '\n\t\t%s ( %s )\n' % ( binary, binary_flags )
 
 
 def run_usage():
