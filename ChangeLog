@@ -1,4 +1,8 @@
 
+2011-12-04
+
+	* src/paxctl-ng.c: add exception handling when trying to pax.setflags
+
 2011-11-26
 
 	* src/paxctl-ng.c: made verbosity more consistant
