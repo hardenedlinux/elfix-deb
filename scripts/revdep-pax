@@ -400,12 +400,21 @@ def main():
 	elif do_reverse:
 		run_reverse(verbose, executable_only)
 	elif binary != None:
-		run_binary(binary, verbose, mark)
+		try:
+			run_binary(binary, verbose, mark)
+		except:
+			print 'Please check that %s exists!' % binary
 	elif soname != None:
-		run_soname(soname, verbose, True, mark, executable_only)
+		try:
+			run_soname(soname, verbose, True, mark, executable_only)
+		except:
+			print 'Please check that %s exists!' % soname
 	elif library != None:
-		library = os.path.realpath(library)
-		run_soname(library, verbose, False, mark, executable_only)
+		try:
+			library = os.path.realpath(library)
+			run_soname(library, verbose, False, mark, executable_only)
+		except:
+			print 'Please check that %s exists!' % library
 
 if __name__ == '__main__':
     main()
