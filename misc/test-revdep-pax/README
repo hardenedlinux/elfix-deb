@@ -31,5 +31,5 @@ THEN
 
 The script tests all possible combinations of the RANDMMAP flag on both
 the binary /usr/bin/testrevdeppax and library /usr/lib64/libmyrevdeppax.so.0.0.0
-It then tests both forward migrating the pax markings from the binary to the
-library and then reverse migrating them from the library to the binary.
+It then tests only reverse migrating the pax markings from the library to the
+binary.  Forward migrating would be bad because it'll migrate the flags to glibc! 

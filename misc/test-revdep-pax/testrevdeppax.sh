@@ -15,17 +15,19 @@ echo "Testing reverse migration $LIBRARY -> $BINARY"
 echo "(This will take a while)"
 echo
 
-for i in 'R' 'r' 'Rr'
+for i in "R" "r" "Rr"
 do
-	for j in 'R' 'r' 'Rr'
+	for j in "R" "r" "Rr"
 	do
 		$PAXCTLNG -z $BINARY
 		$PAXCTLNG -$i $BINARY
 		$PAXCTLNG -z $LIBRARY
 		$PAXCTLNG -$j $LIBRARY
-		echo "Binary  -> $i"
-		echo "Library -> $j"
-		$REVDEPPAX -m -l $LIBRARY
+		p=$i; [[ "$p" == "Rr" ]] && p="-"
+		echo "Binary  -> $p"
+		p=$j; [[ "$p" == "Rr" ]] && p="-"
+		echo "Library -> $p"
+		$REVDEPPAX -m -y -l $LIBRARY
 		echo
 	done
 done
