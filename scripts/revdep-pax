@@ -228,7 +228,7 @@ def migrate_flags(importer, exporter_str_flags, exporter_bin_flags):
 	pax.setflags(importer, result_bin_flags)
 
 
-def run_binary(binary, verbose, mark):
+def run_binary(binary, verbose, mark, allyes):
 	( linkings, mappings ) = get_ldd_linkings(binary)
 	( binary_str_flags, binary_bin_flags ) = pax.getflags(binary)
 	print '%s (%s)\n' % ( binary, binary_str_flags )
@@ -259,7 +259,10 @@ def run_binary(binary, verbose, mark):
 			for library in mismatched_libraries:
 				do_marking = False
 				while True:
-					ans = raw_input('\tSet flags for %s (y/n): ' % library)
+					if allyes:
+						ans = 'y'
+					else:
+						ans = raw_input('\tSet flags for %s (y/n): ' % library)
 					if ans == 'y':
 						do_marking = True
 						break
@@ -286,7 +289,7 @@ def invert_so2library_mappings( so2library_mappings ):
 	return library2soname_mappings
 
 
-def run_soname(name, verbose, use_soname, mark, executable_only):
+def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 	shell_path = path = os.getenv('PATH').split(':')
 
 	( forward_linkings, so2library_mappings ) = get_forward_linkings()
@@ -340,7 +343,10 @@ def run_soname(name, verbose, use_soname, mark, executable_only):
 						continue
 				do_marking = False
 				while True:
-					ans = raw_input('\tSet flags for %s (y/n): ' % binary)
+					if allyes:
+						ans = 'y'
+					else:
+						ans = raw_input('\tSet flags for %s (y/n): ' % binary)
 					if ans == 'y':
 						do_marking = True
 						break
@@ -365,21 +371,22 @@ def run_usage():
 	print 'Program Name : revdep-pax'
 	print 'Description  : Get or set pax flags on an ELF object'
 	print
-	print 'Usage        : revdep-pax -f [-v]            print out all forward mappings for all system binaries'
-	print '             : revdep-pax -r [-ve]           print out all reverse mappings for all system sonames'
-	print '             : revdep-pax -b OBJECT  [-mv]   print all forward mappings only for OBJECT'
-	print '             : revdep-pax -s SONAME  [-mve]  print all reverse mappings only for SONAME'
-	print '             : revdep-pax -l LIBRARY [-mve]  print all reverse mappings only for LIBRARY file'
-	print '             : revdep-pax [-h]               print out this help'
-	print '             : -v                            verbose, otherwise just print mismatching objects'
-	print '             : -e                            only print out executables in shell $PATH'
-	print '             : -m                            don\'t just report, but mark the mismatching objects'
+	print 'Usage        : revdep-pax -f [-v]             print out all forward mappings for all system binaries'
+	print '             : revdep-pax -r [-ve]            print out all reverse mappings for all system sonames'
+	print '             : revdep-pax -b OBJECT  [-myv]   print all forward mappings only for OBJECT'
+	print '             : revdep-pax -s SONAME  [-myve]  print all reverse mappings only for SONAME'
+	print '             : revdep-pax -l LIBRARY [-myve]  print all reverse mappings only for LIBRARY file'
+	print '             : revdep-pax [-h]                print out this help'
+	print '             : -v                             verbose, otherwise just print mismatching objects'
+	print '             : -e                             only print out executables in shell $PATH'
+	print '             : -m                             don\'t just report, but mark the mismatching objects'
+	print '             : -y                             assume "yes" to all prompts for making (USE CAREFULLY!)'
 	print
 
 
 def main():
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], 'hfrb:s:l:vem')
+		opts, args = getopt.getopt(sys.argv[1:], 'hfrb:s:l:vemy')
 	except getopt.GetoptError, err:
 		print str(err) # will print something like 'option -a not recognized'
 		run_usage()
@@ -400,6 +407,7 @@ def main():
 	verbose = False
 	executable_only = False
 	mark = False
+	allyes = False
 
 	opt_count = 0
 
@@ -428,6 +436,8 @@ def main():
 			executable_only = True
 		elif o == '-m':
 			mark = True
+		elif o == '-y':
+			allyes = True
 		else:
 			print 'Option included in getopt but not handled here!'
 			print 'Please file a bug'
@@ -442,18 +452,18 @@ def main():
 		run_reverse(verbose, executable_only)
 	elif binary != None:
 		try:
-			run_binary(binary, verbose, mark)
+			run_binary(binary, verbose, mark, allyes)
 		except:
 			print 'Please check that %s exists!' % binary
 	elif soname != None:
 		try:
-			run_soname(soname, verbose, True, mark, executable_only)
+			run_soname(soname, verbose, True, mark, allyes, executable_only)
 		except:
 			print 'Please check that %s exists!' % soname
 	elif library != None:
 		try:
 			library = os.path.realpath(library)
-			run_soname(library, verbose, False, mark, executable_only)
+			run_soname(library, verbose, False, mark, allyes, executable_only)
 		except:
 			print 'Please check that %s exists!' % library
 

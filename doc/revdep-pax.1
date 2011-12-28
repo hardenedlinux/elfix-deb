@@ -137,11 +137,11 @@ revdep\-pax \- find mismatching PaX markings between ELF objects and their libra
 .PP
 \&\fBrevdep-pax\fR \-r [\-ve]
 .PP
-\&\fBrevdep-pax\fR \-b \s-1OBJECT\s0 [\-mv]
+\&\fBrevdep-pax\fR \-b \s-1OBJECT\s0 [\-myv]
 .PP
-\&\fBrevdep-pax\fR \-s \s-1SONAME\s0 [\-mve]
+\&\fBrevdep-pax\fR \-s \s-1SONAME\s0 [\-myve]
 .PP
-\&\fBrevdep-pax\fR \-l \s-1LIBRARY\s0 [\-mve]
+\&\fBrevdep-pax\fR \-l \s-1LIBRARY\s0 [\-myve]
 .PP
 \&\fBrevdep-pax\fR [\-h]
 .SH "DESCRIPTION"
@@ -181,15 +181,19 @@ so that the PaX flags of the target inherit the flags of the source.
 .IP "\fB\-l\fR   \s-1LIBRARY\s0 Retrieve only the reverse mappings for this \s-1LIBRARY\s0." 4
 .IX Item "-l   LIBRARY Retrieve only the reverse mappings for this LIBRARY."
 .IP "" 4
-.IP "\fB\-m\fR   Prompt the user to mark the found object with the PaX flags of the source." 4
-.IX Item "-m   Prompt the user to mark the found object with the PaX flags of the source."
-.IP "" 4
 .IP "\fB\-v\fR   Report all mappings, not just the mismatched ones." 4
 .IX Item "-v   Report all mappings, not just the mismatched ones."
 .IP "" 4
 .ie n .IP "\fB\-e\fR   Limit the markings or report to only those executables in the current shell's $PATH." 4
 .el .IP "\fB\-e\fR   Limit the markings or report to only those executables in the current shell's \f(CW$PATH\fR." 4
 .IX Item "-e   Limit the markings or report to only those executables in the current shell's $PATH."
+.IP "" 4
+.IP "\fB\-m\fR   Prompt the user to mark the found object with the PaX flags of the source." 4
+.IX Item "-m   Prompt the user to mark the found object with the PaX flags of the source."
+.IP "" 4
+.ie n .IP "\fB\-y\fR   Assume ""yes"" to all prompts for making (\s-1USE\s0 \s-1CAREFULLY\s0!)" 4
+.el .IP "\fB\-y\fR   Assume ``yes'' to all prompts for making (\s-1USE\s0 \s-1CAREFULLY\s0!)" 4
+.IX Item "-y   Assume yes to all prompts for making (USE CAREFULLY!)"
 .IP "" 4
 .IP "\fB\-h\fR   Print out a short help message and exit." 4
 .IX Item "-h   Print out a short help message and exit."

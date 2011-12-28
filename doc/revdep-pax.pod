@@ -8,11 +8,11 @@ B<revdep-pax> -f [-v]
 
 B<revdep-pax> -r [-ve]
 
-B<revdep-pax> -b OBJECT [-mv]
+B<revdep-pax> -b OBJECT [-myv]
 
-B<revdep-pax> -s SONAME [-mve]
+B<revdep-pax> -s SONAME [-myve]
 
-B<revdep-pax> -l LIBRARY [-mve]
+B<revdep-pax> -l LIBRARY [-myve]
 
 B<revdep-pax> [-h]
 
@@ -60,15 +60,19 @@ so that the PaX flags of the target inherit the flags of the source.
 
 =item
 
-=item B<-m>   Prompt the user to mark the found object with the PaX flags of the source.
-
-=item
-
 =item B<-v>   Report all mappings, not just the mismatched ones.
 
 =item
 
 =item B<-e>   Limit the markings or report to only those executables in the current shell's $PATH.
+
+=item
+
+=item B<-m>   Prompt the user to mark the found object with the PaX flags of the source.
+
+=item
+
+=item B<-y>   Assume "yes" to all prompts for making (USE CAREFULLY!)
 
 =item
 
