@@ -187,7 +187,7 @@ def run_reverse(verbose, executable_only):
 	print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, executable_only)
 
 
-def migrate_flags(elf, pax_flags)
+def migrate_flags(elf, pax_flags):
 	"""
 	Importer	Exporter	Result
 	Force On	Force On	Force On
