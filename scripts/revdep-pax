@@ -217,13 +217,17 @@ def migrate_flags(importer, exporter_str_flags, exporter_bin_flags):
 
 	for i in range(len(importer_str_flags)):
 		if importer_str_flags[i].isupper() and exporter_str_flags[i].islower():
-			print 'Warning: importer = %s exporter = %s' %  ( importer_str_flags[i], exporter_str_flags[i] )
+			print '\t\tWarning: %s has %s, trying to set to %s' % (
+				importer, importer_str_flags[i], exporter_str_flags[i] ),
 		if importer_str_flags[i].isupper() and exporter_str_flags[i] == '-':
-			print 'Warning: importer = %s exporter = %s' %  ( importer_str_flags[i], exporter_str_flags[i] )
+			print '\t\tWarning: %s has %s, trying to set to %s' % (
+				importer, importer_str_flags[i], exporter_str_flags[i] ),
 		if importer_str_flags[i].islower() and exporter_str_flags[i].isupper():
-			print 'Warning: importer = %s exporter = %s' %  ( importer_str_flags[i], exporter_str_flags[i] )
+			print '\t\tWarning: %s has %s, trying to set to %s' % (
+				importer, importer_str_flags[i], exporter_str_flags[i] ),
 		if importer_str_flags[i].islower() and exporter_str_flags[i] == '-':
-			print 'Warning: importer = %s exporter = %s' %  ( importer_str_flags[i], exporter_str_flags[i] )
+			print '\t\tWarning: %s has %s, trying to set to %s' % (
+				importer, importer_str_flags[i], exporter_str_flags[i] ),
 
 	pax.setflags(importer, result_bin_flags)
 
