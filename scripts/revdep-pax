@@ -187,20 +187,45 @@ def run_reverse(verbose, executable_only):
 	print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, executable_only)
 
 
-def migrate_flags(elf, pax_flags):
-	"""
-	Importer	Exporter	Result
-	Force On	Force On	Force On
-	Force On	Force Off	Warn Only
-	Force On	Nothing		Force On
-	Force Off	Force On	Warn Only
-	Force Off	Force Off	Force Off
-	Force Off	Nothing		Force Off
-	Nothing		Force On	Force On
-	Nothing		Force Off	Force Off
-	Nothing		Nothing		Nothing
-	"""
-	pax.setflags(elf, pax_flags)
+def migrate_flags(importer, exporter_str_flags, exporter_bin_flags):
+	# We implement the following logic for setting the pax flags
+	# on the target elf object, the 'importer', given that the
+	# flags from the elf object we want it to match to, the exporter.
+	#
+	#	Importer	Exporter	Result
+	#	Force On	Force On	Force On
+	#	Force On	Force Off	Force On + Warn
+	#	Force On	Nothing		Force On
+	#	Force Off	Force On	Force Off + Warn
+	#	Force Off	Force Off	Force Off
+	#	Force Off	Nothing		Force Off
+	#	Nothing		Force On	Force On
+	#	Nothing		Force Off	Force Off
+	#	Nothing		Nothing		Nothing
+	#
+	# The algorithm proceeds by assuming the resulting flags = the exporter
+	# flags and then changes them in cases where that's not what we want, ie
+	#
+	#	Force On        Force Off       Force On + Warn
+	#	Force On        Nothing         Force On
+	#	Force Off       Force On        Force Off + Warn
+	#	Force Off       Nothing         Force Off
+
+	( importer_str_flags, importer_bin_flags ) = pax.getflags(importer)
+
+	result_bin_flags = exporter_bin_flags
+
+	for i in range(len(importer_str_flags)):
+		if importer_str_flags[i].isupper() and exporter_str_flags[i].islower():
+			print 'Warning: importer = %s exporter = %s' %  ( importer_str_flags[i], exporter_str_flags[i] )
+		if importer_str_flags[i].isupper() and exporter_str_flags[i] == '-':
+			print 'Warning: importer = %s exporter = %s' %  ( importer_str_flags[i], exporter_str_flags[i] )
+		if importer_str_flags[i].islower() and exporter_str_flags[i].isupper():
+			print 'Warning: importer = %s exporter = %s' %  ( importer_str_flags[i], exporter_str_flags[i] )
+		if importer_str_flags[i].islower() and exporter_str_flags[i] == '-':
+			print 'Warning: importer = %s exporter = %s' %  ( importer_str_flags[i], exporter_str_flags[i] )
+
+	pax.setflags(importer, result_bin_flags)
 
 
 def run_binary(binary, verbose, mark):
@@ -246,7 +271,7 @@ def run_binary(binary, verbose, mark):
 
 				if do_marking:
 					try:
-						migrate_flags(library, binary_bin_flags)
+						migrate_flags(library, binary_str_flags, binary_bin_flags)
 					except:
 						print "\n\tCould not set pax flags on %s, file is probably busy" % library
 						print "\tShut down all processes that use it and try again"
@@ -326,7 +351,7 @@ def run_soname(name, verbose, use_soname, mark, executable_only):
 						print '\t\tPlease enter y or n'
 				if do_marking:
 					try:
-						migrate_flags(binary, library_bin_flags)
+						migrate_flags(binary, library_str_flags, library_bin_flags)
 					except:
 						print "\n\tCould not set pax flags on %s, file is probably busy" % binary
 						print "\tShut down all processes that use it and try again"
