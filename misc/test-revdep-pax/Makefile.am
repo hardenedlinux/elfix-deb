@@ -7,4 +7,4 @@ testrevdeppax_LDADD = libmyrevdeppax.la
 lib_LTLIBRARIES = libmyrevdeppax.la
 libmyrevdeppax_la_SOURCES = libmyrevdeppax.c
 
-bin_SCRIPTS = testrevdeppax.sh
+dist_bin_SCRIPTS = testrevdeppax.sh
