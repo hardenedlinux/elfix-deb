@@ -211,23 +211,35 @@ def migrate_flags(importer, exporter_str_flags, exporter_bin_flags):
 	#	Force Off       Force On        Force Off + Warn
 	#	Force Off       Nothing         Force Off
 
+	#See /usr/include/elf.h for these values
+	pf_flags = {
+		'P':1<<4, 'p':1<<5,
+		'S':1<<6, 's':1<<7,
+		'M':1<<8, 'm':1<<9,
+		'X':1<<10, 'x':1<<11,
+		'E':1<<12, 'e':1<<13,
+		'R':1<<14, 'r':1<<15
+	}
+
 	( importer_str_flags, importer_bin_flags ) = pax.getflags(importer)
 
 	result_bin_flags = exporter_bin_flags
 
 	for i in range(len(importer_str_flags)):
 		if importer_str_flags[i].isupper() and exporter_str_flags[i].islower():
-			print '\t\tWarning: %s has %s, trying to set to %s' % (
+			result_bin_flags = result_bin_flags ^ pf_flags[exporter_str_flags[i]]
+			result_bin_flags = result_bin_flags | pf_flags[importer_str_flags[i]]
+			print '\t\tWarning: %s has %s, refusing to set to %s' % (
 				importer, importer_str_flags[i], exporter_str_flags[i] ),
 		if importer_str_flags[i].isupper() and exporter_str_flags[i] == '-':
-			print '\t\tWarning: %s has %s, trying to set to %s' % (
-				importer, importer_str_flags[i], exporter_str_flags[i] ),
+			result_bin_flags = result_bin_flags | pf_flags[importer_str_flags[i]]
 		if importer_str_flags[i].islower() and exporter_str_flags[i].isupper():
-			print '\t\tWarning: %s has %s, trying to set to %s' % (
+			result_bin_flags = result_bin_flags ^ pf_flags[exporter_str_flags[i]]
+			result_bin_flags = result_bin_flags | pf_flags[importer_str_flags[i]]
+			print '\t\tWarning: %s has %s, refusing to set to %s' % (
 				importer, importer_str_flags[i], exporter_str_flags[i] ),
 		if importer_str_flags[i].islower() and exporter_str_flags[i] == '-':
-			print '\t\tWarning: %s has %s, trying to set to %s' % (
-				importer, importer_str_flags[i], exporter_str_flags[i] ),
+			result_bin_flags = result_bin_flags | pf_flags[importer_str_flags[i]]
 
 	pax.setflags(importer, result_bin_flags)
 
