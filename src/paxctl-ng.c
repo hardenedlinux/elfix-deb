@@ -45,7 +45,7 @@
 #define COPY_XT_TO_PT_FLAGS		4
 #endif
 
-#define FLAGS_SIZE		5
+#define FLAGS_SIZE			6
 
 void
 print_help_exit(char *v)
@@ -258,29 +258,29 @@ string2bin(char *buf)
 {
 	uint16_t flags = 0;
 
-	if( buf[0] = 'P' )
+	if( buf[0] == 'P' )
 		flags |= PF_PAGEEXEC;
-	else if( buf[0] = 'p' )
+	else if( buf[0] == 'p' )
 		flags |= PF_NOPAGEEXEC;
 
-	if( buf[1] = 'S' )
+	if( buf[1] == 'S' )
 		flags |= PF_SEGMEXEC;
-	else if( buf[1] = 's' )
+	else if( buf[1] == 's' )
 		flags |= PF_NOSEGMEXEC;
 
-	if( buf[2] = 'M' )
+	if( buf[2] == 'M' )
 		flags |= PF_MPROTECT;
-	else if( buf[2] = 'm' )
+	else if( buf[2] == 'm' )
 		flags |= PF_NOMPROTECT;
 
-	if( buf[3] = 'E' )
+	if( buf[3] == 'E' )
 		flags |= PF_EMUTRAMP;
-	else if( buf[3] = 'e' )
-		flags |= PF_NORANDMMAP;
+	else if( buf[3] == 'e' )
+		flags |= PF_NOEMUTRAMP;
 
-	if( buf[4] = 'R' )
+	if( buf[4] == 'R' )
 		flags |= PF_RANDMMAP;
-	else if( buf[4] = 'r' )
+	else if( buf[4] == 'r' )
 		flags |= PF_NORANDMMAP;
 
 	return flags;
@@ -293,7 +293,9 @@ get_xt_flags(int fd)
 	char buf[FLAGS_SIZE];
 	uint16_t xt_flags = UINT16_MAX;
 
-	if(fgetxattr(fd, PAX_NAMESPACE, buf, sizeof(FLAGS_SIZE)) != -1)
+	memset(buf, 0, FLAGS_SIZE);
+
+	if(fgetxattr(fd, PAX_NAMESPACE, buf, FLAGS_SIZE) != -1)
 		xt_flags = string2bin(buf);
 
 	return xt_flags;
@@ -509,8 +511,10 @@ set_xt_flags(int fd, uint16_t xt_flags)
 {
 	char buf[FLAGS_SIZE];
 
+	memset(buf, 0, FLAGS_SIZE);
 	bin2string(xt_flags, buf);
-	fsetxattr(fd, PAX_NAMESPACE, buf, FLAGS_SIZE, XATTR_REPLACE);
+	printf("DEBUG buf = %s\n", buf);
+	//fsetxattr(fd, PAX_NAMESPACE, buf, FLAGS_SIZE, XATTR_REPLACE);
 }
 #endif
 
@@ -552,8 +556,10 @@ create_xt_flags(int fd, int cp_flags)
 	else if(cp_flags == 2)
 		xt_flags = 0;
 
+	memset(buf, 0, FLAGS_SIZE);
 	bin2string(xt_flags, buf);
-	fsetxattr(fd, PAX_NAMESPACE, buf, FLAGS_SIZE, XATTR_REPLACE);
+	printf("DEBUG buf = %s\n", buf);
+	//fsetxattr(fd, PAX_NAMESPACE, buf, FLAGS_SIZE, XATTR_REPLACE);
 }
 
 
