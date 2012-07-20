@@ -37,7 +37,7 @@
 #include <config.h>
 
 #ifdef XATTR
-#define PAX_NAMESPACE	"user.pax"
+#define PAX_NAMESPACE	"user.pax.flags"
 
 #define CREATE_XT_FLAGS_SECURE		1
 #define CREATE_XT_FLAGS_DEFAULT		2
@@ -45,7 +45,7 @@
 #define COPY_XT_TO_PT_FLAGS		4
 #endif
 
-#define BUF_SIZE	8
+#define FLAGS_SIZE		5
 
 void
 print_help_exit(char *v)
@@ -254,11 +254,48 @@ get_pt_flags(int fd, int verbose)
 
 #ifdef XATTR
 uint16_t
+string2bin(char *buf)
+{
+	uint16_t flags = 0;
+
+	if( buf[0] = 'P' )
+		flags |= PF_PAGEEXEC;
+	else if( buf[0] = 'p' )
+		flags |= PF_NOPAGEEXEC;
+
+	if( buf[1] = 'S' )
+		flags |= PF_SEGMEXEC;
+	else if( buf[1] = 's' )
+		flags |= PF_NOSEGMEXEC;
+
+	if( buf[2] = 'M' )
+		flags |= PF_MPROTECT;
+	else if( buf[2] = 'm' )
+		flags |= PF_NOMPROTECT;
+
+	if( buf[3] = 'E' )
+		flags |= PF_EMUTRAMP;
+	else if( buf[3] = 'e' )
+		flags |= PF_NORANDMMAP;
+
+	if( buf[4] = 'R' )
+		flags |= PF_RANDMMAP;
+	else if( buf[4] = 'r' )
+		flags |= PF_NORANDMMAP;
+
+	return flags;
+}
+
+
+uint16_t
 get_xt_flags(int fd)
 {
+	char buf[FLAGS_SIZE];
 	uint16_t xt_flags = UINT16_MAX;
 
-	fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t));
+	if(fgetxattr(fd, PAX_NAMESPACE, buf, sizeof(FLAGS_SIZE)) != -1)
+		xt_flags = string2bin(buf);
+
 	return xt_flags;
 }
 #endif
@@ -288,14 +325,14 @@ void
 print_flags(int fd, int verbose)
 {
 	uint16_t flags;
-	char buf[BUF_SIZE];
+	char buf[FLAGS_SIZE];
 
 	flags = get_pt_flags(fd, verbose);
 	if( flags == UINT16_MAX )
 		printf("\tPT_PAX: not found\n");
 	else
 	{
-		memset(buf, 0, BUF_SIZE);
+		memset(buf, 0, FLAGS_SIZE);
 		bin2string(flags, buf);
 		printf("\tPT_PAX: %s\n", buf);
 	}
@@ -306,7 +343,7 @@ print_flags(int fd, int verbose)
 		printf("\tXT_PAX: not found\n");
 	else
 	{
-		memset(buf, 0, BUF_SIZE);
+		memset(buf, 0, FLAGS_SIZE);
 		bin2string(flags, buf);
 		printf("\tXT_PAX: %s\n", buf);
 	}
@@ -470,7 +507,10 @@ set_pt_flags(int fd, uint16_t pt_flags, int verbose)
 void
 set_xt_flags(int fd, uint16_t xt_flags)
 {
-	fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), XATTR_REPLACE);
+	char buf[FLAGS_SIZE];
+
+	bin2string(xt_flags, buf);
+	fsetxattr(fd, PAX_NAMESPACE, buf, FLAGS_SIZE, XATTR_REPLACE);
 }
 #endif
 
@@ -503,6 +543,7 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int verbose)
 void
 create_xt_flags(int fd, int cp_flags)
 {
+	char buf[FLAGS_SIZE];
 	uint16_t xt_flags;
 
 	if(cp_flags == 1)
@@ -511,7 +552,8 @@ create_xt_flags(int fd, int cp_flags)
 	else if(cp_flags == 2)
 		xt_flags = 0;
 
-	fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), XATTR_CREATE);
+	bin2string(xt_flags, buf);
+	fsetxattr(fd, PAX_NAMESPACE, buf, FLAGS_SIZE, XATTR_REPLACE);
 }
 
 
