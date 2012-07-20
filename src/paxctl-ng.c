@@ -56,7 +56,7 @@ print_help_exit(char *v)
 		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
 		"Program Name : %s\n"
 		"Description  : Get or set pax flags on an ELF object\n\n"
-		"Usage        : %s -PpSsMmEeRrXxv ELF | -Zv ELF | -zv ELF\n"
+		"Usage        : %s -PpSsMmEeRrv ELF | -Zv ELF | -zv ELF\n"
 #ifdef XATTR
 		"             : %s -Cv ELF | -cv ELF | Fv ELF | -fv ELF\n"
 #endif
@@ -66,7 +66,6 @@ print_help_exit(char *v)
 		"             : -M enable MPROTECT\t-m disable  MPROTECT\n"
 		"             : -E enable EMUTRAMP\t-e disable  EMUTRAMP\n"
 		"             : -R enable RANDMMAP\t-r disable  RANDMMAP\n"
-		"             : -X enable RANDEXEC\t-x disable  RANDEXEC\n"
 		"             : -Z most secure settings\t-z all default settings\n"
 #ifdef XATTR
 		"             : -C create XT_PAX with most secure setting\n"
@@ -100,9 +99,9 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 	*verbose = 0;
 	*cp_flags = 0; 
 #ifdef XATTR
-	while((oc = getopt(argc, argv,":PpSsMmEeRrXxZzCcFfvh")) != -1)
+	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcFfvh")) != -1)
 #else
-	while((oc = getopt(argc, argv,":PpSsMmEeRrXxZzvh")) != -1)
+	while((oc = getopt(argc, argv,":PpSsMmEeRrZzvh")) != -1)
 #endif
 	{
 		switch(oc)
@@ -147,23 +146,15 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 				*pax_flags |= PF_NORANDMMAP;
 				compat |= 1;
 				break ;
-			case 'X':
-				*pax_flags |= PF_RANDEXEC;
-				compat |= 1;
-				break;
-			case 'x':
-				*pax_flags |= PF_NORANDEXEC;
-				compat |= 1;
-				break ;
 			case 'Z':
 				*pax_flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
-					PF_NOEMUTRAMP | PF_RANDMMAP | PF_NORANDEXEC;
+					PF_NOEMUTRAMP | PF_RANDMMAP ;
 				solitaire += 1;
 				break ;
 			case 'z':
 				*pax_flags = PF_PAGEEXEC | PF_NOPAGEEXEC | PF_SEGMEXEC | PF_NOSEGMEXEC |
 					PF_MPROTECT | PF_NOMPROTECT | PF_EMUTRAMP | PF_NOEMUTRAMP |
-					PF_RANDMMAP | PF_NORANDMMAP | PF_RANDEXEC | PF_NORANDEXEC;
+					PF_RANDMMAP | PF_NORANDMMAP ;
 				solitaire += 1;
 				break;
 #ifdef XATTR
@@ -290,9 +281,6 @@ bin2string(uint16_t flags, char *buf)
 
 	buf[4] = flags & PF_RANDMMAP   ? 'R' :
 		flags & PF_NORANDMMAP ? 'r' : '-';
-
-	buf[5] = flags & PF_RANDEXEC   ? 'X' :
-		flags & PF_NORANDEXEC ? 'x' : '-';
 }
 
 
@@ -415,23 +403,6 @@ update_flags(uint16_t flags, uint16_t pax_flags)
 		flags &= ~PF_NORANDMMAP;
 	}
 
-	//RANDEXEC
-	if(pax_flags & PF_RANDEXEC)
-	{
-		flags |= PF_RANDEXEC;
-		flags &= ~PF_NORANDEXEC;
-	}
-	if(pax_flags & PF_NORANDEXEC)
-	{
-		flags &= ~PF_RANDEXEC;
-		flags |= PF_NORANDEXEC;
-	}
-	if((pax_flags & PF_RANDEXEC) && (pax_flags & PF_NORANDEXEC))
-	{
-		flags &= ~PF_RANDEXEC;
-		flags &= ~PF_NORANDEXEC;
-	}
-
 	return flags;
 }
 
@@ -479,7 +450,8 @@ set_pt_flags(int fd, uint16_t pt_flags, int verbose)
 
 		if(phdr.p_type == PT_PAX_FLAGS)
 		{
-			phdr.p_flags = pt_flags;
+			//RANDEXEC is deprecated, we'll force it off like paxctl
+			phdr.p_flags = pt_flags | PF_NORANDEXEC;
 
 			if(!gelf_update_phdr(elf, i, &phdr))
 			{
@@ -512,7 +484,7 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int verbose)
 	{
 		flags = get_pt_flags(fd, verbose);
 		if( flags == UINT16_MAX )
-			flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
+			flags = PF_NOEMUTRAMP ;
 		flags = update_flags( flags, *pax_flags);
 		set_pt_flags(fd, flags, verbose);
 	}
@@ -520,7 +492,7 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int verbose)
 #ifdef XATTR
 	flags = get_xt_flags(fd);
 	if( flags == UINT16_MAX )
-		flags = PF_NOEMUTRAMP | PF_NORANDEXEC;
+		flags = PF_NOEMUTRAMP ;
 	flags = update_flags( flags, *pax_flags);
 	set_xt_flags(fd, flags);
 #endif
@@ -535,7 +507,7 @@ create_xt_flags(int fd, int cp_flags)
 
 	if(cp_flags == 1)
 		xt_flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
-			PF_NOEMUTRAMP | PF_RANDMMAP | PF_NORANDEXEC;
+			PF_NOEMUTRAMP | PF_RANDMMAP ;
 	else if(cp_flags == 2)
 		xt_flags = 0;
 
