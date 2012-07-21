@@ -22,11 +22,9 @@ def main():
 
 	for o, a in opts:
 		if o == '-s':
-			#pax.setflags(a, flags)
 			flags = a
 			do_set = 1
 		elif o == '-g':
-			#( str_flags, bin_flags ) = pax.getflags(a)
 			do_get = 1
 
 	if( (do_set + do_get) != 1 ):
@@ -39,10 +37,11 @@ def main():
 
 	if( do_set == 1 ):
 		for binary in args:
-			print('set %s on %s' % (flags,binary))
+			pax.setflags(binary, flags)
 	else:
 		for binary in args:
-			print('get on %s' % binary)
+			( str_flags, bin_flags ) = pax.getflags(binary)
+			print('%s' % str_flags)
 
 if __name__ == '__main__':
 	main()
