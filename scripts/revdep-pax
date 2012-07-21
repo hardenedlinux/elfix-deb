@@ -241,7 +241,7 @@ def migrate_flags(importer, exporter_str_flags, exporter_bin_flags):
 		if importer_str_flags[i].islower() and exporter_str_flags[i] == '-':
 			result_bin_flags = result_bin_flags | pf_flags[importer_str_flags[i]]
 
-	pax.setflags(importer, result_bin_flags)
+	pax.setbinflags(importer, result_bin_flags)
 
 
 def run_binary(binary, verbose, mark, allyes):

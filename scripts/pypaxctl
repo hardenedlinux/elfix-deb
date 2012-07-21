@@ -37,7 +37,7 @@ def main():
 
 	if( do_set == 1 ):
 		for binary in args:
-			pax.setflags(binary, flags)
+			pax.setstrflags(binary, flags)
 	else:
 		for binary in args:
 			( str_flags, bin_flags ) = pax.getflags(binary)

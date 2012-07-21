@@ -39,11 +39,13 @@
 
 
 static PyObject * pax_getflags(PyObject *, PyObject *);
-static PyObject * pax_setflags(PyObject *, PyObject *);
+static PyObject * pax_setbinflags(PyObject *, PyObject *);
+static PyObject * pax_setstrflags(PyObject *, PyObject *);
 
 static PyMethodDef PaxMethods[] = {
-	{"getflags",  pax_getflags, METH_VARARGS, "Get the pax flags."},
-	{"setflags",  pax_setflags, METH_VARARGS, "Set the pax flags."},
+	{"getflags",  pax_getflags, METH_VARARGS, "Get the pax flags as a string."},
+	{"setbinflags",  pax_setbinflags, METH_VARARGS, "Set the pax flags using binary."},
+	{"setstrflags",  pax_setstrflags, METH_VARARGS, "Set the pax flags using string."},
 	{NULL, NULL, 0, NULL}
 };
 
@@ -299,7 +301,7 @@ set_xt_flags(int fd, uint16_t xt_flags)
 
 
 static PyObject *
-pax_setflags(PyObject *self, PyObject *args)
+pax_setbinflags(PyObject *self, PyObject *args)
 {
 	const char *f_name;
 	int fd, iflags;
@@ -307,13 +309,13 @@ pax_setflags(PyObject *self, PyObject *args)
 
 	if (!PyArg_ParseTuple(args, "si", &f_name, &iflags))
 	{
-		PyErr_SetString(PaxError, "pax_setflags: PyArg_ParseTuple failed");
+		PyErr_SetString(PaxError, "pax_setbinflags: PyArg_ParseTuple failed");
 		return NULL;
 	}
 
 	if((fd = open(f_name, O_RDWR)) < 0)
 	{
-		PyErr_SetString(PaxError, "pax_setflags: open() failed");
+		PyErr_SetString(PaxError, "pax_setbinflags: open() failed");
 		return NULL;
 	}
 
@@ -333,19 +335,19 @@ pax_setflags(PyObject *self, PyObject *args)
 static PyObject *
 pax_setstrflags(PyObject *self, PyObject *args)
 {
-	const char *f_name, *sflags;
+	char *f_name, *sflags;
 	int fd;
 	uint16_t flags;
 
 	if (!PyArg_ParseTuple(args, "ss", &f_name, &sflags))
 	{
-		PyErr_SetString(PaxError, "pax_setflags: PyArg_ParseTuple failed");
+		PyErr_SetString(PaxError, "pax_setbinflags: PyArg_ParseTuple failed");
 		return NULL;
 	}
 
 	if((fd = open(f_name, O_RDWR)) < 0)
 	{
-		PyErr_SetString(PaxError, "pax_setflags: open() failed");
+		PyErr_SetString(PaxError, "pax_setbinflags: open() failed");
 		return NULL;
 	}
 
