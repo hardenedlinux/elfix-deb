@@ -189,9 +189,9 @@ pax_getflags(PyObject *self, PyObject *args)
 	const char *f_name;
 	int fd;
 	uint16_t flags;
-	char buf[BUF_SIZE];
+	char buf[FLAGS_SIZE];
 
-	memset(buf, 0, BUF_SIZE);
+	memset(buf, 0, FLAGS_SIZE);
 
 	if (!PyArg_ParseTuple(args, "s", &f_name))
 	{
@@ -209,7 +209,7 @@ pax_getflags(PyObject *self, PyObject *args)
 	flags = get_xt_flags(fd);
 	if( flags != UINT16_MAX )
 	{
-		memset(buf, 0, BUF_SIZE);
+		memset(buf, 0, FLAGS_SIZE);
 		bin2string(flags, buf);
 	}
 	else
@@ -218,7 +218,7 @@ pax_getflags(PyObject *self, PyObject *args)
 		flags = get_pt_flags(fd);
 		if( flags != UINT16_MAX )
 		{
-			memset(buf, 0, BUF_SIZE);
+			memset(buf, 0, FLAGS_SIZE);
 			bin2string(flags, buf);
 		}
 #ifdef XATTR
