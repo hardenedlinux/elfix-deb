@@ -513,7 +513,7 @@ set_xt_flags(int fd, uint16_t xt_flags)
 
 	memset(buf, 0, FLAGS_SIZE);
 	bin2string(xt_flags, buf);
-	fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), XATTR_REPLACE);
+	fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), 0);
 }
 #endif
 
@@ -617,7 +617,7 @@ main( int argc, char *argv[])
 			copy_xt_flags(fd, cp_flags, verbose);
 #endif
 
-		if(pax_flags != 1)
+		if(pax_flags != 0)
 			set_flags(fd, &pax_flags, rdwr_pt_pax, verbose);
 
 		if(verbose == 1)
