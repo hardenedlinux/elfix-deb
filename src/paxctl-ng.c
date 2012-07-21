@@ -58,7 +58,7 @@ print_help_exit(char *v)
 		"Description  : Get or set pax flags on an ELF object\n\n"
 		"Usage        : %s -PpSsMmEeRrv ELF | -Zv ELF | -zv ELF\n"
 #ifdef XATTR
-		"             : %s -Cv ELF | -cv ELF | Fv ELF | -fv ELF\n"
+		"             : %s -Cv ELF | -cv ELF | -Fv ELF | -fv ELF\n"
 #endif
 		"             : %s -v ELF | -h\n\n"
 		"Options      : -P enable PAGEEXEC\t-p disable  PAGEEXEC\n"
@@ -513,8 +513,7 @@ set_xt_flags(int fd, uint16_t xt_flags)
 
 	memset(buf, 0, FLAGS_SIZE);
 	bin2string(xt_flags, buf);
-	printf("DEBUG buf = %s\n", buf);
-	//fsetxattr(fd, PAX_NAMESPACE, buf, FLAGS_SIZE, XATTR_REPLACE);
+	fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), XATTR_REPLACE);
 }
 #endif
 
@@ -558,8 +557,7 @@ create_xt_flags(int fd, int cp_flags)
 
 	memset(buf, 0, FLAGS_SIZE);
 	bin2string(xt_flags, buf);
-	printf("DEBUG buf = %s\n", buf);
-	//fsetxattr(fd, PAX_NAMESPACE, buf, FLAGS_SIZE, XATTR_REPLACE);
+	fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), XATTR_CREATE);
 }
 
 
@@ -570,12 +568,14 @@ copy_xt_flags(int fd, int cp_flags, int verbose)
 	if(cp_flags == 3)
 	{
 		flags = get_pt_flags(fd, verbose);
-		set_xt_flags(fd, flags);
+		if( flags != UINT16_MAX )
+			set_xt_flags(fd, flags);
 	}
 	else if(cp_flags == 4)
 	{
 		flags = get_xt_flags(fd);
-		set_pt_flags(fd, flags, verbose);
+		if( flags != UINT16_MAX )
+			set_pt_flags(fd, flags, verbose);
 	}
 }
 #endif
