@@ -1,3 +1,20 @@
+2012-07-21
+
+	* scripts/revdep-pax: add option to only print out executables,
+	not libraries
+	* scripts/revdep-pax: allow for a more complex logic in migrating
+	flags from source to target.  When the source says nothing about a
+	flag, the target's options survive
+	* misc/test-revdep-pax: add revdep-pax test code
+	* src/paxctl-ng.c: remove RANDEXEC completely.  Its completely missing
+	from XT_PAX so remove it from PT_APX as well.
+	* src/paxctl-ng.c: switch to string implementation of XT_PAX following
+	upstreams implementation in the kernel
+	* scripts/paxmodule.c: switch to string implementation of XT_PAX
+	* scripts/pypaxctl: a (too?) simple front end to test python module
+	* src/paxctl-ng.c, scripts/paxmodule.c: create xattr user.pax.flags when
+	trying to set XT_PAX flags when the field doesn't already exit
+
 2011-12-28
 
 	* misc/test-revdep-pax: added a test package for revdep-pax
