@@ -19,3 +19,5 @@ fix-gnustack
 paxctl-ng
 bad-gnustack
 daemon
+#
+scripts/build

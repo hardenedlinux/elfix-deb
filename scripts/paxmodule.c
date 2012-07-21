@@ -329,3 +329,35 @@ pax_setflags(PyObject *self, PyObject *args)
 
 	return Py_BuildValue("");
 }
+
+static PyObject *
+pax_setstrflags(PyObject *self, PyObject *args)
+{
+	const char *f_name, *sflags;
+	int fd;
+	uint16_t flags;
+
+	if (!PyArg_ParseTuple(args, "ss", &f_name, &sflags))
+	{
+		PyErr_SetString(PaxError, "pax_setflags: PyArg_ParseTuple failed");
+		return NULL;
+	}
+
+	if((fd = open(f_name, O_RDWR)) < 0)
+	{
+		PyErr_SetString(PaxError, "pax_setflags: open() failed");
+		return NULL;
+	}
+
+	flags = string2bin(sflags);
+
+	set_pt_flags(fd, flags);
+
+#ifdef XATTR
+	set_xt_flags(fd, flags);
+#endif
+
+	close(fd);
+
+	return Py_BuildValue("");
+}
