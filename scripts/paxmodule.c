@@ -31,11 +31,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define BUF_SIZE	7	//Buffer size for holding human readable flags
-
 #ifdef XATTR
-#define PAX_NAMESPACE	"user.pax"
+#define PAX_NAMESPACE	"user.pax.flags"
 #endif
+
+#define FLAGS_SIZE	6
 
 
 static PyObject * pax_getflags(PyObject *, PyObject *);
@@ -114,11 +114,50 @@ get_pt_flags(int fd)
 
 #ifdef XATTR
 uint16_t
+string2bin(char *buf)
+{
+	uint16_t flags = 0;
+
+	if( buf[0] == 'P' )
+		flags |= PF_PAGEEXEC;
+	else if( buf[0] == 'p' )
+		flags |= PF_NOPAGEEXEC;
+
+	if( buf[1] == 'S' )
+		flags |= PF_SEGMEXEC;
+	else if( buf[1] == 's' )
+		flags |= PF_NOSEGMEXEC;
+
+	if( buf[2] == 'M' )
+		flags |= PF_MPROTECT;
+	else if( buf[2] == 'm' )
+		flags |= PF_NOMPROTECT;
+
+	if( buf[3] == 'E' )
+		flags |= PF_EMUTRAMP;
+	else if( buf[3] == 'e' )
+		flags |= PF_NOEMUTRAMP;
+
+	if( buf[4] == 'R' )
+		flags |= PF_RANDMMAP;
+	else if( buf[4] == 'r' )
+		flags |= PF_NORANDMMAP;
+
+	return flags;
+}
+
+
+uint16_t
 get_xt_flags(int fd)
 {
+	char buf[FLAGS_SIZE];
 	uint16_t xt_flags = UINT16_MAX;
 
-	fgetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t));
+	memset(buf, 0, FLAGS_SIZE);
+
+	if(fgetxattr(fd, PAX_NAMESPACE, buf, FLAGS_SIZE) != -1)
+		xt_flags = string2bin(buf);
+
 	return xt_flags;
 }
 #endif
@@ -141,9 +180,6 @@ bin2string(uint16_t flags, char *buf)
 
 	buf[4] = flags & PF_RANDMMAP   ? 'R' :
 		flags & PF_NORANDMMAP ? 'r' : '-';
-
-	buf[5] = flags & PF_RANDEXEC   ? 'X' :
-		flags & PF_NORANDEXEC ? 'x' : '-';
 }
 
 
@@ -253,7 +289,11 @@ set_pt_flags(int fd, uint16_t pt_flags)
 void
 set_xt_flags(int fd, uint16_t xt_flags)
 {
-	fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0);
+	char buf[FLAGS_SIZE];
+
+	memset(buf, 0, FLAGS_SIZE);
+	bin2string(xt_flags, buf);
+	fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), XATTR_REPLACE);
 }
 #endif
 
