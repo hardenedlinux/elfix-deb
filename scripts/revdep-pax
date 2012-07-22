@@ -268,7 +268,7 @@ def run_binary(binary, verbose, mark, allyes):
 		if not verbose:
 			print('\tNo mismatches\n')
 	else:
-		print()
+		print('\n'),
 		if mark:
 			print('\tWill mark libraries with %s\n' % binary_str_flags)
 			for library in mismatched_libraries:
@@ -349,7 +349,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 		if not verbose:
 			print('\tNo mismatches\n')
 	else:
-		print()
+		print('\n'),
 		if mark:
 			print('\tWill mark binaries with %s\n' % library_str_flags)
 			for binary in mismatched_binaries:
@@ -385,7 +385,7 @@ def run_usage():
 	print('Bug Reports  : http://bugs.gentoo.org/')
 	print('Program Name : revdep-pax')
 	print('Description  : Get or set pax flags on an ELF object')
-	print()
+	print('\n'),
 	print('Usage        : revdep-pax -f [-v]             print out all forward mappings for all system binaries')
 	print('             : revdep-pax -r [-ve]            print out all reverse mappings for all system sonames')
 	print('             : revdep-pax -b OBJECT  [-myv]   print all forward mappings only for OBJECT')
@@ -396,7 +396,7 @@ def run_usage():
 	print('             : -e                             only print out executables in shell $PATH')
 	print('             : -m                             don\'t just report, but mark the mismatching objects')
 	print('             : -y                             assume "yes" to all prompts for making (USE CAREFULLY!)')
-	print()
+	print('\n'),
 
 
 def main():

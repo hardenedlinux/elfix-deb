@@ -49,20 +49,49 @@ static PyMethodDef PaxMethods[] = {
 	{NULL, NULL, 0, NULL}
 };
 
+#if PY_MAJOR_VERSION >= 3
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "pax",						/* m_name */
+        "Module for setting PT_PAX and XT_PAX flags",	/* m_doc */
+        -1,						/* m_size */
+        PaxMethods,					/* m_methods */
+        NULL,						/* m_reload */
+        NULL,						/* m_traverse */
+        NULL,						/* m_clear */
+        NULL,						/* m_free */
+    };
+#endif
+
 static PyObject *PaxError;
 
 PyMODINIT_FUNC
+#if PY_MAJOR_VERSION >= 3
+PyInit_pax(void)
+#else
 initpax(void)
+#endif
 {
 	PyObject *m;
 
+#if PY_MAJOR_VERSION >= 3
+	m = PyModule_Create(&moduledef);
+#else
 	m = Py_InitModule("pax", PaxMethods);
+#endif
+
 	if (m == NULL)
 		return;
 
 	PaxError = PyErr_NewException("pax.error", NULL, NULL);
 	Py_INCREF(PaxError);
 	PyModule_AddObject(m, "error", PaxError);
+
+#if PY_MAJOR_VERSION >= 3
+	return m;
+#else
+	return;
+#endif
 }
 
 
@@ -114,7 +143,6 @@ get_pt_flags(int fd)
 }
 
 
-#ifdef XATTR
 uint16_t
 string2bin(char *buf)
 {
@@ -149,6 +177,7 @@ string2bin(char *buf)
 }
 
 
+#ifdef XATTR
 uint16_t
 get_xt_flags(int fd)
 {
