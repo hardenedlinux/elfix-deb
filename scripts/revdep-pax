@@ -102,24 +102,24 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 				missing_links.append(soname)
 
 		if verbose:
-			print '%s\n' % sv
+			print('%s\n' % sv)
 			if count == 0:
-				print '\tNo mismatches\n\n'
+				print('\tNo mismatches\n\n')
 			else:
-				print '\tMismatches\n\n'
+				print('\tMismatches\n\n')
 		else:
 			if count != 0:
-				print '%s\n\n' % s
+				print('%s\n\n' % s)
 
 	missing_binaries = set(missing_binaries)
-	print '\n**** Missing binaries ****\n'
+	print('\n**** Missing binaries ****\n')
 	for m in missing_binaries:
-		print '\t%s\n' % m
+		print('\t%s\n' % m)
 
 	missing_links = set(missing_links)
-	print '\n**** Missing forward linkings ****\n'
+	print('\n**** Missing forward linkings ****\n')
 	for m in missing_links:
-		print '\t%s\n' % m
+		print('\t%s\n' % m)
 
 
 def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, executable_only ):
@@ -156,24 +156,24 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, exec
 				missing_links.append(binary)
 
 		if verbose:
-			print '%s\n' % sv
+			print('%s\n' % sv)
 			if count == 0:
-				print '\tNo mismatches\n\n'
+				print('\tNo mismatches\n\n')
 			else:
-				print '\tMismatches\n\n'
+				print('\tMismatches\n\n')
 		else:
 			if count != 0:
-				print '%s\n\n' % s
+				print('%s\n\n' % s)
 
 	missing_sonames = set(missing_sonames)
-	print '\n**** Missing sonames ****\n'
+	print('\n**** Missing sonames ****\n')
 	for m in missing_sonames:
-		print '\t%s\n' % m
+		print('\t%s\n' % m)
 
 	missing_links = set(missing_links)
-	print '\n**** Missing reverse linkings ****\n'
+	print('\n**** Missing reverse linkings ****\n')
 	for m in missing_links:
-		print '\t%s\n' % m
+		print('\t%s\n' % m)
 
 
 def run_forward(verbose):
@@ -229,15 +229,15 @@ def migrate_flags(importer, exporter_str_flags, exporter_bin_flags):
 		if importer_str_flags[i].isupper() and exporter_str_flags[i].islower():
 			result_bin_flags = result_bin_flags ^ pf_flags[exporter_str_flags[i]]
 			result_bin_flags = result_bin_flags | pf_flags[importer_str_flags[i]]
-			print '\t\tWarning: %s has %s, refusing to set to %s' % (
-				importer, importer_str_flags[i], exporter_str_flags[i] ),
+			print('\t\tWarning: %s has %s, refusing to set to %s' % (
+				importer, importer_str_flags[i], exporter_str_flags[i] )),
 		if importer_str_flags[i].isupper() and exporter_str_flags[i] == '-':
 			result_bin_flags = result_bin_flags | pf_flags[importer_str_flags[i]]
 		if importer_str_flags[i].islower() and exporter_str_flags[i].isupper():
 			result_bin_flags = result_bin_flags ^ pf_flags[exporter_str_flags[i]]
 			result_bin_flags = result_bin_flags | pf_flags[importer_str_flags[i]]
-			print '\t\tWarning: %s has %s, refusing to set to %s' % (
-				importer, importer_str_flags[i], exporter_str_flags[i] ),
+			print('\t\tWarning: %s has %s, refusing to set to %s' % (
+				importer, importer_str_flags[i], exporter_str_flags[i] )),
 		if importer_str_flags[i].islower() and exporter_str_flags[i] == '-':
 			result_bin_flags = result_bin_flags | pf_flags[importer_str_flags[i]]
 
@@ -247,7 +247,7 @@ def migrate_flags(importer, exporter_str_flags, exporter_bin_flags):
 def run_binary(binary, verbose, mark, allyes):
 	( linkings, mappings ) = get_ldd_linkings(binary)
 	( binary_str_flags, binary_bin_flags ) = pax.getflags(binary)
-	print '%s (%s)\n' % ( binary, binary_str_flags )
+	print('%s (%s)\n' % ( binary, binary_str_flags ))
 
 	mismatched_libraries = []
 
@@ -256,22 +256,21 @@ def run_binary(binary, verbose, mark, allyes):
 			library = mappings[soname]
 			( library_str_flags, library_bin_flags ) = pax.getflags(library)
 			if verbose:
-				print '\t%s\t%s ( %s )' % ( soname, library, library_str_flags )
+				print('\t%s\t%s ( %s )' % ( soname, library, library_str_flags ))
 			if binary_str_flags != library_str_flags:
 				mismatched_libraries.append(library)
 				if not verbose:
-					print '\t%s\t%s ( %s )' % ( soname, library, library_str_flags )
+					print('\t%s\t%s ( %s )' % ( soname, library, library_str_flags ))
 		except:
-			print 'file for soname %s not found' % soname
+			print('file for soname %s not found' % soname)
 
 	if len(mismatched_libraries) == 0:
 		if not verbose:
-			print '\tNo mismatches\n'
+			print('\tNo mismatches\n')
 	else:
-		print
+		print()
 		if mark:
-			print '\tWill mark libraries with %s' % binary_str_flags
-			print
+			print('\tWill mark libraries with %s\n' % binary_str_flags)
 			for library in mismatched_libraries:
 				do_marking = False
 				while True:
@@ -286,16 +285,16 @@ def run_binary(binary, verbose, mark, allyes):
 						do_marking = False
 						break
 					else:
-						print '\t\tPlease enter y or n'
+						print('\t\tPlease enter y or n')
 
 				if do_marking:
 					try:
 						migrate_flags(library, binary_str_flags, binary_bin_flags)
 					except:
-						print "\n\tCould not set pax flags on %s, file is probably busy" % library
-						print "\tShut down all processes that use it and try again"
+						print("\n\tCould not set pax flags on %s, file is probably busy" % library)
+						print("\tShut down all processes that use it and try again")
 					( library_str_flags, library_bin_flags ) = pax.getflags(library)
-					print '\n\t\t%s ( %s )\n' % ( library, library_str_flags )
+					print('\n\t\t%s ( %s )\n' % ( library, library_str_flags ))
 
 
 def invert_so2library_mappings( so2library_mappings ):
@@ -321,7 +320,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 	library = so2library_mappings[soname]
 
 	( library_str_flags, library_bin_flags ) = pax.getflags(library)
-	print '%s\t%s (%s)\n' % ( soname, library, library_str_flags )
+	print('%s\t%s (%s)\n' % ( soname, library, library_str_flags ))
 
 	mismatched_binaries = []
 	for binary in linkings:
@@ -330,29 +329,29 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 			if verbose:
 				if executable_only:
 					if os.path.dirname(binary) in shell_path:	
-						print '\t%s ( %s )' % ( binary, binary_str_flags )
+						print('\t%s ( %s )' % ( binary, binary_str_flags ))
 				else:
-					print '\t%s ( %s )' % ( binary, binary_str_flags )
+					print('\t%s ( %s )' % ( binary, binary_str_flags ))
 			if library_str_flags != binary_str_flags:
 				if executable_only:
 					if os.path.dirname(binary) in shell_path:	
 						mismatched_binaries.append(binary)
 						if not verbose:
-							print '\t%s ( %s )' % ( binary, binary_str_flags )
+							print('\t%s ( %s )' % ( binary, binary_str_flags ))
 				else:
 					mismatched_binaries.append(binary)
 					if not verbose:
-						print '\t%s ( %s )' % ( binary, binary_str_flags )
+						print('\t%s ( %s )' % ( binary, binary_str_flags ))
 		except:
-			print 'cannot obtain pax flags for %s' % binary
+			print('cannot obtain pax flags for %s' % binary)
 
 	if len(mismatched_binaries) == 0:
 		if not verbose:
-			print '\tNo mismatches\n'
+			print('\tNo mismatches\n')
 	else:
-		print
+		print()
 		if mark:
-			print '\tWill mark binaries with %s\n' % library_str_flags
+			print('\tWill mark binaries with %s\n' % library_str_flags)
 			for binary in mismatched_binaries:
 				if executable_only:
 					if not os.path.dirname(binary) in shell_path:
@@ -370,41 +369,41 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 						do_marking = False
 						break
 					else:
-						print '\t\tPlease enter y or n'
+						print('\t\tPlease enter y or n')
 				if do_marking:
 					try:
 						migrate_flags(binary, library_str_flags, library_bin_flags)
 					except:
-						print "\n\tCould not set pax flags on %s, file is probably busy" % binary
-						print "\tShut down all processes that use it and try again"
+						print('\n\tCould not set pax flags on %s, file is probably busy' % binary)
+						print('\tShut down all processes that use it and try again')
 					( binary_str_flags, binary_bin_flags ) = pax.getflags(binary)
-					print '\n\t\t%s ( %s )\n' % ( binary, binary_str_flags )
+					print('\n\t\t%s ( %s )\n' % ( binary, binary_str_flags ))
 
 
 def run_usage():
-	print 'Package Name : elfix'
-	print 'Bug Reports  : http://bugs.gentoo.org/'
-	print 'Program Name : revdep-pax'
-	print 'Description  : Get or set pax flags on an ELF object'
-	print
-	print 'Usage        : revdep-pax -f [-v]             print out all forward mappings for all system binaries'
-	print '             : revdep-pax -r [-ve]            print out all reverse mappings for all system sonames'
-	print '             : revdep-pax -b OBJECT  [-myv]   print all forward mappings only for OBJECT'
-	print '             : revdep-pax -s SONAME  [-myve]  print all reverse mappings only for SONAME'
-	print '             : revdep-pax -l LIBRARY [-myve]  print all reverse mappings only for LIBRARY file'
-	print '             : revdep-pax [-h]                print out this help'
-	print '             : -v                             verbose, otherwise just print mismatching objects'
-	print '             : -e                             only print out executables in shell $PATH'
-	print '             : -m                             don\'t just report, but mark the mismatching objects'
-	print '             : -y                             assume "yes" to all prompts for making (USE CAREFULLY!)'
-	print
+	print('Package Name : elfix')
+	print('Bug Reports  : http://bugs.gentoo.org/')
+	print('Program Name : revdep-pax')
+	print('Description  : Get or set pax flags on an ELF object')
+	print()
+	print('Usage        : revdep-pax -f [-v]             print out all forward mappings for all system binaries')
+	print('             : revdep-pax -r [-ve]            print out all reverse mappings for all system sonames')
+	print('             : revdep-pax -b OBJECT  [-myv]   print all forward mappings only for OBJECT')
+	print('             : revdep-pax -s SONAME  [-myve]  print all reverse mappings only for SONAME')
+	print('             : revdep-pax -l LIBRARY [-myve]  print all reverse mappings only for LIBRARY file')
+	print('             : revdep-pax [-h]                print out this help')
+	print('             : -v                             verbose, otherwise just print mismatching objects')
+	print('             : -e                             only print out executables in shell $PATH')
+	print('             : -m                             don\'t just report, but mark the mismatching objects')
+	print('             : -y                             assume "yes" to all prompts for making (USE CAREFULLY!)')
+	print()
 
 
 def main():
 	try:
 		opts, args = getopt.getopt(sys.argv[1:], 'hfrb:s:l:vemy')
-	except getopt.GetoptError, err:
-		print str(err) # will print something like 'option -a not recognized'
+	except getopt.GetoptError as err:
+		print(str(err)) # will print something like 'option -a not recognized'
 		run_usage()
 		sys.exit(1)
 
@@ -455,8 +454,8 @@ def main():
 		elif o == '-y':
 			allyes = True
 		else:
-			print 'Option included in getopt but not handled here!'
-			print 'Please file a bug'
+			print('Option included in getopt but not handled here!')
+			print('Please file a bug')
 			sys.exit(1)
 
 	# Only allow one of -h, -f -r -b -s
@@ -470,18 +469,18 @@ def main():
 		try:
 			run_binary(binary, verbose, mark, allyes)
 		except:
-			print 'Please check that %s exists!' % binary
+			print('Please check that %s exists!' % binary)
 	elif soname != None:
 		try:
 			run_soname(soname, verbose, True, mark, allyes, executable_only)
 		except:
-			print 'Please check that %s exists!' % soname
+			print('Please check that %s exists!' % soname)
 	elif library != None:
 		try:
 			library = os.path.realpath(library)
 			run_soname(library, verbose, False, mark, allyes, executable_only)
 		except:
-			print 'Please check that %s exists!' % library
+			print('Please check that %s exists!' % library)
 
 if __name__ == '__main__':
     main()
