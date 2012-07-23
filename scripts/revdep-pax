@@ -7,6 +7,15 @@ import subprocess
 import re
 import pax
 
+
+#python2/3 compat input
+def get_input(prompt):
+	if sys.hexversion > 0x03000000:
+		return input(prompt)
+	else:
+		return raw_input(prompt)
+
+
 def get_ldd_linkings(binary):
 	ldd_output = subprocess.Popen(['/usr/bin/ldd', binary], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	ldd_lines = ldd_output.stdout.read().decode().split('\n')
@@ -274,7 +283,7 @@ def run_binary(binary, verbose, mark, allyes):
 					if allyes:
 						ans = 'y'
 					else:
-						ans = input('\tSet flags for %s (y/n): ' % library)
+						ans = get_input('\tSet flags for %s (y/n): ' % library)
 					if ans == 'y':
 						do_marking = True
 						break
@@ -367,7 +376,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 					if allyes:
 						ans = 'y'
 					else:
-						ans = input('\tSet flags for %s (y/n): ' % binary)
+						ans = get_input('\tSet flags for %s (y/n): ' % binary)
 					if ans == 'y':
 						do_marking = True
 						break
