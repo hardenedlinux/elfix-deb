@@ -68,13 +68,10 @@ def get_forward_linkings():
 
 def invert_linkings( forward_linkings ):
 	reverse_linkings = {}
-	for binary in forward_linkings:
-		for library in forward_linkings[binary]:
-			reverse_linkings[library] = []
 
 	for binary in forward_linkings:
 		for library in forward_linkings[binary]:
-			reverse_linkings[library].append(binary)
+			reverse_linkings.setdefault(library,[]).append(binary)
 
 	return reverse_linkings 
 
