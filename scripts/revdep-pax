@@ -8,14 +8,8 @@ import re
 import pax
 
 def get_ldd_linkings(binary):
-	try:
-		#TODO: when subprocess.DEVNULL makes it to python, change this: http://bugs.python.org/issue5870
-		ldd_output = subprocess.check_output(['/usr/bin/ldd', binary], stderr=subprocess.PIPE)
-	except Subprocess.CalledProcessError:
-		#TODO: we should record these binaries which are probably statically linked
-		return []
-
-	ldd_lines = ldd_output.split('\n')
+	ldd_output = subprocess.Popen(['/usr/bin/ldd', binary], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	ldd_lines = ldd_output.stdout.read().decode().split('\n')
 
 	linkings = []
 	mappings = {}
@@ -37,7 +31,7 @@ def get_ldd_linkings(binary):
 
 
 def get_forward_linkings():
-	#TODO: I'm still not sure we wan to use /var/db/pkg vs some path of binaries
+	#TODO: I'm still not sure we want to use /var/db/pkg vs some path of binaries
 	var_db_pkg = '/var/db/pkg'
 
 	forward_linkings = {}
@@ -57,8 +51,8 @@ def get_forward_linkings():
 					( linkings, mappings ) = get_ldd_linkings(binary)
 					forward_linkings[binary] = linkings 
 					so2library_mappings.update(mappings)
-			except SyntaxError:
-				continue
+			except IOError:
+				continue #File probably doesn't exist, which is okay
 
 	return ( forward_linkings, so2library_mappings )
 
@@ -85,7 +79,7 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 			( binary_str_flags, binary_bin_flags ) = pax.getflags(binary)
 			sv = '%s ( %s )\n' % ( binary, binary_str_flags )
 			s = sv
-		except SyntaxError:
+		except pax.error:
 			missing_binaries.append(binary)
 			continue
 
@@ -98,7 +92,7 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 				if binary_str_flags != library_str_flags:
 					s = '%s\n\t%s\t%s ( %s )' % ( s, soname, library, library_str_flags )
 					count = count + 1
-			except SyntaxError:
+			except pax.error:
 				missing_links.append(soname)
 
 		if verbose:
@@ -133,7 +127,7 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, exec
 			( library_str_flags, library_bin_flags ) = pax.getflags(library)
 			sv = '%s\t%s ( %s )\n' % ( soname, library, library_str_flags )
 			s = sv
-		except SyntaxError:
+		except pax.error:
 			missing_sonames.append(soname)
 			continue
 
@@ -152,7 +146,7 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, exec
 					if library_str_flags != binary_str_flags:
 						s = '%s\n\t%s ( %s )' % ( s, binary, binary_str_flags )
 						count = count + 1
-			except SyntaxError:
+			except pax.error:
 				missing_links.append(binary)
 
 		if verbose:
@@ -261,7 +255,7 @@ def run_binary(binary, verbose, mark, allyes):
 				mismatched_libraries.append(library)
 				if not verbose:
 					print('\t%s\t%s ( %s )' % ( soname, library, library_str_flags ))
-		except SyntaxError:
+		except pax.error:
 			print('file for soname %s not found' % soname)
 
 	if len(mismatched_libraries) == 0:
@@ -290,7 +284,7 @@ def run_binary(binary, verbose, mark, allyes):
 				if do_marking:
 					try:
 						migrate_flags(library, binary_str_flags, binary_bin_flags)
-					except SyntaxError:
+					except pax.error:
 						print("\n\tCould not set pax flags on %s, file is probably busy" % library)
 						print("\tShut down all processes that use it and try again")
 					( library_str_flags, library_bin_flags ) = pax.getflags(library)
@@ -342,7 +336,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 					mismatched_binaries.append(binary)
 					if not verbose:
 						print('\t%s ( %s )' % ( binary, binary_str_flags ))
-		except SyntaxError:
+		except pax.error:
 			print('cannot obtain pax flags for %s' % binary)
 
 	if len(mismatched_binaries) == 0:
@@ -373,7 +367,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 				if do_marking:
 					try:
 						migrate_flags(binary, library_str_flags, library_bin_flags)
-					except SyntaxError:
+					except pax.error:
 						print('\n\tCould not set pax flags on %s, file is probably busy' % binary)
 						print('\tShut down all processes that use it and try again')
 					( binary_str_flags, binary_bin_flags ) = pax.getflags(binary)
@@ -466,21 +460,12 @@ def main():
 	elif do_reverse:
 		run_reverse(verbose, executable_only)
 	elif binary != None:
-		try:
-			run_binary(binary, verbose, mark, allyes)
-		except SyntaxError:
-			print('Please check that %s exists!' % binary)
+		run_binary(binary, verbose, mark, allyes)
 	elif soname != None:
-		try:
-			run_soname(soname, verbose, True, mark, allyes, executable_only)
-		except SyntaxError:
-			print('Please check that %s exists!' % soname)
+		run_soname(soname, verbose, True, mark, allyes, executable_only)
 	elif library != None:
-		try:
-			library = os.path.realpath(library)
-			run_soname(library, verbose, False, mark, allyes, executable_only)
-		except SyntaxError:
-			print('Please check that %s exists!' % library)
+		library = os.path.realpath(library)
+		run_soname(library, verbose, False, mark, allyes, executable_only)
 
 if __name__ == '__main__':
     main()
