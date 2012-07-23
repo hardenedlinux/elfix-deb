@@ -99,7 +99,7 @@ main( int argc, char *argv[])
 	{
 		if((fd = open(f_name, O_RDWR)) < 0)
 			error(EXIT_FAILURE, 0, "open() fail.");
-		if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
+		if((elf = elf_begin(fd, ELF_C_RDWR, NULL)) == NULL)
 			error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
 	}
 	else
