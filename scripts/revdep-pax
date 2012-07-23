@@ -11,7 +11,7 @@ def get_ldd_linkings(binary):
 	try:
 		#TODO: when subprocess.DEVNULL makes it to python, change this: http://bugs.python.org/issue5870
 		ldd_output = subprocess.check_output(['/usr/bin/ldd', binary], stderr=subprocess.PIPE)
-	except:
+	except Subprocess.CalledProcessError:
 		#TODO: we should record these binaries which are probably statically linked
 		return []
 
@@ -57,7 +57,7 @@ def get_forward_linkings():
 					( linkings, mappings ) = get_ldd_linkings(binary)
 					forward_linkings[binary] = linkings 
 					so2library_mappings.update(mappings)
-			except:
+			except SyntaxError:
 				continue
 
 	return ( forward_linkings, so2library_mappings )
@@ -85,7 +85,7 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 			( binary_str_flags, binary_bin_flags ) = pax.getflags(binary)
 			sv = '%s ( %s )\n' % ( binary, binary_str_flags )
 			s = sv
-		except:
+		except SyntaxError:
 			missing_binaries.append(binary)
 			continue
 
@@ -98,7 +98,7 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 				if binary_str_flags != library_str_flags:
 					s = '%s\n\t%s\t%s ( %s )' % ( s, soname, library, library_str_flags )
 					count = count + 1
-			except:
+			except SyntaxError:
 				missing_links.append(soname)
 
 		if verbose:
@@ -133,7 +133,7 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, exec
 			( library_str_flags, library_bin_flags ) = pax.getflags(library)
 			sv = '%s\t%s ( %s )\n' % ( soname, library, library_str_flags )
 			s = sv
-		except:
+		except SyntaxError:
 			missing_sonames.append(soname)
 			continue
 
@@ -152,7 +152,7 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, exec
 					if library_str_flags != binary_str_flags:
 						s = '%s\n\t%s ( %s )' % ( s, binary, binary_str_flags )
 						count = count + 1
-			except:
+			except SyntaxError:
 				missing_links.append(binary)
 
 		if verbose:
@@ -261,7 +261,7 @@ def run_binary(binary, verbose, mark, allyes):
 				mismatched_libraries.append(library)
 				if not verbose:
 					print('\t%s\t%s ( %s )' % ( soname, library, library_str_flags ))
-		except:
+		except SyntaxError:
 			print('file for soname %s not found' % soname)
 
 	if len(mismatched_libraries) == 0:
@@ -290,7 +290,7 @@ def run_binary(binary, verbose, mark, allyes):
 				if do_marking:
 					try:
 						migrate_flags(library, binary_str_flags, binary_bin_flags)
-					except:
+					except SyntaxError:
 						print("\n\tCould not set pax flags on %s, file is probably busy" % library)
 						print("\tShut down all processes that use it and try again")
 					( library_str_flags, library_bin_flags ) = pax.getflags(library)
@@ -342,7 +342,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 					mismatched_binaries.append(binary)
 					if not verbose:
 						print('\t%s ( %s )' % ( binary, binary_str_flags ))
-		except:
+		except SyntaxError:
 			print('cannot obtain pax flags for %s' % binary)
 
 	if len(mismatched_binaries) == 0:
@@ -373,7 +373,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 				if do_marking:
 					try:
 						migrate_flags(binary, library_str_flags, library_bin_flags)
-					except:
+					except SyntaxError:
 						print('\n\tCould not set pax flags on %s, file is probably busy' % binary)
 						print('\tShut down all processes that use it and try again')
 					( binary_str_flags, binary_bin_flags ) = pax.getflags(binary)
@@ -468,18 +468,18 @@ def main():
 	elif binary != None:
 		try:
 			run_binary(binary, verbose, mark, allyes)
-		except:
+		except SyntaxError:
 			print('Please check that %s exists!' % binary)
 	elif soname != None:
 		try:
 			run_soname(soname, verbose, True, mark, allyes, executable_only)
-		except:
+		except SyntaxError:
 			print('Please check that %s exists!' % soname)
 	elif library != None:
 		try:
 			library = os.path.realpath(library)
 			run_soname(library, verbose, False, mark, allyes, executable_only)
-		except:
+		except SyntaxError:
 			print('Please check that %s exists!' % library)
 
 if __name__ == '__main__':
