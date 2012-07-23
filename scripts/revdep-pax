@@ -239,6 +239,9 @@ def migrate_flags(importer, exporter_str_flags, exporter_bin_flags):
 
 
 def run_binary(binary, verbose, mark, allyes):
+	if not os.path.exists(binary):
+		print('%s\tNo such OBJECT' % binary)
+		return
 	( linkings, mappings ) = get_ldd_linkings(binary)
 	( binary_str_flags, binary_bin_flags ) = pax.getflags(binary)
 	print('%s (%s)\n' % ( binary, binary_str_flags ))
@@ -308,9 +311,18 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 		soname = name
 	else:
 		library2soname_mappings = invert_so2library_mappings(so2library_mappings)
-		soname = library2soname_mappings[name]
+		try:
+			soname = library2soname_mappings[name]
+		except KeyError:
+			print('%s\tNo such LIBRARY' % name)
+			return
 
-	linkings = reverse_linkings[soname]
+	try:
+		linkings = reverse_linkings[soname]
+	except KeyError:
+		print('%s\tNo such SONAME' % soname)
+		return
+
 	library = so2library_mappings[soname]
 
 	( library_str_flags, library_bin_flags ) = pax.getflags(library)
