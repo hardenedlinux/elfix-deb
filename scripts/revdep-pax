@@ -277,7 +277,7 @@ def run_binary(binary, verbose, mark, allyes):
 					if allyes:
 						ans = 'y'
 					else:
-						ans = raw_input('\tSet flags for %s (y/n): ' % library)
+						ans = input('\tSet flags for %s (y/n): ' % library)
 					if ans == 'y':
 						do_marking = True
 						break
@@ -299,7 +299,7 @@ def run_binary(binary, verbose, mark, allyes):
 
 def invert_so2library_mappings( so2library_mappings ):
 	library2soname_mappings = {}
-	for soname, library in so2library_mappings.iteritems():
+	for soname, library in so2library_mappings.items():
 		library2soname_mappings[library] = soname
 	return library2soname_mappings
 
@@ -361,7 +361,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 					if allyes:
 						ans = 'y'
 					else:
-						ans = raw_input('\tSet flags for %s (y/n): ' % binary)
+						ans = input('\tSet flags for %s (y/n): ' % binary)
 					if ans == 'y':
 						do_marking = True
 						break
