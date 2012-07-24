@@ -1,3 +1,21 @@
+2012-07-24
+
+	* scripts/{revdep-pax,paxmodule.c,pypaxctl}: python2/3 compat
+	* src/{fix-gnustack.c,paxctl-ng.c}, scripts/paxmodule.c:
+	switch from ELF_C_RDWR_MMAP to ELF_C_RDWR to link again libelf
+	for uclibc systems
+	* scripts/revdep-pax: remove bare exception handling, catch only
+	exceptions which are well understood, eg pax.error
+	* scripts/revdep-pax: switch from subprocess.check_output to
+	subprocess.Popen for better behavior
+	* scripts/revdep-pax: add sanity checks for missing OBJECT, SONAME,
+	and LIBRARY passed on the command line
+	* scripts/revdep-pax: simplify map reversal using setdefault to
+	avoid a double loop
+
+	Thanks to Arfrever Frehtes Taifersar Arahesis <arfrever@gentoo.org>
+	and Brian Dolbec <dolsen@gentoo.org>
+
 2012-07-21
 
 	* scripts/revdep-pax: add option to only print out executables,
