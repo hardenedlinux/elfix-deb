@@ -13,9 +13,6 @@
 	* scripts/revdep-pax: simplify map reversal using setdefault to
 	avoid a double loop
 
-	Thanks to Arfrever Frehtes Taifersar Arahesis <arfrever@gentoo.org>
-	and Brian Dolbec <dolsen@gentoo.org>
-
 2012-07-21
 
 	* scripts/revdep-pax: add option to only print out executables,
