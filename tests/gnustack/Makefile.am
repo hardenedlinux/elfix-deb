@@ -1,15 +1,11 @@
 noinst_PROGRAMS = bad-gnustack
-bad_gnustack_SOURCES = bad-gnustack.c
-bad_gnustack_DEPENDENCIES = bad-asm.o
-bad_gnustack_LDADD = bad-asm.o
-
-EXTRA_DIST = bad64.asm bad32.asm
+bad_gnustack_SOURCES = bad64.s bad32.s
 
 ARCH = $(shell uname -m | sed -e 's/i./x/')
 
-bad-asm.o: bad64.asm bad32.asm
-	[[ "$(ARCH)" == "x86" ]] && yasm -f elf -m x86 bad32.asm && mv bad32.o bad-asm.o || true
-	[[ "$(ARCH)" == "x86_64" ]] && yasm -f elf -m amd64 bad64.asm && mv bad64.o bad-asm.o || true
+bad-gnustack: bad64.s bad32.s
+	[[ "$(ARCH)" == "x86" ]]    && $(CCAS) -m32 -o bad-gnustack bad32.s || true
+	[[ "$(ARCH)" == "x86_64" ]] && $(CCAS) -m64 -o bad-gnustack bad64.s || true
 
 check_SCRIPTS = test.sh
 TEST = $(check_SCRIPTS)
@@ -17,12 +13,12 @@ TEST = $(check_SCRIPTS)
 test.sh:
 	@echo "================================================================================"
 	@echo
-	@echo "Fixing Bad GNU_STACK Elf"
+	@echo "Before GNU_STACK Elf: "
 	@../../src/fix-gnustack -f bad-gnustack
 	@echo
-	@echo "Fixed Bad GNU_STACK Elf"
+	@echo "After GNU_STACK Elf: "
 	@../../src/fix-gnustack bad-gnustack
 	@echo
 	@echo "================================================================================"
 
-CLEANFILES = bad-asm.o test.sh
+CLEANFILES = *.o test.sh

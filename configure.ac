@@ -6,6 +6,7 @@ AC_INIT([elfix], [0.5], [http://bugs.gentoo.org/])
 AC_CONFIG_SRCDIR([src/fix-gnustack.c])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.11 foreign])
+AM_SILENT_RULES([yes])
 
 AC_ARG_ENABLE(
 	[tests],
@@ -61,6 +62,7 @@ AC_ARG_ENABLE(
 # Checks for programs.
 AC_PROG_AWK
 AC_PROG_CC
+AM_PROG_AS
 
 # Checks for libraries.
 AC_CHECK_LIB([elf], [elf_begin],[],[AC_MSG_ERROR(["Missing necessary function elf_begin in libelf"])])
