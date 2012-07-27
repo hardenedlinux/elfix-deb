@@ -216,7 +216,7 @@ get_pt_flags(int fd, int verbose)
 		return pt_flags;
 	}
 
-	if((elf = elf_begin(fd, ELF_C_READ, NULL)) == NULL)
+	if((elf = elf_begin(fd, ELF_C_READ_MMAP, NULL)) == NULL)
 	{
 		if(verbose)
 			printf("\tELF ERROR: elf_begin() fail: %s\n", elf_errmsg(elf_errno()));
@@ -460,7 +460,7 @@ set_pt_flags(int fd, uint16_t pt_flags, int verbose)
 		return;
 	}
 
-	if((elf = elf_begin(fd, ELF_C_RDWR, NULL)) == NULL)
+	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
 	{
 		if(verbose)
 			printf("\tELF ERROR: elf_begin() fail: %s\n", elf_errmsg(elf_errno()));
