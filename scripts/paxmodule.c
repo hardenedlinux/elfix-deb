@@ -110,7 +110,7 @@ get_pt_flags(int fd)
 		return pt_flags;
 	}
 
-	if((elf = elf_begin(fd, ELF_C_READ, NULL)) == NULL)
+	if((elf = elf_begin(fd, ELF_C_READ_MMAP, NULL)) == NULL)
 	{
 		PyErr_SetString(PaxError, "get_pt_flags: elf_begin() failed");
 		return pt_flags;
@@ -275,7 +275,7 @@ set_pt_flags(int fd, uint16_t pt_flags)
 		return;
 	}
 
-	if((elf = elf_begin(fd, ELF_C_RDWR, NULL)) == NULL)
+	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
 	{
 		PyErr_SetString(PaxError, "set_pt_flags: elf_begin() failed");
 		return;
