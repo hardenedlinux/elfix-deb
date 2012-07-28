@@ -14,17 +14,9 @@ AC_ARG_ENABLE(
 		[--enable-tests],
 		[perform tests]
 	),
-	[
-		AS_IF(
-			[test "x$enable_tests" = "xyes"],
-			[
-				AC_CHECK_PROG([has_yasm],[yasm],["yes"],["no"])
-				AS_IF([test "x$has_yasm" = "xno"],AC_MSG_ERROR(["Missing yasm assembler"]))
-			]
-		)
-	]
+	[test "x$enable_tests" = "xyes"]
 )
-AM_CONDITIONAL([TEST],[test "x$has_yasm" = "xyes"])
+AM_CONDITIONAL([TEST],[test "x$enable_tests" = "xyes"])
 
 AC_ARG_ENABLE(
 	[xattr],
