@@ -21,4 +21,4 @@ test.sh:
 	@echo
 	@echo "================================================================================"
 
-CLEANFILES = *.o test.sh
+CLEANFILES = *.o *.s test.sh
