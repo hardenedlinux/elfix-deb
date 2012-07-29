@@ -2,7 +2,7 @@ noinst_PROGRAMS = bad-gnustack
 
 bad-gnustack.s: bad-gnustack.c
 	$(CC) -S $<
-	sed -i -e 's/GNU-stack,"",@progbits/GNU-stack,"x",@progbits/' $@
+	$(SED) -i -e 's/GNU-stack,"",/GNU-stack,"x",/' $@
 
 bad-gnustack: bad-gnustack.s
 	$(CC) -o $@ $<

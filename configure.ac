@@ -54,6 +54,7 @@ AC_ARG_ENABLE(
 # Checks for programs.
 AC_PROG_AWK
 AC_PROG_CC
+AC_PROG_SED
 
 # Checks for libraries.
 AC_CHECK_LIB([elf], [elf_begin],[],[AC_MSG_ERROR(["Missing necessary function elf_begin in libelf"])])
