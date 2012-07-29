@@ -1,11 +1,11 @@
 noinst_PROGRAMS = bad-gnustack
-bad_gnustack_SOURCES = bad64.s bad32.s
 
-ARCH = $(shell uname -m | sed -e 's/i./x/')
+bad-gnustack.s: bad-gnustack.c
+	$(CC) -S $<
+	sed -i -e 's/GNU-stack,"",@progbits/GNU-stack,"x",@progbits/' $@
 
-bad-gnustack: bad64.s bad32.s
-	[[ "$(ARCH)" == "x86" ]]    && $(CCAS) -m32 -o bad-gnustack bad32.s || true
-	[[ "$(ARCH)" == "x86_64" ]] && $(CCAS) -m64 -o bad-gnustack bad64.s || true
+bad-gnustack: bad-gnustack.s
+	$(CC) -o $@ $<
 
 check_SCRIPTS = test.sh
 TEST = $(check_SCRIPTS)
