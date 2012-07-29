@@ -1,3 +1,9 @@
+2012-07-29
+
+	* remove unnecessary check for yasm in configure.ac
+	* make tests/gnustack machine independant by generating
+	native assembly using gcc
+
 2012-07-27
 
 	* switch from yasm to gcc for assembler for arches other than
