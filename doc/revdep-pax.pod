@@ -72,7 +72,7 @@ so that the PaX flags of the target inherit the flags of the source.
 
 =item
 
-=item B<-y>   Assume "yes" to all prompts for making (USE CAREFULLY!)
+=item B<-y>   Assume "yes" to all prompts for marking (USE CAREFULLY!)
 
 =item
 

@@ -407,7 +407,7 @@ def run_usage():
 	print('             : -v                             verbose, otherwise just print mismatching objects')
 	print('             : -e                             only print out executables in shell $PATH')
 	print('             : -m                             don\'t just report, but mark the mismatching objects')
-	print('             : -y                             assume "yes" to all prompts for making (USE CAREFULLY!)')
+	print('             : -y                             assume "yes" to all prompts for marking (USE CAREFULLY!)')
 	print('\n'),
 
 
