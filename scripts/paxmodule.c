@@ -22,7 +22,7 @@
 
 #include <gelf.h>
 
-#ifdef XATTR
+#ifdef XTPAX
 #include <attr/xattr.h>
 #endif
 
@@ -31,7 +31,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#ifdef XATTR
+#ifdef XTPAX
 #define PAX_NAMESPACE	"user.pax.flags"
 #endif
 
@@ -177,7 +177,7 @@ string2bin(char *buf)
 }
 
 
-#ifdef XATTR
+#ifdef XTPAX
 uint16_t
 get_xt_flags(int fd)
 {
@@ -236,7 +236,7 @@ pax_getflags(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-#ifdef XATTR
+#ifdef XTPAX
 	flags = get_xt_flags(fd);
 	if( flags != UINT16_MAX )
 	{
@@ -252,7 +252,7 @@ pax_getflags(PyObject *self, PyObject *args)
 			memset(buf, 0, FLAGS_SIZE);
 			bin2string(flags, buf);
 		}
-#ifdef XATTR
+#ifdef XTPAX
 	}
 #endif
 
@@ -316,7 +316,7 @@ set_pt_flags(int fd, uint16_t pt_flags)
 }
 
 
-#ifdef XATTR
+#ifdef XTPAX
 void
 set_xt_flags(int fd, uint16_t xt_flags)
 {
@@ -352,7 +352,7 @@ pax_setbinflags(PyObject *self, PyObject *args)
 
 	set_pt_flags(fd, flags);
 
-#ifdef XATTR
+#ifdef XTPAX
 	set_xt_flags(fd, flags);
 #endif
 
@@ -384,7 +384,7 @@ pax_setstrflags(PyObject *self, PyObject *args)
 
 	set_pt_flags(fd, flags);
 
-#ifdef XATTR
+#ifdef XTPAX
 	set_xt_flags(fd, flags);
 #endif
 

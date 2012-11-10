@@ -18,51 +18,14 @@ AC_ARG_ENABLE(
 )
 AM_CONDITIONAL([TEST],[test "x$enable_tests" = "xyes"])
 
-AC_ARG_ENABLE(
-	[xattr],
-	AS_HELP_STRING(
-		[--enable-xattr],
-		[enable support for pax markings in xattrs]
-	),
-	[
-		AS_IF(
-			[test "x$enable_xattr" = "xyes"],
-			[
-				AC_CHECK_HEADERS(
-					[attr/xattr.h],
-					[],
-					[AC_MSG_ERROR(["Missing necessary attr/xattr.h"])]
-				)
-				AC_CHECK_LIB(
-					[attr],
-					[fgetxattr],
-					[],
-					[AC_MSG_ERROR(["Missing necessary function fgetxattr in libattr"])]
-				)
-				CFLAGS+=" -DXATTR"
-			],
-			[
-				CFLAGS+=" -UXATTR"
-			]
-		)
-	],
-	[
-		CFLAGS+=" -DXATTR"
-	]
-)
-
 # Checks for programs.
 AC_PROG_AWK
 AC_PROG_CC
 AC_PROG_SED
 
-# Checks for libraries.
-AC_CHECK_LIB([elf], [elf_begin],[],[AC_MSG_ERROR(["Missing necessary function elf_begin in libelf"])])
-
 # Checks for header files.
-
 AC_CHECK_HEADERS(
-	[errno.h error.h fcntl.h gelf.h libgen.h stdio.h stdlib.h string.h \
+	[errno.h error.h fcntl.h libgen.h stdio.h stdlib.h string.h \
 	sys/mman.h sys/stat.h sys/types.h unistd.h],
 	[],
 	[AC_MSG_ERROR(["Missing necessary header"])]
@@ -80,6 +43,83 @@ AC_FUNC_FORK
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([memset strerror])
 
+AC_ARG_ENABLE(
+	[ptpax],
+	AS_HELP_STRING(
+		[--enable-ptpax],
+		[enable support for pax markings in PT_PAX ELF phdr]
+	),
+	[
+		AS_IF(
+			[test "x$enable_ptpax" = "xyes"],
+			[
+				AC_CHECK_HEADERS(
+					[gelf.h],
+					[],
+					[AC_MSG_ERROR(["Missing necessary gelf.h"])]
+				)
+				AC_CHECK_DECLS(
+					[PT_PAX_FLAGS, PF_PAGEEXEC, PF_MPROTECT, PF_RANDMMAP],
+					[],
+					[AC_MSG_ERROR(["Missing necessary function elf_begin in libelf"])],
+					[[#include <gelf.h>]]
+				)
+				AC_CHECK_LIB(
+					[elf],
+					[elf_begin],
+					[],
+					[AC_MSG_ERROR(["Missing necessary function elf_begin in libelf"])]
+				)
+				CFLAGS+=" -DPTPAX"
+			],
+			[
+				CFLAGS+=" -UPTPAX"
+			]
+		)
+	],
+	[
+		CFLAGS+=" -DPTPAX"
+	]
+)
+
+AC_ARG_ENABLE(
+	[xtpax],
+	AS_HELP_STRING(
+		[--enable-xtpax],
+		[enable support for pax markings in xattrs]
+	),
+	[
+		AS_IF(
+			[test "x$enable_xtpax" = "xyes"],
+			[
+				AC_CHECK_HEADERS(
+					[attr/xattr.h],
+					[],
+					[AC_MSG_ERROR(["Missing necessary attr/xattr.h"])]
+				)
+				AC_CHECK_LIB(
+					[attr],
+					[fgetxattr],
+					[],
+					[AC_MSG_ERROR(["Missing necessary function fgetxattr in libattr"])]
+				)
+				CFLAGS+=" -DXTPAX"
+			],
+			[
+				CFLAGS+=" -UXTPAX"
+			]
+		)
+	],
+	[
+		CFLAGS+=" -DXTPAX"
+	]
+)
+
+if [test "x$enable_ptpax" != "xyes" -a  "x$enable_xtpax" != "xyes" ]; then
+	AC_MSG_ERROR(["You must enable either ptpax or xtpax"])
+fi
+
+# Ready to configure our files
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile

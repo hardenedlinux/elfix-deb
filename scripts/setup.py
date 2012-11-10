@@ -3,26 +3,26 @@
 import os
 from distutils.core import setup, Extension
 
-xattr = os.getenv('XATTR')
+xattr = os.getenv('XTPAX')
 
 if xattr != None:
 	module1 = Extension(
 		name='pax',
 		sources = ['paxmodule.c'],
 		libraries = ['elf', 'attr'],
-		define_macros = [('XATTR', None)]
+		define_macros = [('XTPAX', None)]
 	)
 else:
 	module1 = Extension(
 		name='pax',
 		sources = ['paxmodule.c'],
 		libraries = ['elf'],
-		undef_macros = ['XATTR']
+		undef_macros = ['XTPAX']
 	)
 
 setup(
 	name = 'PaxPython',
-	version = '1.0',
+	version = '2.0',
 	author = 'Anthony G. Basile',
 	author_email = 'blueness@gentoo.org',
 	url = 'http://dev.gentoo.org/~blueness/elfix',

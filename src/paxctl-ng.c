@@ -25,7 +25,7 @@
 
 #include <gelf.h>
 
-#ifdef XATTR
+#ifdef XTPAX
 #include <attr/xattr.h>
 #endif
 
@@ -36,7 +36,7 @@
 
 #include <config.h>
 
-#ifdef XATTR
+#ifdef XTPAX
 #define PAX_NAMESPACE	"user.pax.flags"
 
 #define CREATE_XT_FLAGS_SECURE		1
@@ -57,7 +57,7 @@ print_help_exit(char *v)
 		"Program Name : %s\n"
 		"Description  : Get or set pax flags on an ELF object\n\n"
 		"Usage        : %s -PpSsMmEeRrv ELF | -Zv ELF | -zv ELF\n"
-#ifdef XATTR
+#ifdef XTPAX
 		"             : %s -Cv ELF | -cv ELF | -Fv ELF | -fv ELF\n"
 #endif
 		"             : %s -v ELF | -h\n\n"
@@ -67,7 +67,7 @@ print_help_exit(char *v)
 		"             : -E enable EMUTRAMP\t-e disable  EMUTRAMP\n"
 		"             : -R enable RANDMMAP\t-r disable  RANDMMAP\n"
 		"             : -Z most secure settings\t-z all default settings\n"
-#ifdef XATTR
+#ifdef XTPAX
 		"             : -C create XT_PAX with most secure setting\n"
 		"             : -c create XT_PAX all default settings\n"
 		"             : -F copy PT_PAX to XT_PAX\n"
@@ -98,7 +98,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 	*pax_flags = 0;
 	*verbose = 0;
 	*cp_flags = 0; 
-#ifdef XATTR
+#ifdef XTPAX
 	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcFfvh")) != -1)
 #else
 	while((oc = getopt(argc, argv,":PpSsMmEeRrZzvh")) != -1)
@@ -157,7 +157,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 					PF_RANDMMAP | PF_NORANDMMAP ;
 				solitaire += 1;
 				break;
-#ifdef XATTR
+#ifdef XTPAX
 			case 'C':
 				solitaire += 1;
 				*cp_flags = CREATE_XT_FLAGS_SECURE;
@@ -252,7 +252,7 @@ get_pt_flags(int fd, int verbose)
 }
 
 
-#ifdef XATTR
+#ifdef XTPAX
 uint16_t
 string2bin(char *buf)
 {
@@ -339,7 +339,7 @@ print_flags(int fd, int verbose)
 		printf("\tPT_PAX: %s\n", buf);
 	}
 
-#ifdef XATTR
+#ifdef XTPAX
 	flags = get_xt_flags(fd);
 	if( flags == UINT16_MAX )
 		printf("\tXT_PAX: not found\n");
@@ -505,7 +505,7 @@ set_pt_flags(int fd, uint16_t pt_flags, int verbose)
 }
 
 
-#ifdef XATTR
+#ifdef XTPAX
 void
 set_xt_flags(int fd, uint16_t xt_flags)
 {
@@ -532,7 +532,7 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int verbose)
 		set_pt_flags(fd, flags, verbose);
 	}
 
-#ifdef XATTR
+#ifdef XTPAX
 	flags = get_xt_flags(fd);
 	if( flags == UINT16_MAX )
 		flags = PF_NOEMUTRAMP ;
@@ -542,7 +542,7 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int verbose)
 }
 
 
-#ifdef XATTR
+#ifdef XTPAX
 void
 create_xt_flags(int fd, int cp_flags)
 {
@@ -609,7 +609,7 @@ main( int argc, char *argv[])
 			}
 		}
 
-#ifdef XATTR
+#ifdef XTPAX
 		if(cp_flags == CREATE_XT_FLAGS_SECURE || cp_flags == CREATE_XT_FLAGS_DEFAULT)
 			create_xt_flags(fd, cp_flags);
 
