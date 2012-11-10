@@ -22,30 +22,29 @@
 #include <string.h>
 #include <error.h>
 #include <libgen.h>
-
-#include <gelf.h>
-
-#ifdef XTPAX
-#include <attr/xattr.h>
-#endif
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <config.h>
-
-#ifdef XTPAX
-#define PAX_NAMESPACE	"user.pax.flags"
-
-#define CREATE_XT_FLAGS_SECURE		1
-#define CREATE_XT_FLAGS_DEFAULT		2
-#define COPY_PT_TO_XT_FLAGS		3
-#define COPY_XT_TO_PT_FLAGS		4
+#ifdef PTPAX
+ #include <gelf.h>
 #endif
 
-#define FLAGS_SIZE			6
+#ifdef XTPAX
+ #include <attr/xattr.h>
+
+ #define PAX_NAMESPACE	"user.pax.flags"
+
+ #define CREATE_XT_FLAGS_SECURE         1
+ #define CREATE_XT_FLAGS_DEFAULT        2
+ #define COPY_PT_TO_XT_FLAGS            3
+ #define COPY_XT_TO_PT_FLAGS            4
+#endif
+
+#define FLAGS_SIZE                      6
+
+#include <config.h>
 
 void
 print_help_exit(char *v)
@@ -58,7 +57,10 @@ print_help_exit(char *v)
 		"Description  : Get or set pax flags on an ELF object\n\n"
 		"Usage        : %s -PpSsMmEeRrv ELF | -Zv ELF | -zv ELF\n"
 #ifdef XTPAX
-		"             : %s -Cv ELF | -cv ELF | -Fv ELF | -fv ELF\n"
+		"             : %s -Cv ELF | -cv ELF\n"
+#endif
+#if defined(PTPAX) && defined(XTPAX)
+		"             : %s -Fv ELF | -fv ELF\n"
 #endif
 		"             : %s -v ELF | -h\n\n"
 		"Options      : -P enable PAGEEXEC\t-p disable  PAGEEXEC\n"
@@ -70,6 +72,8 @@ print_help_exit(char *v)
 #ifdef XTPAX
 		"             : -C create XT_PAX with most secure setting\n"
 		"             : -c create XT_PAX all default settings\n"
+#endif
+#if defined(PTPAX) && defined(XTPAX)
 		"             : -F copy PT_PAX to XT_PAX\n"
 		"             : -f copy XT_PAX to PT_PAX\n"
 #endif
@@ -78,7 +82,12 @@ print_help_exit(char *v)
 		"Note         :  If both enabling and disabling flags are set, the default - is used\n\n",
 		basename(v),
 		basename(v),
+#ifdef XTPAX
 		basename(v),
+#endif
+#if defined(PTPAX) && defined(XTPAX)
+		basename(v),
+#endif
 		basename(v)
 	);
 
@@ -98,11 +107,21 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 	*pax_flags = 0;
 	*verbose = 0;
 	*cp_flags = 0; 
-#ifdef XTPAX
+
+/*
+#if !defined(PTPAX) && defined(XTPAX)
+	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcvh")) != -1)
+#elif defined(PTPAX) && defined(XTPAX)
 	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcFfvh")) != -1)
 #else
 	while((oc = getopt(argc, argv,":PpSsMmEeRrZzvh")) != -1)
 #endif
+*/
+
+	//Accept all options and silently ignore irrelevant ones below
+	//so we can pass any parameter in scripts
+
+	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcFfvh")) != -1)
 	{
 		switch(oc)
 		{
@@ -166,6 +185,8 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 				solitaire += 1;
 				*cp_flags = CREATE_XT_FLAGS_DEFAULT;
 				break;
+#endif
+#if defined(PTPAX) && defined(XTPAX)
 			case 'F':
 				solitaire += 1;
 				*cp_flags = COPY_PT_TO_XT_FLAGS;
