@@ -392,7 +392,7 @@ bin2string(uint16_t flags, char *buf)
 }
 
 
-int
+void
 print_flags(int fd, int verbose)
 {
 	uint16_t flags;
@@ -421,8 +421,6 @@ print_flags(int fd, int verbose)
 		printf("\tXT_PAX: %s\n", buf);
 	}
 #endif
-
-	return EXIT_SUCCESS;
 }
 
 
@@ -735,21 +733,21 @@ main( int argc, char *argv[])
 
 #ifdef XTPAX
 		if(cp_flags == CREATE_XT_FLAGS_SECURE || cp_flags == CREATE_XT_FLAGS_DEFAULT)
-			ret = create_xt_flags(fd, cp_flags);
+			ret |= create_xt_flags(fd, cp_flags);
 		if(cp_flags == DELETE_XT_FLAGS)
-			ret = delete_xt_flags(fd);
+			ret |= delete_xt_flags(fd);
 #endif
 
 #if defined(PTPAX) && defined(XTPAX)
 		if(cp_flags == COPY_PT_TO_XT_FLAGS || (cp_flags == COPY_XT_TO_PT_FLAGS && rdwr_pt_pax))
-			ret = copy_xt_flags(fd, cp_flags, verbose);
+			ret |= copy_xt_flags(fd, cp_flags, verbose);
 #endif
 
 		if(pax_flags != 0)
-			ret = set_flags(fd, &pax_flags, rdwr_pt_pax, limit, verbose);
+			ret |= set_flags(fd, &pax_flags, rdwr_pt_pax, limit, verbose);
 
 		if(verbose == 1)
-			ret = print_flags(fd, verbose);
+			print_flags(fd, verbose);
 
 		close(fd);
 
