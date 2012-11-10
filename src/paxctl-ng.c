@@ -79,7 +79,7 @@ print_help_exit(char *v)
 		"             : -M enable MPROTECT\t-m disable  MPROTECT\n"
 		"             : -E enable EMUTRAMP\t-e disable  EMUTRAMP\n"
 		"             : -R enable RANDMMAP\t-r disable  RANDMMAP\n"
-		"             : -Z most secure settings\t-z all default settings\n"
+		"             : -Z all secure settings\t-z all default settings\n"
 #ifdef XTPAX
 		"             : -C create XT_PAX with most secure setting\n"
 		"             : -c create XT_PAX all default settings\n"

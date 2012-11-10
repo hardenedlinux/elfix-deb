@@ -19,20 +19,29 @@
 #include <Python.h>
 
 #include <string.h>
-
-#include <gelf.h>
-
-#ifdef XTPAX
-#include <attr/xattr.h>
-#endif
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
+#ifdef PTPAX
+ #include <gelf.h>
+#else
+ #define PF_PAGEEXEC     (1 << 4)        /* Enable  PAGEEXEC */
+ #define PF_NOPAGEEXEC   (1 << 5)        /* Disable PAGEEXEC */
+ #define PF_SEGMEXEC     (1 << 6)        /* Enable  SEGMEXEC */
+ #define PF_NOSEGMEXEC   (1 << 7)        /* Disable SEGMEXEC */
+ #define PF_MPROTECT     (1 << 8)        /* Enable  MPROTECT */
+ #define PF_NOMPROTECT   (1 << 9)        /* Disable MPROTECT */
+ #define PF_EMUTRAMP     (1 << 12)       /* Enable  EMUTRAMP */
+ #define PF_NOEMUTRAMP   (1 << 13)       /* Disable EMUTRAMP */
+ #define PF_RANDMMAP     (1 << 14)       /* Enable  RANDMMAP */
+ #define PF_NORANDMMAP   (1 << 15)       /* Disable RANDMMAP */
+#endif
+
 #ifdef XTPAX
-#define PAX_NAMESPACE	"user.pax.flags"
+ #include <attr/xattr.h>
+ #define PAX_NAMESPACE	"user.pax.flags"
 #endif
 
 #define FLAGS_SIZE	6
@@ -95,6 +104,7 @@ initpax(void)
 }
 
 
+#ifdef PTPAX
 uint16_t
 get_pt_flags(int fd)
 {
@@ -141,6 +151,7 @@ get_pt_flags(int fd)
 
 	return pt_flags;
 }
+#endif
 
 
 uint16_t
@@ -236,23 +247,30 @@ pax_getflags(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
+	/* Since the xattr pax flags are obtained second, they
+	 * will override the PT_PAX flags values.  The pax kernel
+	 * expects them to be the same if both PAX_XATTR_PAX_FLAGS
+	 * and PAX_PT_PAX_FLAGS else it returns -EINVAL.
+	 * (See pax_parse_pax_flags() in fs/binfmt_elf.c.)
+	 * Unless migrating, we will document to use one or the
+	 * other but not both.
+	 */
+
+#ifdef PTPAX
+	flags = get_pt_flags(fd);
+	if( flags != UINT16_MAX )
+	{
+		memset(buf, 0, FLAGS_SIZE);
+		bin2string(flags, buf);
+	}
+#endif
+
 #ifdef XTPAX
 	flags = get_xt_flags(fd);
 	if( flags != UINT16_MAX )
 	{
 		memset(buf, 0, FLAGS_SIZE);
 		bin2string(flags, buf);
-	}
-	else
-	{
-#endif
-		flags = get_pt_flags(fd);
-		if( flags != UINT16_MAX )
-		{
-			memset(buf, 0, FLAGS_SIZE);
-			bin2string(flags, buf);
-		}
-#ifdef XTPAX
 	}
 #endif
 
@@ -262,6 +280,7 @@ pax_getflags(PyObject *self, PyObject *args)
 }
 
 
+#ifdef PTPAX
 void
 set_pt_flags(int fd, uint16_t pt_flags)
 {
@@ -314,6 +333,7 @@ set_pt_flags(int fd, uint16_t pt_flags)
 
 	elf_end(elf);
 }
+#endif
 
 
 #ifdef XTPAX
@@ -350,7 +370,9 @@ pax_setbinflags(PyObject *self, PyObject *args)
 
 	flags = (uint16_t) iflags;
 
+#ifdef PTPAX
 	set_pt_flags(fd, flags);
+#endif
 
 #ifdef XTPAX
 	set_xt_flags(fd, flags);
@@ -382,7 +404,9 @@ pax_setstrflags(PyObject *self, PyObject *args)
 
 	flags = string2bin(sflags);
 
+#ifdef PTPAX
 	set_pt_flags(fd, flags);
+#endif
 
 #ifdef XTPAX
 	set_xt_flags(fd, flags);

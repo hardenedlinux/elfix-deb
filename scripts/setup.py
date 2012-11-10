@@ -3,21 +3,33 @@
 import os
 from distutils.core import setup, Extension
 
-xattr = os.getenv('XTPAX')
+ptpax = os.getenv('PTPAX')
+xtpax = os.getenv('XTPAX')
 
-if xattr != None:
-	module1 = Extension(
-		name='pax',
-		sources = ['paxmodule.c'],
-		libraries = ['elf', 'attr'],
-		define_macros = [('XTPAX', None)]
-	)
-else:
+if ptpax != None and xtpax == None:
 	module1 = Extension(
 		name='pax',
 		sources = ['paxmodule.c'],
 		libraries = ['elf'],
-		undef_macros = ['XTPAX']
+		undef_macros = ['XTPAX'],
+		define_macros = [('PTPAX', 1)]
+	)
+
+elif ptpax == None and xtpax != None:
+	module1 = Extension(
+		name='pax',
+		sources = ['paxmodule.c'],
+		libraries = ['attr'],
+		undef_macros = ['PTPAX'],
+		define_macros = [('PTPAX', 1)]
+	)
+
+if ptpax != None and xtpax != None:
+	module1 = Extension(
+		name='pax',
+		sources = ['paxmodule.c'],
+		libraries = ['elf', 'attr'],
+		define_macros = [('PTPAX', 1), ('XTPAX', 1)]
 	)
 
 setup(
