@@ -14,6 +14,8 @@ B<paxctl-ng> -C [-v] ELF
 
 B<paxctl-ng> -c [-v] ELF
 
+B<paxctl-ng> -d [-v] ELF
+
 B<paxctl-ng> -F [-v] ELF
 
 B<paxctl-ng> -f [-v] ELF
@@ -26,11 +28,11 @@ B<paxctl-ng> [-h]
 
 =head1 DESCRIPTION
 
-B<paxctl-ng> is used to get or set the PaX flags on ELF objects which determine
-the memory restrictions on the process spawned from those objects.  B<paxctl-ng>
-manages two types of markings, either the older style PT_PAX markings which put the
-flags in an ELF program header named PT_PAX, or the newer style XT_PAX markings
-which put the flags in an extended attribute field called "user.pax" on the filesystem.
+B<paxctl-ng> is used to get or set the PaX flags on ELF executables which determine
+the memory restrictions on process(es) spawned from them.  B<paxctl-ng> manages
+two types of markings, either the older style PT_PAX markings which put the flags
+in an ELF program header named PT_PAX, or the newer style XT_PAX markings which
+put the flags in an extended attribute field called "user.pax" on the filesystem.
 Whenever possible, B<paxctl-ng> will set both PT_PAX and XT_PAX to the same flags.
 
 There are drawbacks to both PT_PAX and XT_PAX markings.  PT_PAX will not work on
@@ -43,19 +45,21 @@ it on such binaries.
 
 Alternatively, XT_PAX requires a filesystem support Extended Attributes.  Most
 modern filesystems do so, but not all.  Furthermore, one must be careful when
-moving ELF objects and ensure that the target filesystem or archive supports
-Extended Attributes, otherwise these are lost, unlike PT_PAX markings which
+moving ELF objects to ensure that the target filesystem or archive supports
+Extended Attributes, otherwise they are lost, unlike PT_PAX markings which
 are carried within the binary itself.
 
 B<paxctl-ng> is opportunistic without taking control away from the user.  If both
-a PT_PAX program header and XT_PAX extended attribute field "user.pax" exist, then
-both markings will be equally updated when the user modifies the flags, unless the
-B<-L> or B<-l> flags are given, limiting the markigs to just PT_PAX or XT_PAX.  If
-only one marking is possible, then only that marking will be updated.  Under no
-circumstances will B<paxctl-ng> create a PT_PAX program header as B<paxctl> does.
-It will only attempt to create an XT_PAX extended attribute field if it is instructed
-to do so with the -C or -c flag, and it will attempt to synchronize the PT_PAX and
-XT_PAX markings if given the B<-F> or B<-f> flag.
+a PT_PAX program header and an Extended Attribute field "user.pax" exist, then
+both fields will be equally updated when the user modifies flags; unless the
+B<-L> or B<-l> flags are given, in which case the markings are limiting to just
+PT_PAX or XT_PAX, respectively.  If only one marking is possible, then only that
+marking will be updated.  Under no circumstances will B<paxctl-ng> create a PT_PAX
+program header as B<paxctl> does.  It will only attempt to create an XT_PAX Extended
+Attribute field if it is instructed to do so with the B<-C> or B<-c> flags, and it
+will attempt to synchronize the PT_PAX and XT_PAX markings if given the B<-F> or
+B<-f> flags.  Finally, if the user wished, he can remvoe the Extended Attribute
+field "user.pax" by running B<paxctl-ng> with the B<-d> flag.
 
 =head1 OPTIONS
 
@@ -85,6 +89,8 @@ eg. -Pp for PAGEEXEC, then the default setting - is used.
 =item B<-C> Create XT_PAX xattr with the most secure PaX settings
 
 =item B<-c> Create XP_PAX xattr with the default PaX settings
+
+=item B<-d> Delete XP_PAX xattr
 
 =item B<-F> Copy PT_PAX flags to XT_PAX, if possible
 

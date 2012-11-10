@@ -47,13 +47,14 @@
  #define PAX_NAMESPACE	"user.pax.flags"
  #define CREATE_XT_FLAGS_SECURE         1
  #define CREATE_XT_FLAGS_DEFAULT        2
+ #define DELETE_XT_FLAGS                3
 #endif
 
 #if defined(PTPAX) && defined(XTPAX)
- #define COPY_PT_TO_XT_FLAGS            3
- #define COPY_XT_TO_PT_FLAGS            4
- #define LIMIT_TO_PT_FLAGS              5
- #define LIMIT_TO_XT_FLAGS              6
+ #define COPY_PT_TO_XT_FLAGS            4
+ #define COPY_XT_TO_PT_FLAGS            5
+ #define LIMIT_TO_PT_FLAGS              6
+ #define LIMIT_TO_XT_FLAGS              7
 #endif
 
 #define FLAGS_SIZE                      6
@@ -71,7 +72,7 @@ print_help_exit(char *v)
 		"Description  : Get or set pax flags on an ELF object\n\n"
 		"Usage        : %s -PpSsMmEeRrv ELF | -Zv ELF | -zv ELF\n"
 #ifdef XTPAX
-		"             : %s -Cv ELF | -cv ELF\n"
+		"             : %s -Cv ELF | -cv ELF | -dv ELF\n"
 #endif
 #if defined(PTPAX) && defined(XTPAX)
 		"             : %s -Fv ELF | -fv ELF\n"
@@ -142,7 +143,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 	 * #endif
 	 */
 
-	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcFfLlvh")) != -1)
+	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcdFfLlvh")) != -1)
 	{
 		switch(oc)
 		{
@@ -205,6 +206,10 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 			case 'c':
 				solitaire += 1;
 				*cp_flags = CREATE_XT_FLAGS_DEFAULT;
+				break;
+			case 'd':
+				solitaire += 1;
+				*cp_flags = DELETE_XT_FLAGS;
 				break;
 #else
 			case 'C':
@@ -634,15 +639,21 @@ create_xt_flags(int fd, int cp_flags)
 	char buf[FLAGS_SIZE];
 	uint16_t xt_flags;
 
-	if(cp_flags == 1)
+	if(cp_flags == CREATE_XT_FLAGS_SECURE)
 		xt_flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
 			PF_NOEMUTRAMP | PF_RANDMMAP ;
-	else if(cp_flags == 2)
+	else if(cp_flags == CREATE_XT_FLAGS_DEFAULT)
 		xt_flags = 0;
 
 	memset(buf, 0, FLAGS_SIZE);
 	bin2string(xt_flags, buf);
 	fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), XATTR_CREATE);
+}
+
+void
+delete_xt_flags(int fd)
+{
+	fremovexattr(fd, PAX_NAMESPACE);
 }
 #endif
 
@@ -652,13 +663,13 @@ void
 copy_xt_flags(int fd, int cp_flags, int verbose)
 {
 	uint16_t flags;
-	if(cp_flags == 3)
+	if(cp_flags == COPY_PT_TO_XT_FLAGS)
 	{
 		flags = get_pt_flags(fd, verbose);
 		if( flags != UINT16_MAX )
 			set_xt_flags(fd, flags);
 	}
-	else if(cp_flags == 4)
+	else if(cp_flags == COPY_XT_TO_PT_FLAGS)
 	{
 		flags = get_xt_flags(fd);
 		if( flags != UINT16_MAX )
@@ -701,6 +712,8 @@ main( int argc, char *argv[])
 #ifdef XTPAX
 		if(cp_flags == CREATE_XT_FLAGS_SECURE || cp_flags == CREATE_XT_FLAGS_DEFAULT)
 			create_xt_flags(fd, cp_flags);
+		if(cp_flags == DELETE_XT_FLAGS)
+			delete_xt_flags(fd);
 #endif
 
 #if defined(PTPAX) && defined(XTPAX)
