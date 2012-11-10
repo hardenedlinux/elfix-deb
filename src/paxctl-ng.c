@@ -29,6 +29,17 @@
 
 #ifdef PTPAX
  #include <gelf.h>
+#else
+ #define PF_PAGEEXEC     (1 << 4)        /* Enable  PAGEEXEC */
+ #define PF_NOPAGEEXEC   (1 << 5)        /* Disable PAGEEXEC */
+ #define PF_SEGMEXEC     (1 << 6)        /* Enable  SEGMEXEC */
+ #define PF_NOSEGMEXEC   (1 << 7)        /* Disable SEGMEXEC */
+ #define PF_MPROTECT     (1 << 8)        /* Enable  MPROTECT */
+ #define PF_NOMPROTECT   (1 << 9)        /* Disable MPROTECT */
+ #define PF_EMUTRAMP     (1 << 12)       /* Enable  EMUTRAMP */
+ #define PF_NOEMUTRAMP   (1 << 13)       /* Disable EMUTRAMP */
+ #define PF_RANDMMAP     (1 << 14)       /* Enable  RANDMMAP */
+ #define PF_NORANDMMAP   (1 << 15)       /* Disable RANDMMAP */
 #endif
 
 #ifdef XTPAX
@@ -108,18 +119,19 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 	*verbose = 0;
 	*cp_flags = 0; 
 
-/*
-#if !defined(PTPAX) && defined(XTPAX)
-	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcvh")) != -1)
-#elif defined(PTPAX) && defined(XTPAX)
-	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcFfvh")) != -1)
-#else
-	while((oc = getopt(argc, argv,":PpSsMmEeRrZzvh")) != -1)
-#endif
-*/
-
-	//Accept all options and silently ignore irrelevant ones below
-	//so we can pass any parameter in scripts
+	/* Accept all options and silently ignore irrelevant ones below.
+	 * We can then pass any parameter in scripts without failure.
+	 *
+	 * Alternatively we could do
+	 *
+	 * #if !defined(PTPAX) && defined(XTPAX)
+	 *	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcvh")) != -1)
+	 * #elif defined(PTPAX) && defined(XTPAX)
+	 *	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcFfvh")) != -1)
+	 * #else
+	 *	while((oc = getopt(argc, argv,":PpSsMmEeRrZzvh")) != -1)
+	 * #endif
+	 */
 
 	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcFfvh")) != -1)
 	{
@@ -185,6 +197,10 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 				solitaire += 1;
 				*cp_flags = CREATE_XT_FLAGS_DEFAULT;
 				break;
+#else
+			case 'C':
+			case 'c':
+				break;
 #endif
 #if defined(PTPAX) && defined(XTPAX)
 			case 'F':
@@ -194,6 +210,10 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 			case 'f':
 				solitaire += 1;
 				*cp_flags = COPY_XT_TO_PT_FLAGS;
+				break;
+#else
+			case 'F':
+			case 'f':
 				break;
 #endif
 			case 'v':
@@ -208,10 +228,14 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 		}
 	}
 
-	if(	((compat == 1 && solitaire == 0) ||
+	if(
+		(
+		 (compat == 1 && solitaire == 0) ||
 		 (compat == 0 && solitaire == 1) ||
 		 (compat == 0 && solitaire == 0 && *verbose == 1)
-		) && argv[optind] != NULL)
+		)
+		&& argv[optind] != NULL
+	)
 	{
 		*begin = optind;
 		*end = argc;
@@ -221,6 +245,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 }
 
 
+#ifdef PTPAX
 uint16_t
 get_pt_flags(int fd, int verbose)
 {
@@ -271,6 +296,7 @@ get_pt_flags(int fd, int verbose)
 	elf_end(elf);
 	return pt_flags;
 }
+#endif
 
 
 #ifdef XTPAX
@@ -350,6 +376,7 @@ print_flags(int fd, int verbose)
 	uint16_t flags;
 	char buf[FLAGS_SIZE];
 
+#ifdef PTPAX
 	flags = get_pt_flags(fd, verbose);
 	if( flags == UINT16_MAX )
 		printf("\tPT_PAX: not found\n");
@@ -359,6 +386,7 @@ print_flags(int fd, int verbose)
 		bin2string(flags, buf);
 		printf("\tPT_PAX: %s\n", buf);
 	}
+#endif
 
 #ifdef XTPAX
 	flags = get_xt_flags(fd);
@@ -467,6 +495,7 @@ update_flags(uint16_t flags, uint16_t pax_flags)
 }
 
 
+#ifdef PTPAX
 void
 set_pt_flags(int fd, uint16_t pt_flags, int verbose)
 {
@@ -524,6 +553,7 @@ set_pt_flags(int fd, uint16_t pt_flags, int verbose)
 
 	elf_end(elf);
 }
+#endif
 
 
 #ifdef XTPAX
@@ -544,6 +574,7 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int verbose)
 {
 	uint16_t flags;
 
+#ifdef PTPAX
 	if(rdwr_pt_pax)
 	{
 		flags = get_pt_flags(fd, verbose);
@@ -552,6 +583,7 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int verbose)
 		flags = update_flags( flags, *pax_flags);
 		set_pt_flags(fd, flags, verbose);
 	}
+#endif
 
 #ifdef XTPAX
 	flags = get_xt_flags(fd);
@@ -580,8 +612,10 @@ create_xt_flags(int fd, int cp_flags)
 	bin2string(xt_flags, buf);
 	fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), XATTR_CREATE);
 }
+#endif
 
 
+#if defined(PTPAX) && defined(XTPAX)
 void
 copy_xt_flags(int fd, int cp_flags, int verbose)
 {
@@ -617,6 +651,7 @@ main( int argc, char *argv[])
 		if(verbose)
 			printf("%s:\n", argv[fi]);
 
+#ifdef PTPAX
 		if((fd = open(argv[fi], O_RDWR)) < 0)
 		{
 			rdwr_pt_pax = 0;
@@ -629,11 +664,14 @@ main( int argc, char *argv[])
 				continue;
 			}
 		}
+#endif
 
 #ifdef XTPAX
 		if(cp_flags == CREATE_XT_FLAGS_SECURE || cp_flags == CREATE_XT_FLAGS_DEFAULT)
 			create_xt_flags(fd, cp_flags);
+#endif
 
+#if defined(PTPAX) && defined(XTPAX)
 		if(cp_flags == COPY_PT_TO_XT_FLAGS || (cp_flags == COPY_XT_TO_PT_FLAGS && rdwr_pt_pax))
 			copy_xt_flags(fd, cp_flags, verbose);
 #endif

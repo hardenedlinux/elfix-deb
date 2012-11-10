@@ -25,7 +25,7 @@ AC_PROG_SED
 
 # Checks for header files.
 AC_CHECK_HEADERS(
-	[errno.h error.h fcntl.h libgen.h stdio.h stdlib.h string.h \
+	[errno.h error.h fcntl.h gelf.h libgen.h stdio.h stdlib.h string.h \
 	sys/mman.h sys/stat.h sys/types.h unistd.h],
 	[],
 	[AC_MSG_ERROR(["Missing necessary header"])]
@@ -43,6 +43,15 @@ AC_FUNC_FORK
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([memset strerror])
 
+# Note: this is always needed for fix-gnustack
+# and for paxctl-ng only with --enable-ptpax
+AC_CHECK_LIB(
+	[elf],
+	[elf_begin],
+	[],
+	[AC_MSG_ERROR(["Missing necessary function elf_begin in libelf"])]
+)
+
 AC_ARG_ENABLE(
 	[ptpax],
 	AS_HELP_STRING(
@@ -54,22 +63,11 @@ AC_ARG_ENABLE(
 AS_IF(
 	[test "x$enable_ptpax" != "xno"],
 	[
-		AC_CHECK_HEADERS(
-			[gelf.h],
-			[],
-			[AC_MSG_ERROR(["Missing necessary gelf.h"])]
-		)
 		AC_CHECK_DECLS(
 			[PT_PAX_FLAGS, PF_PAGEEXEC, PF_MPROTECT, PF_RANDMMAP],
 			[],
 			[AC_MSG_ERROR(["Missing necessary function elf_begin in libelf"])],
 			[[#include <gelf.h>]]
-		)
-		AC_CHECK_LIB(
-			[elf],
-			[elf_begin],
-			[],
-			[AC_MSG_ERROR(["Missing necessary function elf_begin in libelf"])]
 		)
 		CFLAGS+=" -DPTPAX"
 	],
