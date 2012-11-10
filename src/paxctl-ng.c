@@ -142,7 +142,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 	 * #endif
 	 */
 
-	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcFfvh")) != -1)
+	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcFfLlvh")) != -1)
 	{
 		switch(oc)
 		{
@@ -229,6 +229,8 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 #else
 			case 'F':
 			case 'f':
+			case 'L':
+			case 'l':
 				break;
 #endif
 			case 'v':
