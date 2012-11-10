@@ -1,8 +1,14 @@
 2012-11-10
 
-	* Fixes a typo in revdep-pax script and documentation
-	* Make both PT_PAX and xattr PAX optionally enabled/disabled in
+	* fix a typo in revdep-pax script and documentation
+	* make both PT_PAX and xattr PAX optionally enabled/disabled in
 	configure.ac and propagated to src/paxctl-ng.c and script/paxmodule.c
+	* add -L -l which limits markings to only PT_PAX or XT_PAX when
+	both are possible
+	* add -d which deletes the XT_PAX xattr field
+	* silently ignore non-applicable command line flags so there is
+	more flexibility in scripting
+	* add proper exit code handling
 
 2012-07-29
 
