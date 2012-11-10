@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([elfix], [0.5], [http://bugs.gentoo.org/])
+AC_INIT([elfix], [0.6], [http://bugs.gentoo.org/])
 AC_CONFIG_SRCDIR([src/fix-gnustack.c])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.11 foreign])
