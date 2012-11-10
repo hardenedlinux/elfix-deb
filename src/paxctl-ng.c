@@ -590,25 +590,37 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int limit, int verbose)
 	uint16_t flags;
 
 #ifdef PTPAX
-	if(rdwr_pt_pax && !( limit == LIMIT_TO_XT_FLAGS) )
+	if(rdwr_pt_pax)
 	{
-		flags = get_pt_flags(fd, verbose);
-		if( flags == UINT16_MAX )
-			flags = PF_NOEMUTRAMP ;
-		flags = update_flags( flags, *pax_flags);
-		set_pt_flags(fd, flags, verbose);
+#ifdef XTPAX
+		if( !(limit == LIMIT_TO_XT_FLAGS))
+		{
+#endif
+			flags = get_pt_flags(fd, verbose);
+			if( flags == UINT16_MAX )
+				flags = PF_NOEMUTRAMP ;
+			flags = update_flags( flags, *pax_flags);
+			set_pt_flags(fd, flags, verbose);
+#ifdef XTPAX
+		}
+#endif
+
 	}
 #endif
 
 #ifdef XTPAX
-	if( !( limit == LIMIT_TO_PT_FLAGS) )
+#ifdef PTPAX
+	if( !(limit == LIMIT_TO_PT_FLAGS) )
 	{
+#endif
 		flags = get_xt_flags(fd);
 		if( flags == UINT16_MAX )
 			flags = PF_NOEMUTRAMP ;
 		flags = update_flags( flags, *pax_flags);
 		set_xt_flags(fd, flags);
+#ifdef PTPAX
 	}
+#endif
 #endif
 }
 
