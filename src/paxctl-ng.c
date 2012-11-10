@@ -681,20 +681,20 @@ main( int argc, char *argv[])
 		if(verbose)
 			printf("%s:\n", argv[fi]);
 
-#ifdef PTPAX
 		if((fd = open(argv[fi], O_RDWR)) < 0)
 		{
 			rdwr_pt_pax = 0;
+#ifdef PTPAX
 			if(verbose)
 				printf("\topen(O_RDWR) failed: cannot change PT_PAX flags\n");
+#endif
 			if((fd = open(argv[fi], O_RDONLY)) < 0)
 			{
 				if(verbose)
-					printf("\topen(O_RDONLY) failed: cannot change PT_PAX flags\n\n");
+					printf("\topen(O_RDONLY) failed: cannot read/change PAX flags\n\n");
 				continue;
 			}
 		}
-#endif
 
 #ifdef XTPAX
 		if(cp_flags == CREATE_XT_FLAGS_SECURE || cp_flags == CREATE_XT_FLAGS_DEFAULT)
