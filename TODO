@@ -1,4 +1,3 @@
 
 	* src/paxctl-ng.c: add verbose error reporting for xattr (like for set/get phdr)
-	* make sure the exit code are correct if you can't set either PT_PAX or xattr
 

@@ -392,7 +392,7 @@ bin2string(uint16_t flags, char *buf)
 }
 
 
-void
+int
 print_flags(int fd, int verbose)
 {
 	uint16_t flags;
@@ -421,6 +421,8 @@ print_flags(int fd, int verbose)
 		printf("\tXT_PAX: %s\n", buf);
 	}
 #endif
+
+	return EXIT_SUCCESS;
 }
 
 
@@ -518,7 +520,7 @@ update_flags(uint16_t flags, uint16_t pax_flags)
 
 
 #ifdef PTPAX
-void
+int
 set_pt_flags(int fd, uint16_t pt_flags, int verbose)
 {
 	Elf *elf;
@@ -529,14 +531,14 @@ set_pt_flags(int fd, uint16_t pt_flags, int verbose)
 	{
 		if(verbose)
 			printf("\tELF ERROR: Library out of date.\n");
-		return;
+		return EXIT_FAILURE;
 	}
 
 	if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
 	{
 		if(verbose)
 			printf("\tELF ERROR: elf_begin() fail: %s\n", elf_errmsg(elf_errno()));
-		return;
+		return EXIT_FAILURE;
 	}
 
 	if(elf_kind(elf) != ELF_K_ELF)
@@ -544,7 +546,7 @@ set_pt_flags(int fd, uint16_t pt_flags, int verbose)
 		elf_end(elf);
 		if(verbose)
 			printf("\tELF ERROR: elf_kind() fail: this is not an elf file.\n");
-		return; 
+		return EXIT_FAILURE;
 	}
 
 	elf_getphdrnum(elf, &phnum);
@@ -556,7 +558,7 @@ set_pt_flags(int fd, uint16_t pt_flags, int verbose)
 			elf_end(elf);
 			if(verbose)
 				printf("\tELF ERROR: gelf_getphdr(): %s\n", elf_errmsg(elf_errno()));
-			return;
+			return EXIT_FAILURE;
 		}
 
 		if(phdr.p_type == PT_PAX_FLAGS)
@@ -569,32 +571,39 @@ set_pt_flags(int fd, uint16_t pt_flags, int verbose)
 				elf_end(elf);
 				if(verbose)
 					printf("\tELF ERROR: gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
+				return EXIT_FAILURE;
 			}
 		}
 	}
 
 	elf_end(elf);
+	return EXIT_SUCCESS;
 }
 #endif
 
 
 #ifdef XTPAX
-void
+int
 set_xt_flags(int fd, uint16_t xt_flags)
 {
 	char buf[FLAGS_SIZE];
 
 	memset(buf, 0, FLAGS_SIZE);
 	bin2string(xt_flags, buf);
-	fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), 0);
+
+	if( !fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), 0) )
+		return EXIT_SUCCESS;
+	else
+		return EXIT_FAILURE;
 }
 #endif
 
 
-void
+int
 set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int limit, int verbose)
 {
 	uint16_t flags;
+	int ret = EXIT_FAILURE;
 
 #ifdef PTPAX
 	if(rdwr_pt_pax)
@@ -607,7 +616,7 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int limit, int verbose)
 			if( flags == UINT16_MAX )
 				flags = PF_NOEMUTRAMP ;
 			flags = update_flags( flags, *pax_flags);
-			set_pt_flags(fd, flags, verbose);
+			ret = set_pt_flags(fd, flags, verbose);
 #ifdef XTPAX
 		}
 #endif
@@ -624,16 +633,18 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int limit, int verbose)
 		if( flags == UINT16_MAX )
 			flags = PF_NOEMUTRAMP ;
 		flags = update_flags( flags, *pax_flags);
-		set_xt_flags(fd, flags);
+		ret = set_xt_flags(fd, flags);
 #ifdef PTPAX
 	}
 #endif
 #endif
+
+	return ret;
 }
 
 
 #ifdef XTPAX
-void
+int
 create_xt_flags(int fd, int cp_flags)
 {
 	char buf[FLAGS_SIZE];
@@ -647,34 +658,45 @@ create_xt_flags(int fd, int cp_flags)
 
 	memset(buf, 0, FLAGS_SIZE);
 	bin2string(xt_flags, buf);
-	fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), XATTR_CREATE);
+
+	if( !fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), XATTR_CREATE) )
+		return EXIT_SUCCESS;
+	else
+		return EXIT_FAILURE;
 }
 
-void
+int
 delete_xt_flags(int fd)
 {
-	fremovexattr(fd, PAX_NAMESPACE);
+	if( !fremovexattr(fd, PAX_NAMESPACE) )
+		return EXIT_SUCCESS;
+	else
+		return EXIT_FAILURE;
 }
 #endif
 
 
 #if defined(PTPAX) && defined(XTPAX)
-void
+int
 copy_xt_flags(int fd, int cp_flags, int verbose)
 {
 	uint16_t flags;
+	int ret = EXIT_FAILURE;
+
 	if(cp_flags == COPY_PT_TO_XT_FLAGS)
 	{
 		flags = get_pt_flags(fd, verbose);
 		if( flags != UINT16_MAX )
-			set_xt_flags(fd, flags);
+			ret = set_xt_flags(fd, flags);
 	}
 	else if(cp_flags == COPY_XT_TO_PT_FLAGS)
 	{
 		flags = get_xt_flags(fd);
 		if( flags != UINT16_MAX )
-			set_pt_flags(fd, flags, verbose);
+			ret = set_pt_flags(fd, flags, verbose);
 	}
+
+	return ret;
 }
 #endif
 
@@ -686,6 +708,8 @@ main( int argc, char *argv[])
 	uint16_t pax_flags;
 	int verbose, cp_flags, limit, begin, end;
 	int rdwr_pt_pax = 1;
+
+	int ret = EXIT_SUCCESS;
 
 	parse_cmd_args(argc, argv, &pax_flags, &verbose, &cp_flags, &limit, &begin, &end);
 
@@ -711,21 +735,21 @@ main( int argc, char *argv[])
 
 #ifdef XTPAX
 		if(cp_flags == CREATE_XT_FLAGS_SECURE || cp_flags == CREATE_XT_FLAGS_DEFAULT)
-			create_xt_flags(fd, cp_flags);
+			ret = create_xt_flags(fd, cp_flags);
 		if(cp_flags == DELETE_XT_FLAGS)
-			delete_xt_flags(fd);
+			ret = delete_xt_flags(fd);
 #endif
 
 #if defined(PTPAX) && defined(XTPAX)
 		if(cp_flags == COPY_PT_TO_XT_FLAGS || (cp_flags == COPY_XT_TO_PT_FLAGS && rdwr_pt_pax))
-			copy_xt_flags(fd, cp_flags, verbose);
+			ret = copy_xt_flags(fd, cp_flags, verbose);
 #endif
 
 		if(pax_flags != 0)
-			set_flags(fd, &pax_flags, rdwr_pt_pax, limit, verbose);
+			ret = set_flags(fd, &pax_flags, rdwr_pt_pax, limit, verbose);
 
 		if(verbose == 1)
-			print_flags(fd, verbose);
+			ret = print_flags(fd, verbose);
 
 		close(fd);
 
@@ -733,5 +757,5 @@ main( int argc, char *argv[])
 			printf("\n");
 	}
 
-	exit(EXIT_SUCCESS);
+	exit(ret);
 }
