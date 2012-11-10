@@ -44,13 +44,16 @@
 
 #ifdef XTPAX
  #include <attr/xattr.h>
-
  #define PAX_NAMESPACE	"user.pax.flags"
-
  #define CREATE_XT_FLAGS_SECURE         1
  #define CREATE_XT_FLAGS_DEFAULT        2
+#endif
+
+#if defined(PTPAX) && defined(XTPAX)
  #define COPY_PT_TO_XT_FLAGS            3
  #define COPY_XT_TO_PT_FLAGS            4
+ #define LIMIT_TO_PT_FLAGS              5
+ #define LIMIT_TO_XT_FLAGS              6
 #endif
 
 #define FLAGS_SIZE                      6
@@ -72,6 +75,7 @@ print_help_exit(char *v)
 #endif
 #if defined(PTPAX) && defined(XTPAX)
 		"             : %s -Fv ELF | -fv ELF\n"
+		"             : %s -Lv ELF | -lv ELF\n"
 #endif
 		"             : %s -v ELF | -h\n\n"
 		"Options      : -P enable PAGEEXEC\t-p disable  PAGEEXEC\n"
@@ -80,6 +84,7 @@ print_help_exit(char *v)
 		"             : -E enable EMUTRAMP\t-e disable  EMUTRAMP\n"
 		"             : -R enable RANDMMAP\t-r disable  RANDMMAP\n"
 		"             : -Z all secure settings\t-z all default settings\n"
+		"             :\n"
 #ifdef XTPAX
 		"             : -C create XT_PAX with most secure setting\n"
 		"             : -c create XT_PAX all default settings\n"
@@ -87,7 +92,10 @@ print_help_exit(char *v)
 #if defined(PTPAX) && defined(XTPAX)
 		"             : -F copy PT_PAX to XT_PAX\n"
 		"             : -f copy XT_PAX to PT_PAX\n"
+		"             : -L set only PT_PAX flags\n"
+		"             : -l set only XT_PAX flags\n"
 #endif
+		"             :\n"
 		"             : -v view the flags, along with any accompanying operation\n"
 		"             : -h print out this help\n\n"
 		"Note         :  If both enabling and disabling flags are set, the default - is used\n\n",
@@ -97,6 +105,7 @@ print_help_exit(char *v)
 		basename(v),
 #endif
 #if defined(PTPAX) && defined(XTPAX)
+		basename(v),
 		basename(v),
 #endif
 		basename(v)
@@ -108,7 +117,7 @@ print_help_exit(char *v)
 
 void
 parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *cp_flags,
-	int *begin, int *end)
+	int *limit, int *begin, int *end)
 {
 	int i, oc;
 	int compat, solitaire;
@@ -210,6 +219,12 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 			case 'f':
 				solitaire += 1;
 				*cp_flags = COPY_XT_TO_PT_FLAGS;
+				break;
+			case 'L':
+				*limit = LIMIT_TO_PT_FLAGS;
+				break;
+			case 'l':
+				*limit = LIMIT_TO_XT_FLAGS;
 				break;
 #else
 			case 'F':
@@ -570,12 +585,12 @@ set_xt_flags(int fd, uint16_t xt_flags)
 
 
 void
-set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int verbose)
+set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int limit, int verbose)
 {
 	uint16_t flags;
 
 #ifdef PTPAX
-	if(rdwr_pt_pax)
+	if(rdwr_pt_pax && !( limit == LIMIT_TO_XT_FLAGS) )
 	{
 		flags = get_pt_flags(fd, verbose);
 		if( flags == UINT16_MAX )
@@ -586,11 +601,14 @@ set_flags(int fd, uint16_t *pax_flags, int rdwr_pt_pax, int verbose)
 #endif
 
 #ifdef XTPAX
-	flags = get_xt_flags(fd);
-	if( flags == UINT16_MAX )
-		flags = PF_NOEMUTRAMP ;
-	flags = update_flags( flags, *pax_flags);
-	set_xt_flags(fd, flags);
+	if( !( limit == LIMIT_TO_PT_FLAGS) )
+	{
+		flags = get_xt_flags(fd);
+		if( flags == UINT16_MAX )
+			flags = PF_NOEMUTRAMP ;
+		flags = update_flags( flags, *pax_flags);
+		set_xt_flags(fd, flags);
+	}
 #endif
 }
 
@@ -641,10 +659,10 @@ main( int argc, char *argv[])
 {
 	int fd, fi;
 	uint16_t pax_flags;
-	int verbose, cp_flags, begin, end;
+	int verbose, cp_flags, limit, begin, end;
 	int rdwr_pt_pax = 1;
 
-	parse_cmd_args(argc, argv, &pax_flags, &verbose, &cp_flags, &begin, &end);
+	parse_cmd_args(argc, argv, &pax_flags, &verbose, &cp_flags, &limit, &begin, &end);
 
 	for(fi = begin; fi < end; fi++)
 	{
@@ -677,7 +695,7 @@ main( int argc, char *argv[])
 #endif
 
 		if(pax_flags != 0)
-			set_flags(fd, &pax_flags, rdwr_pt_pax, verbose);
+			set_flags(fd, &pax_flags, rdwr_pt_pax, limit, verbose);
 
 		if(verbose == 1)
 			print_flags(fd, verbose);
