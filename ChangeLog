@@ -1,3 +1,9 @@
+2012-11-10
+
+	* Fixes a typo in revdep-pax script and documentation
+	* Make both PT_PAX and xattr PAX optionally enabled/disabled in
+	configure.ac and propagated to src/paxctl-ng.c and script/paxmodule.c
+
 2012-07-29
 
 	* remove unnecessary check for yasm in configure.ac
