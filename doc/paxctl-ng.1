@@ -147,6 +147,10 @@ paxctl\-ng \- get or set the PaX flags for both PT_PAX and XT_PAX markings
 .PP
 \&\fBpaxctl-ng\fR \-f [\-v] \s-1ELF\s0
 .PP
+\&\fBpaxctl-ng\fR \-L [\-v] \s-1ELF\s0
+.PP
+\&\fBpaxctl-ng\fR \-l [\-v] \s-1ELF\s0
+.PP
 \&\fBpaxctl-ng\fR [\-h]
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
@@ -172,13 +176,14 @@ Extended Attributes, otherwise these are lost, unlike \s-1PT_PAX\s0 markings whi
 are carried within the binary itself.
 .PP
 \&\fBpaxctl-ng\fR is opportunistic without taking control away from the user.  If both
-a \s-1PT_PAX\s0 program header and \s-1XT_PAX\s0 extended attribute field \*(L"user.pax\*(R" exist, and
-then both markings will be equally updated when the user modifies the flags.  If
-only one marking exists, then only that marking will be updated.  Under no circumstances
-will \fBpaxctl-ng\fR create a \s-1PT_PAX\s0 program header.  It will attempt to create an \s-1XT_PAX\s0
-extended attribute field if it is instructed to do so with the \-C or \-c flag,
-and it will attempt to synchronize the \s-1PT_PAX\s0 and \s-1XT_PAX\s0 markings if given the \-F
-or \-f flag.
+a \s-1PT_PAX\s0 program header and \s-1XT_PAX\s0 extended attribute field \*(L"user.pax\*(R" exist, then
+both markings will be equally updated when the user modifies the flags, unless the
+\&\fB\-L\fR or \fB\-l\fR flags are given, limiting the markigs to just \s-1PT_PAX\s0 or \s-1XT_PAX\s0.  If
+only one marking is possible, then only that marking will be updated.  Under no
+circumstances will \fBpaxctl-ng\fR create a \s-1PT_PAX\s0 program header as \fBpaxctl\fR does.
+It will only attempt to create an \s-1XT_PAX\s0 extended attribute field if it is instructed
+to do so with the \-C or \-c flag, and it will attempt to synchronize the \s-1PT_PAX\s0 and
+\&\s-1XT_PAX\s0 markings if given the \fB\-F\fR or \fB\-f\fR flag.
 .SH "OPTIONS"
 .IX Header "OPTIONS"
 .IP "\fB\-P\fR or \fB\-p\fR   Enable or disable \s-1PAGEEXEC\s0" 4
@@ -211,6 +216,10 @@ eg. \-Pp for \s-1PAGEEXEC\s0, then the default setting \- is used.
 .IX Item "-F Copy PT_PAX flags to XT_PAX, if possible"
 .IP "\fB\-f\fR Copy \s-1XT_PAX\s0 flags to \s-1PT_PAX\s0, if possible" 4
 .IX Item "-f Copy XT_PAX flags to PT_PAX, if possible"
+.IP "\fB\-L\fR Only set \s-1PT_APX\s0 flags, if both are possible" 4
+.IX Item "-L Only set PT_APX flags, if both are possible"
+.IP "\fB\-l\fR Only set \s-1XT_PAX\s0 flags, if both are possible" 4
+.IX Item "-l Only set XT_PAX flags, if both are possible"
 .IP "\fB\-v\fR View the flags" 4
 .IX Item "-v View the flags"
 .IP "\fB\-h\fR Print out a short help message and exit." 4

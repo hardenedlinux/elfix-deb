@@ -18,6 +18,10 @@ B<paxctl-ng> -F [-v] ELF
 
 B<paxctl-ng> -f [-v] ELF
 
+B<paxctl-ng> -L [-v] ELF
+
+B<paxctl-ng> -l [-v] ELF
+
 B<paxctl-ng> [-h]
 
 =head1 DESCRIPTION
@@ -44,13 +48,14 @@ Extended Attributes, otherwise these are lost, unlike PT_PAX markings which
 are carried within the binary itself.
 
 B<paxctl-ng> is opportunistic without taking control away from the user.  If both
-a PT_PAX program header and XT_PAX extended attribute field "user.pax" exist, and
-then both markings will be equally updated when the user modifies the flags.  If
-only one marking exists, then only that marking will be updated.  Under no circumstances
-will B<paxctl-ng> create a PT_PAX program header.  It will attempt to create an XT_PAX
-extended attribute field if it is instructed to do so with the -C or -c flag,
-and it will attempt to synchronize the PT_PAX and XT_PAX markings if given the -F
-or -f flag.
+a PT_PAX program header and XT_PAX extended attribute field "user.pax" exist, then
+both markings will be equally updated when the user modifies the flags, unless the
+B<-L> or B<-l> flags are given, limiting the markigs to just PT_PAX or XT_PAX.  If
+only one marking is possible, then only that marking will be updated.  Under no
+circumstances will B<paxctl-ng> create a PT_PAX program header as B<paxctl> does.
+It will only attempt to create an XT_PAX extended attribute field if it is instructed
+to do so with the -C or -c flag, and it will attempt to synchronize the PT_PAX and
+XT_PAX markings if given the B<-F> or B<-f> flag.
 
 =head1 OPTIONS
 
@@ -84,6 +89,10 @@ eg. -Pp for PAGEEXEC, then the default setting - is used.
 =item B<-F> Copy PT_PAX flags to XT_PAX, if possible
 
 =item B<-f> Copy XT_PAX flags to PT_PAX, if possible
+
+=item B<-L> Only set PT_APX flags, if both are possible
+
+=item B<-l> Only set XT_PAX flags, if both are possible
 
 =item B<-v> View the flags
 
