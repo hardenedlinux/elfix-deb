@@ -66,7 +66,7 @@ AS_IF(
 		AC_CHECK_DECLS(
 			[PT_PAX_FLAGS, PF_PAGEEXEC, PF_MPROTECT, PF_RANDMMAP],
 			[],
-			[AC_MSG_ERROR(["Missing necessary function elf_begin in libelf"])],
+			[AC_MSG_ERROR(["Missing necessary define's in gelf.h"])],
 			[[#include <gelf.h>]]
 		)
 		CFLAGS+=" -DPTPAX"
