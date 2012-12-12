@@ -75,7 +75,7 @@ print_help_exit(char *v)
 		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
 		"Program Name : %s\n"
 		"Description  : Get or set pax flags on an ELF object\n\n"
-		"Usage        : %s -PpSsMmEeRrv ELF | -Zv ELF | -zv ELF\n"
+		"Usage        : %s -PpEeMmRrSsv ELF | -Zv ELF | -zv ELF\n"
 #ifdef XTPAX
 		"             : %s -Cv ELF | -cv ELF | -dv ELF\n"
 #endif
@@ -85,10 +85,10 @@ print_help_exit(char *v)
 #endif
 		"             : %s -v ELF | -h\n\n"
 		"Options      : -P enable PAGEEXEC\t-p disable  PAGEEXEC\n"
-		"             : -S enable SEGMEXEC\t-s disable  SEGMEXEC\n"
-		"             : -M enable MPROTECT\t-m disable  MPROTECT\n"
 		"             : -E enable EMUTRAMP\t-e disable  EMUTRAMP\n"
+		"             : -M enable MPROTECT\t-m disable  MPROTECT\n"
 		"             : -R enable RANDMMAP\t-r disable  RANDMMAP\n"
+		"             : -S enable SEGMEXEC\t-s disable  SEGMEXEC\n"
 		"             : -Z all secure settings\t-z all default settings\n"
 		"             :\n"
 #ifdef XTPAX
@@ -148,7 +148,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 	 * #endif
 	 */
 
-	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcdFfLlvh")) != -1)
+	while((oc = getopt(argc, argv,":PpEeMmRrSsZzCcdFfLlvh")) != -1)
 	{
 		switch(oc)
 		{
@@ -160,12 +160,12 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 				*pax_flags |= PF_NOPAGEEXEC;
 				compat |= 1;
 				break ;
-			case 'S':
-				*pax_flags |= PF_SEGMEXEC;
+			case 'E':
+				*pax_flags |= PF_EMUTRAMP;
 				compat |= 1;
 				break;
-			case 's':
-				*pax_flags |= PF_NOSEGMEXEC;
+			case 'e':
+				*pax_flags |= PF_NOEMUTRAMP;
 				compat |= 1;
 				break ;
 			case 'M':
@@ -176,20 +176,20 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 				*pax_flags |= PF_NOMPROTECT;
 				compat |= 1;
 				break ;
-			case 'E':
-				*pax_flags |= PF_EMUTRAMP;
-				compat |= 1;
-				break;
-			case 'e':
-				*pax_flags |= PF_NOEMUTRAMP;
-				compat |= 1;
-				break ;
 			case 'R':
 				*pax_flags |= PF_RANDMMAP;
 				compat |= 1;
 				break;
 			case 'r':
 				*pax_flags |= PF_NORANDMMAP;
+				compat |= 1;
+				break ;
+			case 'S':
+				*pax_flags |= PF_SEGMEXEC;
+				compat |= 1;
+				break;
+			case 's':
+				*pax_flags |= PF_NOSEGMEXEC;
 				compat |= 1;
 				break ;
 			case 'Z':
@@ -330,32 +330,36 @@ get_pt_flags(int fd, int verbose)
 uint16_t
 string2bin(char *buf)
 {
+	int i;
 	uint16_t flags = 0;
 
-	if( buf[0] == 'P' )
-		flags |= PF_PAGEEXEC;
-	else if( buf[0] == 'p' )
-		flags |= PF_NOPAGEEXEC;
+	for(i = 0; i < 5; i++)
+	{
+		if(buf[i] == 'P')
+			flags |= PF_PAGEEXEC;
+		else if(buf[i] == 'p')
+			flags |= PF_NOPAGEEXEC;
 
-	if( buf[1] == 'S' )
-		flags |= PF_SEGMEXEC;
-	else if( buf[1] == 's' )
-		flags |= PF_NOSEGMEXEC;
+		if(buf[i] == 'E')
+			flags |= PF_EMUTRAMP;
+		else if(buf[i] == 'e')
+			flags |= PF_NOEMUTRAMP;
 
-	if( buf[2] == 'M' )
-		flags |= PF_MPROTECT;
-	else if( buf[2] == 'm' )
-		flags |= PF_NOMPROTECT;
+		if(buf[i] == 'M')
+			flags |= PF_MPROTECT;
+		else if(buf[i] == 'm')
+			flags |= PF_NOMPROTECT;
 
-	if( buf[3] == 'E' )
-		flags |= PF_EMUTRAMP;
-	else if( buf[3] == 'e' )
-		flags |= PF_NOEMUTRAMP;
+		if(buf[i] == 'R')
+			flags |= PF_RANDMMAP;
+		else if(buf[i] == 'r')
+			flags |= PF_NORANDMMAP;
 
-	if( buf[4] == 'R' )
-		flags |= PF_RANDMMAP;
-	else if( buf[4] == 'r' )
-		flags |= PF_NORANDMMAP;
+		if(buf[i] == 'S')
+			flags |= PF_SEGMEXEC;
+		else if(buf[i] == 's')
+			flags |= PF_NOSEGMEXEC;
+	}
 
 	return flags;
 }
@@ -378,22 +382,59 @@ get_xt_flags(int fd)
 
 
 void
-bin2string(uint16_t flags, char *buf)
+bin2string4print(uint16_t flags, char *buf)
 {
 	buf[0] = flags & PF_PAGEEXEC ? 'P' :
 		flags & PF_NOPAGEEXEC ? 'p' : '-' ;
 
-	buf[1] = flags & PF_SEGMEXEC   ? 'S' : 
-		flags & PF_NOSEGMEXEC ? 's' : '-';
+	buf[1] = flags & PF_EMUTRAMP   ? 'E' :
+		flags & PF_NOEMUTRAMP ? 'e' : '-';
 
 	buf[2] = flags & PF_MPROTECT   ? 'M' :
 		flags & PF_NOMPROTECT ? 'm' : '-';
 
-	buf[3] = flags & PF_EMUTRAMP   ? 'E' :
-		flags & PF_NOEMUTRAMP ? 'e' : '-';
-
-	buf[4] = flags & PF_RANDMMAP   ? 'R' :
+	buf[3] = flags & PF_RANDMMAP   ? 'R' :
 		flags & PF_NORANDMMAP ? 'r' : '-';
+
+	buf[4] = flags & PF_SEGMEXEC   ? 'S' :
+		flags & PF_NOSEGMEXEC ? 's' : '-';
+}
+
+
+void
+bin2string(uint16_t flags, char *buf)
+{
+	int i;
+
+	for(i = 0; i < 5; i++)
+		buf[i] = 0;
+
+	i = 0;
+
+	if(flags & PF_PAGEEXEC)
+		buf[i++] = 'P';
+	else if(flags & PF_NOPAGEEXEC)
+		buf[i++] = 'p';
+
+	if(flags & PF_EMUTRAMP)
+		buf[i++] = 'E';
+	else if(flags & PF_NOEMUTRAMP)
+		buf[i++] = 'e';
+
+	if(flags & PF_MPROTECT)
+		buf[i++] = 'M';
+	else if(flags & PF_NOMPROTECT)
+		buf[i++] = 'm';
+
+	if(flags & PF_RANDMMAP)
+		buf[i++] = 'R';
+	if(flags & PF_NORANDMMAP)
+		buf[i++] = 'r';
+
+	if(flags & PF_SEGMEXEC)
+		buf[i++] = 'S';
+	else if(flags & PF_NOSEGMEXEC)
+		buf[i++] = 's';
 }
 
 
@@ -410,7 +451,7 @@ print_flags(int fd, int verbose)
 	else
 	{
 		memset(buf, 0, FLAGS_SIZE);
-		bin2string(flags, buf);
+		bin2string4print(flags, buf);
 		printf("\tPT_PAX: %s\n", buf);
 	}
 #endif
@@ -422,7 +463,7 @@ print_flags(int fd, int verbose)
 	else
 	{
 		memset(buf, 0, FLAGS_SIZE);
-		bin2string(flags, buf);
+		bin2string4print(flags, buf);
 		printf("\tXT_PAX: %s\n", buf);
 	}
 #endif
@@ -450,21 +491,21 @@ update_flags(uint16_t flags, uint16_t pax_flags)
 		flags &= ~PF_NOPAGEEXEC;
 	}
 
-	//SEGMEXEC
-	if(pax_flags & PF_SEGMEXEC)
+	//EMUTRAMP
+	if(pax_flags & PF_EMUTRAMP)
 	{
-		flags |= PF_SEGMEXEC;
-		flags &= ~PF_NOSEGMEXEC;
+		flags |= PF_EMUTRAMP;
+		flags &= ~PF_NOEMUTRAMP;
 	}
-	if(pax_flags & PF_NOSEGMEXEC)
+	if(pax_flags & PF_NOEMUTRAMP)
 	{
-		flags &= ~PF_SEGMEXEC;
-		flags |= PF_NOSEGMEXEC;
+		flags &= ~PF_EMUTRAMP;
+		flags |= PF_NOEMUTRAMP;
 	}
-	if((pax_flags & PF_SEGMEXEC) && (pax_flags & PF_NOSEGMEXEC))
+	if((pax_flags & PF_EMUTRAMP) && (pax_flags & PF_NOEMUTRAMP))
 	{
-		flags &= ~PF_SEGMEXEC;
-		flags &= ~PF_NOSEGMEXEC;
+		flags &= ~PF_EMUTRAMP;
+		flags &= ~PF_NOEMUTRAMP;
 	}
 
 	//MPROTECT
@@ -484,23 +525,6 @@ update_flags(uint16_t flags, uint16_t pax_flags)
 		flags &= ~PF_NOMPROTECT;
 	}
 
-	//EMUTRAMP
-	if(pax_flags & PF_EMUTRAMP)
-	{
-		flags |= PF_EMUTRAMP;
-		flags &= ~PF_NOEMUTRAMP;
-	}
-	if(pax_flags & PF_NOEMUTRAMP)
-	{
-		flags &= ~PF_EMUTRAMP;
-		flags |= PF_NOEMUTRAMP;
-	}
-	if((pax_flags & PF_EMUTRAMP) && (pax_flags & PF_NOEMUTRAMP))
-	{
-		flags &= ~PF_EMUTRAMP;
-		flags &= ~PF_NOEMUTRAMP;
-	}
-
 	//RANDMMAP
 	if(pax_flags & PF_RANDMMAP)
 	{
@@ -516,6 +540,23 @@ update_flags(uint16_t flags, uint16_t pax_flags)
 	{
 		flags &= ~PF_RANDMMAP;
 		flags &= ~PF_NORANDMMAP;
+	}
+
+	//SEGMEXEC
+	if(pax_flags & PF_SEGMEXEC)
+	{
+		flags |= PF_SEGMEXEC;
+		flags &= ~PF_NOSEGMEXEC;
+	}
+	if(pax_flags & PF_NOSEGMEXEC)
+	{
+		flags &= ~PF_SEGMEXEC;
+		flags |= PF_NOSEGMEXEC;
+	}
+	if((pax_flags & PF_SEGMEXEC) && (pax_flags & PF_NOSEGMEXEC))
+	{
+		flags &= ~PF_SEGMEXEC;
+		flags &= ~PF_NOSEGMEXEC;
 	}
 
 	return flags;
