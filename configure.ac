@@ -6,7 +6,7 @@ AC_INIT([elfix], [0.6], [http://bugs.gentoo.org/])
 AC_CONFIG_SRCDIR([src/fix-gnustack.c])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.11 foreign])
-AM_SILENT_RULES([yes])
+AM_SILENT_RULES([no])
 
 AC_ARG_ENABLE(
 	[tests],
