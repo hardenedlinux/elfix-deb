@@ -66,13 +66,15 @@ AS_IF(
 		AC_CHECK_DECLS(
 			[PT_PAX_FLAGS, PF_PAGEEXEC, PF_MPROTECT, PF_RANDMMAP],
 			[],
-			[AC_MSG_ERROR(["Missing necessary define's in gelf.h"])],
+			[
+				CFLAGS+=" -DNEED_PAX_DECLS"
+			],
 			[[#include <gelf.h>]]
 		)
 		CFLAGS+=" -DPTPAX"
 	],
 	[
-		CFLAGS+=" -UPTPAX"
+		CFLAGS+=" -UPTPAX -DNEED_PAX_DECLS"
 	]
 )
 

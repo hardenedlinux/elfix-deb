@@ -29,13 +29,18 @@
 
 #ifdef PTPAX
  #include <gelf.h>
-#else
+#endif
+
+#ifdef NEED_PAX_DECLS
+ #define PT_PAX_FLAGS    0x65041580      /* Indicates PaX flag markings */
  #define PF_PAGEEXEC     (1 << 4)        /* Enable  PAGEEXEC */
  #define PF_NOPAGEEXEC   (1 << 5)        /* Disable PAGEEXEC */
  #define PF_SEGMEXEC     (1 << 6)        /* Enable  SEGMEXEC */
  #define PF_NOSEGMEXEC   (1 << 7)        /* Disable SEGMEXEC */
  #define PF_MPROTECT     (1 << 8)        /* Enable  MPROTECT */
  #define PF_NOMPROTECT   (1 << 9)        /* Disable MPROTECT */
+ #define PF_RANDEXEC     (1 << 10)       /* DEPRECATED: Enable  RANDEXEC */
+ #define PF_NORANDEXEC   (1 << 11)       /* DEPRECATED: Disable RANDEXEC */
  #define PF_EMUTRAMP     (1 << 12)       /* Enable  EMUTRAMP */
  #define PF_NOEMUTRAMP   (1 << 13)       /* Disable EMUTRAMP */
  #define PF_RANDMMAP     (1 << 14)       /* Enable  RANDMMAP */
