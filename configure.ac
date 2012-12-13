@@ -122,6 +122,7 @@ AC_CONFIG_FILES([
 	tests/Makefile
 	tests/gnustack/Makefile
 	tests/pxtpax/Makefile
+	tests/paxmodule/Makefile
 ])
 
 AC_OUTPUT
