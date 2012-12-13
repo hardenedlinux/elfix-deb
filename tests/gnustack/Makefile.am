@@ -1,5 +1,7 @@
 noinst_PROGRAMS = bad-gnustack
 
+EXTRA_DIST = gnustacktest.sh
+
 bad-gnustack.s: bad-gnustack.c
 	$(CC) -S $<
 	$(SED) -i -e 's/GNU-stack,"",/GNU-stack,"x",/' $@
