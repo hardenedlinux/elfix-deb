@@ -111,6 +111,8 @@ if [test "x$enable_ptpax" = "xno" -a  "x$enable_xtpax" = "xno" ]; then
 	AC_MSG_ERROR(["You must enable either ptpax or xtpax"])
 fi
 
+AM_CONDITIONAL([DUALTEST],[test "x$enable_ptpax" = "xyes" -a  "x$enable_xtpax" = "xyes"])
+
 # Ready to configure our files
 AC_CONFIG_FILES([
 	Makefile

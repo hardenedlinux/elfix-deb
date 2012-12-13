@@ -7,18 +7,10 @@ bad-gnustack.s: bad-gnustack.c
 bad-gnustack: bad-gnustack.s
 	$(CC) -o $@ $<
 
-check_SCRIPTS = test.sh
+check_SCRIPTS = gnustacktest
 TEST = $(check_SCRIPTS)
 
-test.sh:
-	@echo "================================================================================"
-	@echo
-	@echo "Before GNU_STACK Elf: "
-	@../../src/fix-gnustack -f bad-gnustack
-	@echo
-	@echo "After GNU_STACK Elf: "
-	@../../src/fix-gnustack bad-gnustack
-	@echo
-	@echo "================================================================================"
+gnustacktest:
+	./gnustacktest.sh 0
 
-CLEANFILES = *.o *.s test.sh
+CLEANFILES = *.o *.s
