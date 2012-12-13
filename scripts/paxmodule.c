@@ -162,32 +162,36 @@ get_pt_flags(int fd)
 uint16_t
 string2bin(char *buf)
 {
+	int i;
 	uint16_t flags = 0;
 
-	if( buf[0] == 'P' )
-		flags |= PF_PAGEEXEC;
-	else if( buf[0] == 'p' )
-		flags |= PF_NOPAGEEXEC;
+	for(i = 0; i < 5; i++)
+	{
+		if(buf[i] == 'P')
+			flags |= PF_PAGEEXEC;
+		else if(buf[i] == 'p')
+			flags |= PF_NOPAGEEXEC;
 
-	if( buf[1] == 'S' )
-		flags |= PF_SEGMEXEC;
-	else if( buf[1] == 's' )
-		flags |= PF_NOSEGMEXEC;
+		if(buf[i] == 'E')
+			flags |= PF_EMUTRAMP;
+		else if(buf[i] == 'e')
+			flags |= PF_NOEMUTRAMP;
 
-	if( buf[2] == 'M' )
-		flags |= PF_MPROTECT;
-	else if( buf[2] == 'm' )
-		flags |= PF_NOMPROTECT;
+		if(buf[i] == 'M')
+			flags |= PF_MPROTECT;
+		else if(buf[i] == 'm')
+			flags |= PF_NOMPROTECT;
 
-	if( buf[3] == 'E' )
-		flags |= PF_EMUTRAMP;
-	else if( buf[3] == 'e' )
-		flags |= PF_NOEMUTRAMP;
+		if(buf[i] == 'R')
+			flags |= PF_RANDMMAP;
+		else if(buf[i] == 'r')
+			flags |= PF_NORANDMMAP;
 
-	if( buf[4] == 'R' )
-		flags |= PF_RANDMMAP;
-	else if( buf[4] == 'r' )
-		flags |= PF_NORANDMMAP;
+		if(buf[i] == 'S')
+			flags |= PF_SEGMEXEC;
+		else if(buf[i] == 's')
+			flags |= PF_NOSEGMEXEC;
+	}
 
 	return flags;
 }
@@ -211,22 +215,59 @@ get_xt_flags(int fd)
 
 
 void
-bin2string(uint16_t flags, char *buf)
+bin2string4print(uint16_t flags, char *buf)
 {
 	buf[0] = flags & PF_PAGEEXEC ? 'P' :
 		flags & PF_NOPAGEEXEC ? 'p' : '-' ;
 
-	buf[1] = flags & PF_SEGMEXEC   ? 'S' :
-		flags & PF_NOSEGMEXEC ? 's' : '-';
+	buf[1] = flags & PF_EMUTRAMP   ? 'E' :
+		flags & PF_NOEMUTRAMP ? 'e' : '-';
 
 	buf[2] = flags & PF_MPROTECT   ? 'M' :
 		flags & PF_NOMPROTECT ? 'm' : '-';
 
-	buf[3] = flags & PF_EMUTRAMP   ? 'E' :
-		flags & PF_NOEMUTRAMP ? 'e' : '-';
-
-	buf[4] = flags & PF_RANDMMAP   ? 'R' :
+	buf[3] = flags & PF_RANDMMAP   ? 'R' :
 		flags & PF_NORANDMMAP ? 'r' : '-';
+
+	buf[4] = flags & PF_SEGMEXEC   ? 'S' :
+		flags & PF_NOSEGMEXEC ? 's' : '-';
+}
+
+
+void
+bin2string(uint16_t flags, char *buf)
+{
+	int i;
+
+	for(i = 0; i < 5; i++)
+		buf[i] = 0;
+
+	i = 0;
+
+	if(flags & PF_PAGEEXEC)
+		buf[i++] = 'P';
+	else if(flags & PF_NOPAGEEXEC)
+		buf[i++] = 'p';
+
+	if(flags & PF_EMUTRAMP)
+		buf[i++] = 'E';
+	else if(flags & PF_NOEMUTRAMP)
+		buf[i++] = 'e';
+
+	if(flags & PF_MPROTECT)
+		buf[i++] = 'M';
+	else if(flags & PF_NOMPROTECT)
+		buf[i++] = 'm';
+
+	if(flags & PF_RANDMMAP)
+		buf[i++] = 'R';
+	if(flags & PF_NORANDMMAP)
+		buf[i++] = 'r';
+
+	if(flags & PF_SEGMEXEC)
+		 buf[i++] = 'S';
+	else if(flags & PF_NOSEGMEXEC)
+		buf[i++] = 's';
 }
 
 
@@ -266,7 +307,7 @@ pax_getflags(PyObject *self, PyObject *args)
 	if( flags != UINT16_MAX )
 	{
 		memset(buf, 0, FLAGS_SIZE);
-		bin2string(flags, buf);
+		bin2string4print(flags, buf);
 	}
 #endif
 
@@ -275,7 +316,7 @@ pax_getflags(PyObject *self, PyObject *args)
 	if( flags != UINT16_MAX )
 	{
 		memset(buf, 0, FLAGS_SIZE);
-		bin2string(flags, buf);
+		bin2string4print(flags, buf);
 	}
 #endif
 
