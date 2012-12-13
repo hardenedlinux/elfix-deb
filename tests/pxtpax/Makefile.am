@@ -1,7 +1,7 @@
 noinst_PROGRAMS = daemon
 daemon_SOURCES = daemon.c
 
-EXTRA_DIST = init.sh dotest.sh
+EXTRA_DIST = init.sh daemontest.sh
 
 check_SCRIPTS = daemontest
 TEST = $(check_SCRIPTS)
