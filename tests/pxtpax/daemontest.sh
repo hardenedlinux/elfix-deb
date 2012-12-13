@@ -4,6 +4,7 @@
 # dotest = 1 -> do both
 dotest=${1-0}
 verbose=${2-0}
+unamem=$(uname -m)
 
 PWD=$(pwd)
 INITSH="${PWD}"/init.sh
@@ -18,6 +19,27 @@ count=0
 echo "================================================================================"
 echo
 echo " RUNNIG DAEMON TEST"
+echo
+echo " NOTE:"
+echo "   1) This test is only for amd64 and i686"
+echo "   2) This test will fail on amd64 unless the following are enabled in the kernel:"
+echo "        CONFIG_PAX_PAGEEXEC"
+echo "        CONFIG_PAX_EMUTRAMP"
+echo "        CONFIG_PAX_MPROTECT"
+echo "        CONFIG_PAX_RANDMMAP"
+echo "   3) This test will fail on i686 unless the following are enbled in the kernel:"
+echo "        CONFIG_PAX_EMUTRAMP"
+echo "        CONFIG_PAX_MPROTECT"
+echo "        CONFIG_PAX_RANDMMAP"
+echo "        CONFIG_PAX_SEGMEXEC"
+echo
+
+if [ "$unamem" != "i686" -a "$unamem" != "x86_64" ]; then
+  echo "This test is only for i686 or x86_64"
+  echo
+  echo "================================================================================"
+  exit 0
+fi
 
 for pf in "p" "P" "-"; do
   for ef in "e" "E" "-"; do
@@ -61,8 +83,16 @@ for pf in "p" "P" "-"; do
             rflags="-----"
           fi
 
-          # Skip i = 4 which is S which is not set
-          for i in 0 1 2 3; do
+
+          if [ "$unamem" = "i686" ]; then
+            # Skip i = 0 which is P which is not set on i686
+            list="1 2 3 4"
+          else
+            # Skip i = 4 which is S which is not set on amd64
+            list="0 1 2 3"
+          fi
+
+          for i in $list; do
             p=${pflags:$i:1}
             r=${rflags:$i:1}
             if [ $p != "-" ]; then
