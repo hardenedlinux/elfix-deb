@@ -326,6 +326,98 @@ pax_getflags(PyObject *self, PyObject *args)
 }
 
 
+uint16_t
+update_flags(uint16_t oflags, uint16_t flags)
+{
+	//PAGEEXEC
+	if(flags & PF_PAGEEXEC)
+	{
+		oflags |= PF_PAGEEXEC;
+		oflags &= ~PF_NOPAGEEXEC;
+	}
+	if(flags & PF_NOPAGEEXEC)
+	{
+		oflags &= ~PF_PAGEEXEC;
+		oflags |= PF_NOPAGEEXEC;
+	}
+	if((flags & PF_PAGEEXEC) && (flags & PF_NOPAGEEXEC))
+	{
+		oflags &= ~PF_PAGEEXEC;
+		oflags &= ~PF_NOPAGEEXEC;
+	}
+
+	//EMUTRAMP
+	if(flags & PF_EMUTRAMP)
+	{
+		oflags |= PF_EMUTRAMP;
+		oflags &= ~PF_NOEMUTRAMP;
+	}
+	if(flags & PF_NOEMUTRAMP)
+	{
+		oflags &= ~PF_EMUTRAMP;
+		oflags |= PF_NOEMUTRAMP;
+	}
+	if((flags & PF_EMUTRAMP) && (flags & PF_NOEMUTRAMP))
+	{
+		oflags &= ~PF_EMUTRAMP;
+		oflags &= ~PF_NOEMUTRAMP;
+	}
+
+	//MPROTECT
+	if(flags & PF_MPROTECT)
+	{
+		oflags |= PF_MPROTECT;
+		oflags &= ~PF_NOMPROTECT;
+	}
+	if(flags & PF_NOMPROTECT)
+	{
+		oflags &= ~PF_MPROTECT;
+		oflags |= PF_NOMPROTECT;
+	}
+	if((flags & PF_MPROTECT) && (flags & PF_NOMPROTECT))
+	{
+		oflags &= ~PF_MPROTECT;
+		oflags &= ~PF_NOMPROTECT;
+	}
+
+	//RANDMMAP
+	if(flags & PF_RANDMMAP)
+	{
+		oflags |= PF_RANDMMAP;
+		oflags &= ~PF_NORANDMMAP;
+	}
+	if(flags & PF_NORANDMMAP)
+	{
+		oflags &= ~PF_RANDMMAP;
+		oflags |= PF_NORANDMMAP;
+	}
+	if((flags & PF_RANDMMAP) && (flags & PF_NORANDMMAP))
+	{
+		oflags &= ~PF_RANDMMAP;
+		oflags &= ~PF_NORANDMMAP;
+	}
+
+	//SEGMEXEC
+	if(flags & PF_SEGMEXEC)
+	{
+		oflags |= PF_SEGMEXEC;
+		oflags &= ~PF_NOSEGMEXEC;
+	}
+	if(flags & PF_NOSEGMEXEC)
+	{
+		oflags &= ~PF_SEGMEXEC;
+		oflags |= PF_NOSEGMEXEC;
+	}
+	if((flags & PF_SEGMEXEC) && (flags & PF_NOSEGMEXEC))
+	{
+		oflags &= ~PF_SEGMEXEC;
+		oflags &= ~PF_NOSEGMEXEC;
+	}
+
+	return oflags;
+}
+
+
 #ifdef PTPAX
 void
 set_pt_flags(int fd, uint16_t pt_flags)
@@ -399,8 +491,8 @@ static PyObject *
 pax_setbinflags(PyObject *self, PyObject *args)
 {
 	const char *f_name;
-	int fd, iflags;
-	uint16_t flags;
+	int fd, iflags, rdwr_pt_pax = 1;
+	uint16_t oflags, nflags, flags;
 
 	if (!PyArg_ParseTuple(args, "si", &f_name, &iflags))
 	{
@@ -410,18 +502,35 @@ pax_setbinflags(PyObject *self, PyObject *args)
 
 	if((fd = open(f_name, O_RDWR)) < 0)
 	{
-		PyErr_SetString(PaxError, "pax_setbinflags: open() failed");
-		return NULL;
+#ifdef PTPAX
+		rdwr_pt_pax = 0;
+#endif
+		if((fd = open(f_name, O_RDONLY)) < 0)
+		{
+			PyErr_SetString(PaxError, "pax_setbinflags: open() failed");
+			return NULL;
+		}
 	}
 
 	flags = (uint16_t) iflags;
 
 #ifdef PTPAX
-	set_pt_flags(fd, flags);
+	if(rdwr_pt_pax)
+	{
+		oflags = get_pt_flags(fd);
+		if( oflags == UINT16_MAX )
+			oflags = PF_NOEMUTRAMP ;
+		nflags = update_flags( oflags, flags);
+		set_pt_flags(fd, nflags);
+        }
 #endif
 
 #ifdef XTPAX
-	set_xt_flags(fd, flags);
+	oflags = get_xt_flags(fd);
+	if( oflags == UINT16_MAX )
+		oflags = PF_NOEMUTRAMP ;
+	nflags = update_flags( oflags, flags);
+	set_xt_flags(fd, nflags);
 #endif
 
 	close(fd);
@@ -433,29 +542,46 @@ static PyObject *
 pax_setstrflags(PyObject *self, PyObject *args)
 {
 	char *f_name, *sflags;
-	int fd;
-	uint16_t flags;
+	int fd, rdwr_pt_pax = 1;
+	uint16_t oflags, nflags, flags;
 
 	if (!PyArg_ParseTuple(args, "ss", &f_name, &sflags))
 	{
-		PyErr_SetString(PaxError, "pax_setbinflags: PyArg_ParseTuple failed");
+		PyErr_SetString(PaxError, "pax_setstrflags: PyArg_ParseTuple failed");
 		return NULL;
 	}
 
 	if((fd = open(f_name, O_RDWR)) < 0)
 	{
-		PyErr_SetString(PaxError, "pax_setbinflags: open() failed");
-		return NULL;
+#ifdef PTPAX
+		rdwr_pt_pax = 0;
+#endif
+		if((fd = open(f_name, O_RDONLY)) < 0)
+		{
+			PyErr_SetString(PaxError, "pax_setstrflags: open() failed");
+			return NULL;
+		}
 	}
 
 	flags = string2bin(sflags);
 
 #ifdef PTPAX
-	set_pt_flags(fd, flags);
+	if(rdwr_pt_pax)
+	{
+		oflags = get_pt_flags(fd);
+		if( oflags == UINT16_MAX )
+			oflags = PF_NOEMUTRAMP ;
+		nflags = update_flags( oflags, flags);
+		set_pt_flags(fd, nflags);
+	}
 #endif
 
 #ifdef XTPAX
-	set_xt_flags(fd, flags);
+	oflags = get_xt_flags(fd);
+	if( oflags == UINT16_MAX )
+		oflags = PF_NOEMUTRAMP ;
+	nflags = update_flags( oflags, flags);
+	set_xt_flags(fd, nflags);
 #endif
 
 	close(fd);
