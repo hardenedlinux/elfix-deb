@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS = -I m4
+
 noinst_PROGRAMS = daemon
 daemon_SOURCES = daemon.c
 

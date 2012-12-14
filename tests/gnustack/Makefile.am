@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS = -I m4
+
 noinst_PROGRAMS = bad-gnustack
 
 EXTRA_DIST = gnustacktest.sh

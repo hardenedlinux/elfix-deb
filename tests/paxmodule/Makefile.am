@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS = -I m4
+
 noinst_PROGRAMS = dummy
 dummy_SOURCES = dummy.c
 

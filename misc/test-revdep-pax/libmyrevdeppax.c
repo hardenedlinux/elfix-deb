@@ -1,5 +1,0 @@
-void
-doit() {
-	;
-	return ;
-}

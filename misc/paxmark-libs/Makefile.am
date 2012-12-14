@@ -1,4 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4
+
 AM_CPPFLAGS = -DPLUGIN='"$(libdir)/libmypax.so"'
 
 bin_PROGRAMS = testpax testdlpax
