@@ -538,6 +538,55 @@ pax_setbinflags(PyObject *self, PyObject *args)
 	return Py_BuildValue("");
 }
 
+
+//This logic is like parse_cmd_args() in paxctl-ng.c
+uint16_t
+parse_sflags(char *sflags)
+{
+	int i;
+	uint16_t flags = 0;
+
+	for(i = 0; i < strlen(sflags); i++)
+	{
+		switch(sflags[i])
+		{
+			case 'P':
+				flags |= PF_PAGEEXEC;
+				break;
+			case 'p':
+				flags |= PF_NOPAGEEXEC;
+				break ;
+			case 'E':
+				flags |= PF_EMUTRAMP;
+				break;
+			case 'e':
+				flags |= PF_NOEMUTRAMP;
+				break ;
+			case 'M':
+				flags |= PF_MPROTECT;
+				break;
+			case 'm':
+				flags |= PF_NOMPROTECT;
+				break ;
+			case 'R':
+				flags |= PF_RANDMMAP;
+				break;
+			case 'r':
+				flags |= PF_NORANDMMAP;
+				break ;
+			case 'S':
+				flags |= PF_SEGMEXEC;
+				break;
+			case 's':
+				flags |= PF_NOSEGMEXEC;
+				break ;
+		}
+	}
+
+	return flags;
+}
+
+
 static PyObject *
 pax_setstrflags(PyObject *self, PyObject *args)
 {
@@ -563,7 +612,7 @@ pax_setstrflags(PyObject *self, PyObject *args)
 		}
 	}
 
-	flags = string2bin(sflags);
+	flags = parse_sflags(sflags);
 
 #ifdef PTPAX
 	if(rdwr_pt_pax)
