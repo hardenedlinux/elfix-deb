@@ -1,18 +1,41 @@
 #!/bin/bash
 
 verbose=${1-0}
+shift
 
-PWD=$(pwd)
-TESTFILE="${PWD}"/dummy
+TESTFILE="$(pwd)/dummy"
 PAXCTLNG="../../src/paxctl-ng"
 PYPAXCTL="../../scripts/pypaxctl"
-
-count=0
 
 echo "================================================================================"
 echo
 echo " RUNNIG PAXMODULE TEST"
+
+
+unamem=$(uname -m)
+pythonversion=$(python --version 2>&1)
+pythonversion=$(echo ${pythonversion} | awk '{ print $2 }')
+pythonversion=${pythonversion%\.*}
+PYTHONPATH="../../scripts/build/lib.linux-${unamem}-${pythonversion}"
+
+if [ ! -d ${PYTHONPATH} ]; then
+	echo "  (Re)building pax module"
+
+	#NOTE: the last -D or -U wins as it does for gcc $CFLAGS
+	for f in $@; do
+		[ $f = "-UXTPAX" ] && unset XTPAX
+		[ $f = "-DXTPAX" ] && XTPAX=1
+		[ $f = "-UPTPAX" ] && unset PTPAX
+		[ $f = "-DPTPAX" ] && PTPAX=1
+	done
+	export XTPAX
+	export PTPAX
+
+	( cd ../../scripts; exec ./setup.py build ) >/dev/null
+fi
 echo
+
+count=0
 
 for pf in "p" "P" "-"; do
   for ef in "e" "E" "-"; do

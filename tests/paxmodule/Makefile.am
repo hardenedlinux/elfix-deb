@@ -9,4 +9,4 @@ check_SCRIPTS = paxmodtest
 TEST = $(check_SCRIPTS)
 
 paxmodtest:
-	./paxmodtest.sh 0
+	./paxmodtest.sh 0 $(CFLAGS)
