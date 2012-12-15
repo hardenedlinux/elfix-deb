@@ -17,6 +17,7 @@ fi
 PAXCTLNG="../../src/paxctl-ng"
 REVDEPPAX="../../scripts/revdep-pax"
 
+LIBSPATH="$(pwd)/.libs"
 BINARY="revdepbin"
 LIBRARY="librevdeplib.so.0.0.0"
 SONAME="librevdeplib.so.0"
@@ -30,8 +31,7 @@ LDCONFIGD="/etc/ld.so.conf.d/revdeptest.conf"
 
 
 # create a ld.so.conf.d/ file
-LIBSPATH="$(pwd)/.libs"
-cat << EOF > ${LDCONFIGD}
+cat << EOF > "${LDCONFIGD}"
 ${LIBSPATH}
 EOF
 ${LDCONFIG}
@@ -40,15 +40,48 @@ ${LDCONFIG}
 CAT="zzz"
 PKG="revdepbin-1"
 VARDBPKG="/var/db/pkg"
-${MKDIR} ${VARDBPKG}/${CAT}/${PKG}
-cat << EOF > ${VARDBPKG}/${CAT}/${PKG}/NEEDED
+${MKDIR} "${VARDBPKG}/${CAT}/${PKG}"
+cat << EOF > "${VARDBPKG}/${CAT}/${PKG}/NEEDED"
 ${LIBSPATH}/${BINARY} ${SONAME}
 EOF
 
 #
 # do test here
 #
-${REVDEPPAX} -vs "${SONAME}"
+#${REVDEPPAX} -vs "${SONAME}"
+#
+for i in "R" "r" "Rr"
+do
+	for j in "R" "r" "Rr"
+	do
+		$PAXCTLNG -z   "${LIBSPATH}/${BINARY}"
+		$PAXCTLNG -$i  "${LIBSPATH}/${BINARY}"
+		$PAXCTLNG -z   "${LIBSPATH}/${LIBRARY}"
+		$PAXCTLNG -Pm$j "${LIBSPATH}/${LIBRARY}"
+
+		echo " BEFORE: "
+		p=$($PAXCTLNG -v ${LIBSPATH}/${BINARY})
+		p=$(echo $p | awk '{ print $3 }')
+		echo "  Binary:  $p"
+
+		p=$($PAXCTLNG -v ${LIBSPATH}/${LIBRARY})
+		p=$(echo $p | awk '{ print $3 }')
+		echo "  Library: $p"
+
+		$REVDEPPAX -m -y -s ${SONAME} >/dev/null 2>&1
+
+		echo " AFTER: "
+		p=$($PAXCTLNG -v ${LIBSPATH}/${BINARY})
+		p=$(echo $p | awk '{ print $3 }')
+		echo "  Binary:  $p"
+
+		p=$($PAXCTLNG -v ${LIBSPATH}/${LIBRARY})
+		p=$(echo $p | awk '{ print $3 }')
+		echo "  Library: $p"
+		echo
+		echo
+	done
+done
 #
 # do test here
 #
@@ -65,27 +98,3 @@ ${LDCONFIG}
 echo "================================================================================"
 exit 0
 
-echo
-echo "Testing reverse migration $LIBRARY -> $BINARY"
-echo "(This will take a while)"
-echo
-
-for i in "R" "r" "Rr"
-do
-	for j in "R" "r" "Rr"
-	do
-		echo "============================================================================"
-		$PAXCTLNG -z $BINARY
-		$PAXCTLNG -$i $BINARY
-		$PAXCTLNG -z $LIBRARY
-		$PAXCTLNG -m$j $LIBRARY
-		p=$i; [[ "$p" == "Rr" ]] && p="-"
-		echo "Binary  -> $p"
-		p=$j; [[ "$p" == "Rr" ]] && p="-"
-		echo "Library -> $p"
-		$REVDEPPAX -m -y -l $LIBRARY
-		echo
-		$PAXCTLNG -v $BINARY
-		$PAXCTLNG -v $LIBRARY
-	done
-done
