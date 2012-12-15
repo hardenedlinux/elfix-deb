@@ -55,9 +55,9 @@ do
 	for j in "R" "r" "Rr"
 	do
 		$PAXCTLNG -z   "${LIBSPATH}/${BINARY}"
-		$PAXCTLNG -$i  "${LIBSPATH}/${BINARY}"
+		$PAXCTLNG -e$i  "${LIBSPATH}/${BINARY}"
 		$PAXCTLNG -z   "${LIBSPATH}/${LIBRARY}"
-		$PAXCTLNG -Pm$j "${LIBSPATH}/${LIBRARY}"
+		$PAXCTLNG -m$j "${LIBSPATH}/${LIBRARY}"
 
 		echo " BEFORE: "
 		p=$($PAXCTLNG -v ${LIBSPATH}/${BINARY})
