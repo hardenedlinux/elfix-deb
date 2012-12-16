@@ -1,5 +1,7 @@
 #!/bin/bash
 
+verbose=${1-0}
+
 echo "================================================================================"
 echo
 echo " REVDEP-PAX TEST"
@@ -45,41 +47,77 @@ cat << EOF > "${VARDBPKG}/${CAT}/${PKG}/NEEDED"
 ${LIBSPATH}/${BINARY} ${SONAME}
 EOF
 
-#
-# do test here
-#
-#${REVDEPPAX} -vs "${SONAME}"
-#
-for i in "R" "r" "Rr"
-do
-	for j in "R" "r" "Rr"
-	do
-		$PAXCTLNG -z   "${LIBSPATH}/${BINARY}"
-		$PAXCTLNG -e$i  "${LIBSPATH}/${BINARY}"
-		$PAXCTLNG -z   "${LIBSPATH}/${LIBRARY}"
-		$PAXCTLNG -m$j "${LIBSPATH}/${LIBRARY}"
+if [ "${verbose}" = 0 ] ;then
+	echo -n "  "
+fi
 
-		echo " BEFORE: "
+count=0
+
+for bf in "R" "r" "Rr"
+do
+	for lf in "R" "r" "Rr"
+	do
+		$PAXCTLNG -z       "${LIBSPATH}/${BINARY}"
+		$PAXCTLNG -e${bf}  "${LIBSPATH}/${BINARY}"
+		$PAXCTLNG -z       "${LIBSPATH}/${LIBRARY}"
+		$PAXCTLNG -m${lf}  "${LIBSPATH}/${LIBRARY}"
+
 		p=$($PAXCTLNG -v ${LIBSPATH}/${BINARY})
 		p=$(echo $p | awk '{ print $3 }')
-		echo "  Binary:  $p"
+		if [ "${verbose}" != 0 ] ;then
+			echo " BEFORE: "
+			echo "  Binary:  $p"
+		fi
 
 		p=$($PAXCTLNG -v ${LIBSPATH}/${LIBRARY})
 		p=$(echo $p | awk '{ print $3 }')
-		echo "  Library: $p"
+		if [ "${verbose}" != 0 ] ;then
+			echo "  Library: $p"
+		fi
 
 		$REVDEPPAX -m -y -s ${SONAME} >/dev/null 2>&1
 
-		echo " AFTER: "
-		p=$($PAXCTLNG -v ${LIBSPATH}/${BINARY})
-		p=$(echo $p | awk '{ print $3 }')
-		echo "  Binary:  $p"
+		ba=$($PAXCTLNG -v ${LIBSPATH}/${BINARY})
+		ba=$(echo $ba | awk '{ print $3 }')
+		if [ "${verbose}" != 0 ] ;then
+			echo " AFTER: "
+			echo "  Binary:  $ba"
+		fi
 
 		p=$($PAXCTLNG -v ${LIBSPATH}/${LIBRARY})
 		p=$(echo $p | awk '{ print $3 }')
-		echo "  Library: $p"
-		echo
-		echo
+		if [ "${verbose}" != 0 ] ;then
+			echo "  Library: $p"
+		fi
+
+		be="-em"
+		unset x
+
+		if   [ "$bf" != "$lf" -a "$bf" != "Rr" ]; then
+			x="$bf"
+		elif [ "$bf" = "$lf" ]; then
+			x="$bf"
+		elif [ "$lf" = "Rr" ]; then
+			x="$bf"
+		elif [ "$bf" = "Rr" ]; then
+			x="$lf"
+		fi
+
+		be+="${x/Rr/-}-"
+
+		if [ "$be" != "$ba" ]; then
+			(( count = count + 1 ))
+			if [ "${verbose}" != 0 ] ;then
+				echo "   Mismatch: Expected Binary: ${be}"
+			fi
+		fi
+
+		if [ "${verbose}" != 0 ] ;then
+			echo
+			echo
+		else
+			echo -n "."
+		fi
 	done
 done
 #
@@ -95,6 +133,12 @@ ${RMDIR} ${VARDBPKG}/${CAT}
 ${RM} ${LDCONFIGD}
 ${LDCONFIG}
 
+if [ "${verbose}" = 0 ] ;then
+	echo
+	echo
+fi
+echo " Mismatches = ${count}"
+echo
 echo "================================================================================"
-exit 0
+exit $count
 
