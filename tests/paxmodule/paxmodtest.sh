@@ -1,16 +1,16 @@
 #!/bin/bash
 
+echo "================================================================================"
+echo
+echo " RUNNIG PAXMODULE TEST"
+echo
+
 verbose=${1-0}
 shift
 
 TESTFILE="$(pwd)/dummy"
 PAXCTLNG="../../src/paxctl-ng"
 PYPAXCTL="../../scripts/pypaxctl"
-
-echo "================================================================================"
-echo
-echo " RUNNIG PAXMODULE TEST"
-
 
 unamem=$(uname -m)
 pythonversion=$(python --version 2>&1)
@@ -33,7 +33,6 @@ if [ ! -d ${PYTHONPATH} ]; then
 
 	( cd ../../scripts; exec ./setup.py build ) >/dev/null
 fi
-echo
 
 count=0
 

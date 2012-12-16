@@ -18,6 +18,6 @@ check_SCRIPTS = revdeptest
 TEST = $(check_SCRIPTS)
 
 revdeptest:
-	./revdeptest.sh 0
+	./revdeptest.sh 0 $(CFLAGS)
 
 EXTRA_DIST = revdeptest.sh

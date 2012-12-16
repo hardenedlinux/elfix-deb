@@ -1,14 +1,14 @@
 #!/bin/bash
 
-verbose=${1-0}
-
 echo "================================================================================"
 echo
 echo " REVDEP-PAX TEST"
 echo
 
-ID=$(id -u)
+verbose=${1-0}
+shift
 
+ID=$(id -u)
 if [ "$ID" != 0 ]; then
 	echo " MUST BE ROOT"
 	echo
@@ -49,6 +49,30 @@ EOF
 
 if [ "${verbose}" = 0 ] ;then
 	echo -n "  "
+fi
+
+unamem=$(uname -m)
+pythonversion=$(python --version 2>&1)
+pythonversion=$(echo ${pythonversion} | awk '{ print $2 }')
+pythonversion=${pythonversion%\.*}
+PYTHONPATH="../../scripts/build/lib.linux-${unamem}-${pythonversion}"
+
+# Assume the pax.so module is built if the path exists
+# otherwise build it ourselves!
+if [ ! -d ${PYTHONPATH} ]; then
+	echo "  (Re)building pax module"
+
+	#NOTE: the last -D or -U wins as it does for gcc $CFLAGS
+	for f in $@; do
+		[ $f = "-UXTPAX" ] && unset XTPAX
+		[ $f = "-DXTPAX" ] && XTPAX=1
+		[ $f = "-UPTPAX" ] && unset PTPAX
+		[ $f = "-DPTPAX" ] && PTPAX=1
+	done
+	export XTPAX
+	export PTPAX
+
+	( cd ../../scripts; exec ./setup.py build ) >/dev/null
 fi
 
 count=0
