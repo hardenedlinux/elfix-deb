@@ -17,7 +17,7 @@
 #
 
 AC_PREREQ([2.68])
-AC_INIT([elfix], [0.6], [http://bugs.gentoo.org/])
+AC_INIT([elfix], [0.7], [http://bugs.gentoo.org/])
 AC_CONFIG_SRCDIR([src/fix-gnustack.c])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.11 foreign])
