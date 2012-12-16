@@ -1,5 +1,5 @@
 /*
-	fix-gnustack.c: check and optionally remove exec flag on Elf GNU_STACK
+	fix-gnustack.c: this file is part of the elfix package
 	Copyright (C) 2011  Anthony G. Basile
 
 	This program is free software: you can redistribute it and/or modify

@@ -1,3 +1,16 @@
+2012-12-16
+
+	* Add logic for NEED_PAX_DECLS when gelf.h is present but lacks them
+	As of >=glibc-2.16 gentoo no longer carries PAX_DECLS in elf.h
+	* scripts/paxmodule.c: do not use '-' when setting null XATTR PAX flags
+	* scripts/paxmodule.c: adopt the update_flags() logic of paxctl-ng.c
+	* scripts/paxmodule.c: adopt the parse_cmd_args() logic of paxctl-ng.c
+	* scripts/revdep-pax: clean up flag exporter/importer logic
+	* added tests/paxmodule: test python pax module
+	* added up tests/pxtpax: do marked flags <-> running process testing
+	* added tests/revdeppaxtest: test revdep-pax
+	* Tests now give proper return values and are not verbose by default
+
 2012-11-10
 
 	* fix a typo in revdep-pax script and documentation

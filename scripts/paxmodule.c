@@ -1,5 +1,5 @@
 /*
-	paxmodule.c: python module to get/set pax flags on an ELF object
+	paxmodule.c: this file is part of the elfix package
 	Copyright (C) 2011  Anthony G. Basile
 
 	This program is free software: you can redistribute it and/or modify

@@ -1,5 +1,5 @@
 /*
-	paxctl-ng.c: get/set pax flags on an ELF object
+	paxctl-ng.c: this file is part of the elfix package
 	Copyright (C) 2011  Anthony G. Basile
 
 	This program is free software: you can redistribute it and/or modify
