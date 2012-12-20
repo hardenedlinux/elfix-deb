@@ -44,12 +44,12 @@ def run_usage():
 	print('Bug Reports  : http://bugs.gentoo.org/')
 	print('Program Name : migrate')
 	print('Description  : Migrate PT_PAX to XATTR_PAX Flags on all system ELF objects')
-	print(),
+	print('')
 	print('Usage        : migrate -v        print out all system ELF objects')
 	print('             : migrate -m [-v]   migrate flags on all system ELF objects')
 	print('             : migrate [-h]      print out this help')
 	print('             : -v                be verbose when migrating')
-	print()
+	print('')
 
 
 def main():
