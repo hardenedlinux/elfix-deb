@@ -94,6 +94,7 @@ print_help_exit(char *v)
 #ifdef XTPAX
 		"             : -C create XATTR_PAX with most secure setting\n"
 		"             : -c create XATTR_PAX all default settings\n"
+		"             : -d delete XATTR_PAX field\n"
 #endif
 #if defined(PTPAX) && defined(XTPAX)
 		"             : -F copy PT_PAX to XATTR_PAX\n"
