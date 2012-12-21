@@ -162,7 +162,7 @@ read_flags(int fd)
 		//xattrs is supported, PAX_NAMESPACE is present, but it is the wrong size
 		if(errno == ERANGE)
 		{
-			printf("XT_PAX: malformed flags found\n");
+			printf("XATTR_PAX: malformed flags found\n");
 			//FIXME remove the user.pax field
 			xt_flags = 0;
 		}
@@ -170,13 +170,13 @@ read_flags(int fd)
 		//xattrs is supported, PAX_NAMESPACE is not present
 		if(errno == ENOATTR)
 		{
-			printf("XT_PAX: not found\n");
+			printf("XATTR_PAX: not found\n");
 			xt_flags = 0;
 		}
 
 		//xattrs is not supported
 		if(errno == ENOTSUP)
-			printf("XT_PAX: extended attribute not supported\n");
+			printf("XATTR_PAX: extended attribute not supported\n");
 	}
 
 	return xt_flags;
@@ -214,7 +214,7 @@ print_flags(int fd)
 	xt_buf[5] = xt_flags & PF_RANDEXEC   ? 'X' :
 		xt_flags & PF_NORANDEXEC ? 'x' : '-';
 
-	printf("XT_PAX: %s\n", xt_buf);
+	printf("XATTR_PAX: %s\n", xt_buf);
 }
 
 
@@ -332,9 +332,9 @@ set_flags(int fd, int *pax_flags)
 	if(fsetxattr(fd, PAX_NAMESPACE, &xt_flags, sizeof(uint16_t), 0) == -1)
 	{
 		if(errno == ENOSPC || errno == EDQUOT)
-			printf("XT_PAX: cannot store xt_flags\n");
+			printf("XATTR_PAX: cannot store xt_flags\n");
 		if(errno == ENOTSUP)
-			printf("XT_PAX: extended attribute not supported\n");
+			printf("XATTR_PAX: extended attribute not supported\n");
 	}
 }
 

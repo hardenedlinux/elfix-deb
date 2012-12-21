@@ -24,7 +24,7 @@ be put in the Extended File Attributes, much like selinux labels.  This is not
 without its difficulties because not all filesystems are capable of supporting
 xattrs.  However, work on making filesystems, like tmpfs, and archiving tools,
 like tar, aware of xattrs is maturing and migrating pax markings to xattrs is
-now a design possibility [4].  We will call these markings XT_PAX.
+now a design possibility [4].  We will call these markings XATTR_PAX.
 
 
 PURPOSAL
@@ -34,7 +34,7 @@ future, we propose the following standards to how pax markings are treated:
 
 1) The kernel.  All legacy EI_PAX refrences will be removed from the kernel,
 and ehdr.e_ident[] bytes 14 and 15 will not be considered for any PaX decisions.
-The kernel will be patched to force respect of XT_PAX markings first, and only
+The kernel will be patched to force respect of XATTR_PAX markings first, and only
 if these are missing, revert to PT_PAX.  If both markings are missing, then the
 kernel will revert to enforcing maximum protection, meaning
 
@@ -49,7 +49,7 @@ on whatever filesystems are configured and support them.
 
 2) Userland utility.  A new userland utility will be required to ensure
 consistency between the two types of pax markings.  It will return the
-XT_PAX markings if found, and only if these are missing, revert to PT_PAX.
+XATTR_PAX markings if found, and only if these are missing, revert to PT_PAX.
 
 This utility will not attempt to convert or add any program header to the
 ELF binary.

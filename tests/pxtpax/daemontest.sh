@@ -17,7 +17,7 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# dotest = 0 -> do only XT_PAX or PT_PAX test
+# dotest = 0 -> do only XATTR_PAX or PT_PAX test
 # dotest = 1 -> do both
 dotest=${1-0}
 verbose=${2-0}
@@ -80,8 +80,8 @@ for pf in "p" "P" "-"; do
             else
               ptsflags=$(echo ${sflags} | awk '{print $3}')
               xtsflags=$(echo ${sflags} | awk '{print $5}')
-              echo "PT_PAX :"  ${ptsflags}
-              echo "XT_PAX :"  ${xtsflags}
+              echo "PT_PAX    :"  ${ptsflags}
+              echo "XATTR_PAX :"  ${xtsflags}
             fi
           fi
 

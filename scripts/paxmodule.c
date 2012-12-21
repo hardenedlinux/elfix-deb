@@ -66,14 +66,14 @@ static PyMethodDef PaxMethods[] = {
 #if PY_MAJOR_VERSION >= 3
     static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
-        "pax",						/* m_name */
-        "Module for setting PT_PAX and XT_PAX flags",	/* m_doc */
-        -1,						/* m_size */
-        PaxMethods,					/* m_methods */
-        NULL,						/* m_reload */
-        NULL,						/* m_traverse */
-        NULL,						/* m_clear */
-        NULL,						/* m_free */
+        "pax",							/* m_name */
+        "Module for get/setting PT_PAX and XATTR_PAX flags",	/* m_doc */
+        -1,							/* m_size */
+        PaxMethods,						/* m_methods */
+        NULL,							/* m_reload */
+        NULL,							/* m_traverse */
+        NULL,							/* m_clear */
+        NULL,							/* m_free */
     };
 #endif
 

@@ -92,14 +92,14 @@ print_help_exit(char *v)
 		"             : -Z all secure settings\t-z all default settings\n"
 		"             :\n"
 #ifdef XTPAX
-		"             : -C create XT_PAX with most secure setting\n"
-		"             : -c create XT_PAX all default settings\n"
+		"             : -C create XATTR_PAX with most secure setting\n"
+		"             : -c create XATTR_PAX all default settings\n"
 #endif
 #if defined(PTPAX) && defined(XTPAX)
-		"             : -F copy PT_PAX to XT_PAX\n"
-		"             : -f copy XT_PAX to PT_PAX\n"
+		"             : -F copy PT_PAX to XATTR_PAX\n"
+		"             : -f copy XATTR_PAX to PT_PAX\n"
 		"             : -L set only PT_PAX flags\n"
-		"             : -l set only XT_PAX flags\n"
+		"             : -l set only XATTR_PAX flags\n"
 #endif
 		"             :\n"
 		"             : -v view the flags, along with any accompanying operation\n"
@@ -459,12 +459,12 @@ print_flags(int fd, int verbose)
 #ifdef XTPAX
 	flags = get_xt_flags(fd);
 	if( flags == UINT16_MAX )
-		printf("\tXT_PAX: not found\n");
+		printf("\tXATTR_PAX: not found\n");
 	else
 	{
 		memset(buf, 0, FLAGS_SIZE);
 		bin2string4print(flags, buf);
-		printf("\tXT_PAX: %s\n", buf);
+		printf("\tXATTR_PAX: %s\n", buf);
 	}
 #endif
 }
