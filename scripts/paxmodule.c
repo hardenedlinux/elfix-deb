@@ -665,9 +665,13 @@ pax_deletextpax(PyObject *self, PyObject *args)
 	}
 
 	if( !fremovexattr(fd, PAX_NAMESPACE) )
+	{
+		close(fd);
 		return Py_BuildValue("");
+	}
 	else
 	{
+		close(fd);
 		PyErr_SetString(PaxError, "pax_deletextpax: fremovexattr() failed");
 		return NULL;
 	}

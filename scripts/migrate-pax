@@ -78,7 +78,7 @@ def main():
 			opt_count += 1
 		elif o == '-d':
 			do_deleteall = True
-			opt_cout += 1
+			opt_count += 1
 		elif o == '-h':
 			do_usage = True
 			opt_count += 1
