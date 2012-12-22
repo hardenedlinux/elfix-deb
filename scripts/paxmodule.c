@@ -56,7 +56,7 @@ static PyObject * pax_getflags(PyObject *, PyObject *);
 static PyObject * pax_setbinflags(PyObject *, PyObject *);
 static PyObject * pax_setstrflags(PyObject *, PyObject *);
 #ifdef XTPAX
-static PyObject * pax_deleteflags(PyObject *, PyObject *);
+static PyObject * pax_deletextpax(PyObject *, PyObject *);
 #endif
 
 static PyMethodDef PaxMethods[] = {
@@ -64,7 +64,7 @@ static PyMethodDef PaxMethods[] = {
 	{"setbinflags",  pax_setbinflags, METH_VARARGS, "Set the pax flags using binary."},
 	{"setstrflags",  pax_setstrflags, METH_VARARGS, "Set the pax flags using string."},
 #ifdef XTPAX
-	{"deleteflags",  pax_deleteflags, METH_VARARGS, "Delete the XATTR_PAX field."},
+	{"deletextpax",  pax_deletextpax, METH_VARARGS, "Delete the XATTR_PAX field."},
 #endif
 	{NULL, NULL, 0, NULL}
 };
@@ -647,20 +647,20 @@ pax_setstrflags(PyObject *self, PyObject *args)
 
 #ifdef XTPAX
 static PyObject *
-pax_deleteflags(PyObject *self, PyObject *args)
+pax_deletextpax(PyObject *self, PyObject *args)
 {
 	const char *f_name;
 	int fd;
 
 	if(!PyArg_ParseTuple(args, "s", &f_name))
 	{
-		PyErr_SetString(PaxError, "pax_deleteflags: PyArg_ParseTuple failed");
+		PyErr_SetString(PaxError, "pax_deletextpax: PyArg_ParseTuple failed");
 		return NULL;
 	}
 
 	if((fd = open(f_name, O_RDONLY)) < 0)
 	{
-		PyErr_SetString(PaxError, "pax_deleteflags: open() failed");
+		PyErr_SetString(PaxError, "pax_deletextpax: open() failed");
 		return NULL;
 	}
 
@@ -668,7 +668,7 @@ pax_deleteflags(PyObject *self, PyObject *args)
 		return Py_BuildValue("");
 	else
 	{
-		PyErr_SetString(PaxError, "pax_deleteflags: fremovexattr() failed");
+		PyErr_SetString(PaxError, "pax_deletextpax: fremovexattr() failed");
 		return NULL;
 	}
 }

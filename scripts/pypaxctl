@@ -24,7 +24,7 @@ import pax
 
 xattr_available = True
 try:
-	from pax import deleteflags
+	from pax import deletextpax
 except ImportError:
 	xattr_available = False
 
@@ -76,9 +76,9 @@ def main():
 		else:
 			for elf in args:
 				try:
-					pax.deleteflags(elf)
+					pax.deletextpax(elf)
 				except pax.error:
-					print('pax_deleteflags: XATTR_PAX not supported')
+					print('pax_deletextpax: XATTR_PAX not supported')
 					sys.exit(1)
 
 if __name__ == '__main__':
