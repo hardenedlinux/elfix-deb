@@ -48,6 +48,7 @@ def run_usage():
 	print('')
 	print('Usage        : migrate -v        print out all system ELF objects')
 	print('             : migrate -m [-v]   migrate flags on all system ELF objects')
+	print('             : migrate -d [-v]   delete XATTR_PAX on all system ELF objects')
 	print('             : migrate [-h]      print out this help')
 	print('             : -v                be verbose when migrating')
 	print('')
@@ -55,15 +56,15 @@ def run_usage():
 
 def main():
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], 'mv')
+		opts, args = getopt.getopt(sys.argv[1:], 'vmdh')
 	except getopt.GetoptError as err:
 		print(str(err)) # will print something like 'option -a not recognized'
 		run_usage()
 		sys.exit(1)
 
-
 	verbose = False
 	do_migration = False
+	do_deleteall = False
 	do_usage = False
 
 	opt_count = 0
@@ -75,6 +76,9 @@ def main():
 		elif o == '-m':
 			do_migration = True
 			opt_count += 1
+		elif o == '-d':
+			do_deleteall = True
+			opt_cout += 1
 		elif o == '-h':
 			do_usage = True
 			opt_count += 1
@@ -83,14 +87,27 @@ def main():
 			print('Please file a bug')
 			sys.exit(1)
 
-	if opt_count == 0 or do_usage:
+	if do_usage:
 		run_usage()
 		sys.exit(0)
 
+	if opt_count == 0 or opt_count > 2 or ( do_migration and do_deleteall):
+		run_usage()
+		sys.exit(1)
+
+	# Are we root?
 	uid = os.getuid()
 	if uid != 0 and do_migration:
 		print('RUN AS ROOT: cannot migrate flags')
-		sys.exit(0)
+		sys.exit(1)
+
+	# Do we have XATTR_PAX support?
+	if do_migration or do_deleteall:
+		try:
+			from pax import deletextpax
+		except ImportError:
+			print('ERROR: Python module pax.so was compiled without XATTR_PAX support, cannot migrate or delete XATTR_PAX')
+			sys.exit(1)
 
 	object_needed = get_object_needed()
 
@@ -99,6 +116,7 @@ def main():
 
 	for elf in object_needed:
 		try:
+			flags = pax.getflags(elf)[0]
 			if flags:
 				if verbose:
 					print("%s %s" % (flags, elf))
@@ -106,10 +124,13 @@ def main():
 				none.append(elf)
 				if verbose:
 					print("NONE: %s" % elf)
+
 			if do_migration:
-				flags = pax.getflags(elf)[0]
 				flags = re.sub('-','',flags)
 				pax.setstrflags(elf, flags)
+
+			if do_deleteall:
+				pax.deletextpax(elf)
 
 		# We should never get here, because you can
 		# always getflags() via pax.so since you can
