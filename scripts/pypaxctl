@@ -22,24 +22,38 @@ import sys
 import getopt
 import pax
 
+xattr_available = True
+try:
+	from pax import deleteflags
+except ImportError:
+	xattr_available = False
+
 def run_usage():
 	print('Package Name : elfix')
 	print('Bug Reports  : http://bugs.gentoo.org/')
 	print('Program Name : pypaxctl')
-	print('Description  : Get/set/delete PT_PAX or XATTR_PAX flags on an ELF object')
-	print('')
-	print('Usage        : pypaxctl -g ELF                get XATTR_PAX flags first, else get PT_PAX flags')
-	print('             : pypaxctl -s [-PpEeMmRrSs] ELF  set PT_PAX and XATTR_PAX flags whenever possible')
-	print('             : pypaxctl -d ELF                delete the XATTR_PAX field')
-	print('')
-	print('Note         : If the pax.so module is compiled without PT_PAX or XATTR_PAX, then no operation will')
-	print('             : be done on that field.  Note -d is not available unless XATTR_PAX support is present')
+	if xattr_available:
+		print('Description  : Get/set/delete PT_PAX or XATTR_PAX flags on an ELF object')
+		print('')
+		print('Usage        : pypaxctl -g ELF                get XATTR_PAX flags first, else get PT_PAX flags')
+		print('             : pypaxctl -s [-PpEeMmRrSs] ELF  set PT_PAX and XATTR_PAX flags whenever possible')
+		print('             : pypaxctl -d ELF                delete the XATTR_PAX field')
+	else:
+		print('Description  : Get/set PT_PAX flags on an ELF object')
+		print('')
+		print('Usage        : pypaxctl -g ELF                get PT_PAX flags')
+		print('             : pypaxctl -s [-PpEeMmRrSs] ELF  set PT_PAX flags whenever possible')
+		print('')
+		print('Note         : Python module pax.so was compiled without XATTR_PAX support')
 	print('')
 
 
 def main():
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], 'gs:d')
+		if xattr_available:
+			opts, args = getopt.getopt(sys.argv[1:], 'gs:d')
+		else:
+			opts, args = getopt.getopt(sys.argv[1:], 'gs:')
 	except getopt.GetoptError as err:
 		print(err)
 		sys.exit(1)
@@ -48,34 +62,24 @@ def main():
 		run_usage()
 		sys.exit(1)
 
-	elf = None
-	do_get = False
-	do_set = False
-	do_del = False
-
 	for o, a in opts:
 		if o == '-g':
-			do_get = True
+			for elf in args:
+				( str_flags, bin_flags ) = pax.getflags(elf)
+				print('%s' % str_flags)
 		elif o == '-s':
-			flags = a
-			do_set = True
-		else:
-			do_del = True
+			for elf in args:
+				pax.setstrflags(elf, a)
 
-	if( do_get ):
-		for elf in args:
-			( str_flags, bin_flags ) = pax.getflags(elf)
-			print('%s' % str_flags)
-	elif( do_set ):
-		for elf in args:
-			pax.setstrflags(elf, flags)
-	else:
-		for elf in args:
-			try:
-				pax.deleteflags(elf)
-			except pax.error:
-				print('pax_deleteflags: XATTR_PAX not supported')
-				sys.exit(1)
+		# Don't worry if xattr_available = False
+		# because we can't get here if it is.
+		else:
+			for elf in args:
+				try:
+					pax.deleteflags(elf)
+				except pax.error:
+					print('pax_deleteflags: XATTR_PAX not supported')
+					sys.exit(1)
 
 if __name__ == '__main__':
 	main()

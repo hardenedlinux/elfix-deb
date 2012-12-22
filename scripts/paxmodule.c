@@ -650,8 +650,9 @@ static PyObject *
 pax_deleteflags(PyObject *self, PyObject *args)
 {
 	const char *f_name;
+	int fd;
 
-	if(!PyArg_ParseTuple(args, "s", &f_names))
+	if(!PyArg_ParseTuple(args, "s", &f_name))
 	{
 		PyErr_SetString(PaxError, "pax_deleteflags: PyArg_ParseTuple failed");
 		return NULL;
@@ -666,6 +667,9 @@ pax_deleteflags(PyObject *self, PyObject *args)
 	if( !fremovexattr(fd, PAX_NAMESPACE) )
 		return Py_BuildValue("");
 	else
+	{
+		PyErr_SetString(PaxError, "pax_deleteflags: fremovexattr() failed");
 		return NULL;
+	}
 }
 #endif
