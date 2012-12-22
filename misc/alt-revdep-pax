@@ -13,10 +13,11 @@ import os
 import sys
 import re
 import pax
+from copy import copy
 
-def get_forward_needed():
+def get_object_needed():
 	"""
-	Return forward_needed dictionary which has structure
+	Return object_needed dictionary which has structure
 
 		{ full_path_to_ELF_object : [ soname1, soname2, ... ], ... }
 
@@ -25,7 +26,7 @@ def get_forward_needed():
 
 	var_db_pkg = '/var/db/pkg'
 
-	forward_needed = {}
+	object_needed = {}
 	for cat in os.listdir(var_db_pkg):
 		catdir = '%s/%s' % (var_db_pkg, cat)
 		for pkg in os.listdir(catdir):
@@ -39,11 +40,11 @@ def get_forward_needed():
 					link = re.split(';', line)
 					elf = link[1]
 					sonames = re.split(',', link[4])
-					forward_needed[elf] = sonames
+					object_needed[elf] = sonames
 			except IOError:
 				continue #File probably doesn't exist, which is okay
 
-	return forward_needed
+	return object_needed
 
 
 def get_library():
@@ -83,24 +84,48 @@ def get_library():
 	return ( library2soname, soname2library )
 
 
-def get_soname2soname_linkings( forward_needed, library2soname ):
+def get_soname_needed( object_needed, library2soname ):
 	"""
-	Return get_soname2soname_linkings dictionary which has structure:
+	Return get_soname_needed dictionary which has structure:
 
 		{ soname : [ soname1, soname2, ... ], .... }
 
+	Here the soname1,2,... were obtained from soname's corresponding ELF library by readelf -d
 	"""
 
-	soname2soname_linkings = {}
+	soname_needed = {}
 
-	for elf in forward_needed:
+	for elf in object_needed:
 		try:
 			soname = library2soname[elf]
-			soname2soname_linkings[soname] = forward_needed[elf]
+			soname_needed[soname] = copy(object_needed[elf]) #copy the list
 		except KeyError:
-			continue	#It doesn't have an soname and prabably isn't a library
+			continue  # no soname, its probably an executable
 
-	return soname2soname_linkings
+	return soname_needed
+
+
+def get_soname_linkings( soname_needed ):
+	soname_linkings = {}
+	for soname in soname_needed:
+		needed = copy(soname_needed[soname])
+		while True:
+			count = 0
+			for s in needed:
+				try:
+					for sf in soname_needed[s]:
+						if not sf in needed:
+							needed.append(sf)
+							count = 1
+				except KeyError:
+					continue
+
+			if count == 0:
+				break
+
+		soname_linkings[soname] = needed
+
+	return soname_linkings
 
 
 def main():
@@ -111,19 +136,17 @@ def main():
 		print('RUN AS ROOT: cannot read all flags')
 		sys.exit(0)
 
-	forward_needed = get_forward_needed()
+	object_needed = get_object_needed()
 	( library2soname, soname2library ) = get_library()
+	soname_needed = get_soname_needed( object_needed, library2soname )
+	soname_linkings = get_soname_linkings( soname_needed )
+	print soname_linkings
 
-	soname2soname_linkings = get_soname2soname_linkings( forward_needed, library2soname )
+	#forward_linkings = get_forward_linkings( object_needed, soname_linkings )
 
-	for soname in soname2soname_linkings:
-		print("%s" % soname)
-		for s in soname2soname_linkings[soname]:
-			print("\t%s" % s )
-		print('')
 
 	""" Print out all ELF objects and their PaX flags
-	for elf in forward_needed:
+	for elf in object_needed:
 		try:
 			flags = pax.getflags(elf)[0]
 			if flags:
@@ -143,15 +166,35 @@ def main():
 	"""	
 
 	""" Print out all ELF objects and the NEEDED sonames and full library paths
-	for elf in forward_needed:
-		sonames = forward_needed[elf]
+	for elf in object_needed:
+		sonames = object_needed[elf]
 		print("%s" % elf)
-		for soname in sorted(forward_needed[elf]):
+		for soname in sorted(object_needed[elf]):
 			try:
 				print("\t%s\t=> %s" % (soname, soname2library[soname]))
 			except KeyError:
 				print("\t%s\t=> ****" % soname)
 		print("\n\n")
+	"""
+
+	""" Print out all the soname to soname NEEDED
+	for soname in soname_needed:
+		print("%s" % soname)
+		for s in soname_needed[soname]:
+			print("\t%s" % s )
+		print('')
+	"""
+
+
+	""" Print out all the soname to soname linkings
+	for soname in soname_linkings:
+		print("%s => %s" % (soname, soname2library[soname]))
+		for s in soname_linkings[soname]:
+			if s in soname2library:
+				print("\t%s => %s" % (s, soname2library[s]))
+			else:
+				print("\t%s => ****" %s )
+		print('')
 	"""
 
 if __name__ == '__main__':
