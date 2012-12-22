@@ -15,10 +15,11 @@ import getopt
 import sys
 import pax
 
-def get_forward_linkings():
+def get_object_needed():
+
 	var_db_pkg = '/var/db/pkg'
 
-	forward_linkings = {}
+	object_needed = {}
 	for cat in os.listdir(var_db_pkg):
 		catdir = '%s/%s' % (var_db_pkg, cat)
 		for pkg in os.listdir(catdir):
@@ -32,11 +33,11 @@ def get_forward_linkings():
 					link = re.split(';', line)
 					elf = link[1]
 					sonames = re.split(',', link[4])
-					forward_linkings[elf] = sonames
+					object_needed[elf] = sonames
 			except IOError:
 				continue #File probably doesn't exist, which is okay
 
-	return forward_linkings
+	return object_needed
 
 
 def run_usage():
@@ -91,14 +92,13 @@ def main():
 		print('RUN AS ROOT: cannot migrate flags')
 		sys.exit(0)
 
-	forward_linkings = get_forward_linkings()
+	object_needed = get_object_needed()
 
 	fail = []
 	none = []
 
-	for elf in forward_linkings:
+	for elf in object_needed:
 		try:
-			flags = pax.getflags(elf)[0]
 			if flags:
 				if verbose:
 					print("%s %s" % (flags, elf))
@@ -107,6 +107,7 @@ def main():
 				if verbose:
 					print("NONE: %s" % elf)
 			if do_migration:
+				flags = pax.getflags(elf)[0]
 				flags = re.sub('-','',flags)
 				pax.setstrflags(elf, flags)
 
@@ -120,7 +121,7 @@ def main():
 			if uid == 0:
 				fail.append(elf)
 				if verbose:
-					print("BUSY: %s" % elf)
+					print("FAIL: %s" % elf)
 
 	if verbose:
 		if fail:
