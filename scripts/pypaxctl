@@ -22,44 +22,60 @@ import sys
 import getopt
 import pax
 
+def run_usage():
+	print('Package Name : elfix')
+	print('Bug Reports  : http://bugs.gentoo.org/')
+	print('Program Name : pypaxctl')
+	print('Description  : Get/set/delete PT_PAX or XATTR_PAX flags on an ELF object')
+	print('')
+	print('Usage        : pypaxctl -g ELF                get XATTR_PAX flags first, else get PT_PAX flags')
+	print('             : pypaxctl -s [-PpEeMmRrSs] ELF  set PT_PAX and XATTR_PAX flags whenever possible')
+	print('             : pypaxctl -d ELF                delete the XATTR_PAX field')
+	print('')
+	print('Note         : If the pax.so module is compiled without PT_PAX or XATTR_PAX, then no operation will')
+	print('             : be done on that field.  Note -d is not available unless XATTR_PAX support is present')
+	print('')
+
+
 def main():
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], 's:g')
+		opts, args = getopt.getopt(sys.argv[1:], 'gs:d')
 	except getopt.GetoptError as err:
 		print(err)
 		sys.exit(1)
 
-	if len(opts) == 0:
-		print('Provide either -s <flags> <elf> xor -g <elf>')
+	if( len(opts) != 1 or len(args) < 1 ):
+		run_usage()
 		sys.exit(1)
 
-	binary = None
-
-	do_set = 0
-	do_get = 0
+	elf = None
+	do_get = False
+	do_set = False
+	do_del = False
 
 	for o, a in opts:
-		if o == '-s':
+		if o == '-g':
+			do_get = True
+		elif o == '-s':
 			flags = a
-			do_set = 1
-		elif o == '-g':
-			do_get = 1
+			do_set = True
+		else:
+			do_del = True
 
-	if( (do_set + do_get) != 1 ):
-		print('Provide either -s <flags> <elf> xor -g <elf>')
-		sys.exit(1)
-
-	if( len(args) < 1 ):
-		print('Provide either -s <flags> <elf> xor -g <elf>')
-		sys.exit(1)
-
-	if( do_set == 1 ):
-		for binary in args:
-			pax.setstrflags(binary, flags)
-	else:
-		for binary in args:
-			( str_flags, bin_flags ) = pax.getflags(binary)
+	if( do_get ):
+		for elf in args:
+			( str_flags, bin_flags ) = pax.getflags(elf)
 			print('%s' % str_flags)
+	elif( do_set ):
+		for elf in args:
+			pax.setstrflags(elf, flags)
+	else:
+		for elf in args:
+			try:
+				pax.deleteflags(elf)
+			except pax.error:
+				print('pax_deleteflags: XATTR_PAX not supported')
+				sys.exit(1)
 
 if __name__ == '__main__':
 	main()

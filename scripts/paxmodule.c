@@ -55,25 +55,31 @@
 static PyObject * pax_getflags(PyObject *, PyObject *);
 static PyObject * pax_setbinflags(PyObject *, PyObject *);
 static PyObject * pax_setstrflags(PyObject *, PyObject *);
+#ifdef XTPAX
+static PyObject * pax_deleteflags(PyObject *, PyObject *);
+#endif
 
 static PyMethodDef PaxMethods[] = {
-	{"getflags",  pax_getflags, METH_VARARGS, "Get the pax flags as a string."},
+	{"getflags",     pax_getflags,    METH_VARARGS, "Get the pax flags as a string."},
 	{"setbinflags",  pax_setbinflags, METH_VARARGS, "Set the pax flags using binary."},
 	{"setstrflags",  pax_setstrflags, METH_VARARGS, "Set the pax flags using string."},
+#ifdef XTPAX
+	{"deleteflags",  pax_deleteflags, METH_VARARGS, "Delete the XATTR_PAX field."},
+#endif
 	{NULL, NULL, 0, NULL}
 };
 
 #if PY_MAJOR_VERSION >= 3
     static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
-        "pax",							/* m_name */
-        "Module for get/setting PT_PAX and XATTR_PAX flags",	/* m_doc */
-        -1,							/* m_size */
-        PaxMethods,						/* m_methods */
-        NULL,							/* m_reload */
-        NULL,							/* m_traverse */
-        NULL,							/* m_clear */
-        NULL,							/* m_free */
+        "pax",								/* m_name */
+        "Module for get/set/deleting PT_PAX and XATTR_PAX flags",	/* m_doc */
+        -1,								/* m_size */
+        PaxMethods,							/* m_methods */
+        NULL,								/* m_reload */
+        NULL,								/* m_traverse */
+        NULL,								/* m_clear */
+        NULL,								/* m_free */
     };
 #endif
 
@@ -637,3 +643,29 @@ pax_setstrflags(PyObject *self, PyObject *args)
 
 	return Py_BuildValue("");
 }
+
+
+#ifdef XTPAX
+static PyObject *
+pax_deleteflags(PyObject *self, PyObject *args)
+{
+	const char *f_name;
+
+	if(!PyArg_ParseTuple(args, "s", &f_names))
+	{
+		PyErr_SetString(PaxError, "pax_deleteflags: PyArg_ParseTuple failed");
+		return NULL;
+	}
+
+	if((fd = open(f_name, O_RDONLY)) < 0)
+	{
+		PyErr_SetString(PaxError, "pax_deleteflags: open() failed");
+		return NULL;
+	}
+
+	if( !fremovexattr(fd, PAX_NAMESPACE) )
+		return Py_BuildValue("");
+	else
+		return NULL;
+}
+#endif
