@@ -103,9 +103,9 @@ initpax(void)
 	if (m == NULL)
 		return;
 
-	PaxError = PyErr_NewException("pax.error", NULL, NULL);
+	PaxError = PyErr_NewException("pax.PaxError", NULL, NULL);
 	Py_INCREF(PaxError);
-	PyModule_AddObject(m, "error", PaxError);
+	PyModule_AddObject(m, "PaxError", PaxError);
 
 #if PY_MAJOR_VERSION >= 3
 	return m;

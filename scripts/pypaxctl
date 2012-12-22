@@ -77,7 +77,7 @@ def main():
 			for elf in args:
 				try:
 					pax.deletextpax(elf)
-				except pax.error:
+				except pax.PaxError:
 					print('pax_deletextpax: XATTR_PAX not supported')
 					sys.exit(1)
 

@@ -103,7 +103,7 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 			( binary_str_flags, binary_bin_flags ) = pax.getflags(binary)
 			sv = '%s ( %s )\n' % ( binary, binary_str_flags )
 			s = sv
-		except pax.error:
+		except pax.PaxError:
 			missing_binaries.append(binary)
 			continue
 
@@ -116,7 +116,7 @@ def print_forward_linkings( forward_linkings, so2library_mappings, verbose ):
 				if binary_str_flags != library_str_flags:
 					s = '%s\n\t%s\t%s ( %s )' % ( s, soname, library, library_str_flags )
 					count = count + 1
-			except pax.error:
+			except pax.PaxError:
 				missing_links.append(soname)
 
 		if verbose:
@@ -151,7 +151,7 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, exec
 			( library_str_flags, library_bin_flags ) = pax.getflags(library)
 			sv = '%s\t%s ( %s )\n' % ( soname, library, library_str_flags )
 			s = sv
-		except pax.error:
+		except pax.PaxError:
 			missing_sonames.append(soname)
 			continue
 
@@ -170,7 +170,7 @@ def print_reverse_linkings( reverse_linkings, so2library_mappings, verbose, exec
 					if library_str_flags != binary_str_flags:
 						s = '%s\n\t%s ( %s )' % ( s, binary, binary_str_flags )
 						count = count + 1
-			except pax.error:
+			except pax.PaxError:
 				missing_links.append(binary)
 
 		if verbose:
@@ -275,7 +275,7 @@ def run_binary(binary, verbose, mark, allyes):
 				mismatched_libraries.append(library)
 				if not verbose:
 					print('\t%s\t%s ( %s )' % ( soname, library, library_str_flags ))
-		except pax.error:
+		except pax.PaxError:
 			print('file for soname %s not found' % soname)
 
 	if len(mismatched_libraries) == 0:
@@ -304,7 +304,7 @@ def run_binary(binary, verbose, mark, allyes):
 				if do_marking:
 					try:
 						migrate_flags(library, binary_str_flags, binary_bin_flags)
-					except pax.error:
+					except pax.PaxError:
 						print("\n\tCould not set pax flags on %s, file is probably busy" % library)
 						print("\tShut down all processes that use it and try again")
 					( library_str_flags, library_bin_flags ) = pax.getflags(library)
@@ -365,7 +365,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 					mismatched_binaries.append(binary)
 					if not verbose:
 						print('\t%s ( %s )' % ( binary, binary_str_flags ))
-		except pax.error:
+		except pax.PaxError:
 			print('cannot obtain pax flags for %s' % binary)
 
 	if len(mismatched_binaries) == 0:
@@ -396,7 +396,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
 				if do_marking:
 					try:
 						migrate_flags(binary, library_str_flags, library_bin_flags)
-					except pax.error:
+					except pax.PaxError:
 						print('\n\tCould not set pax flags on %s, file is probably busy' % binary)
 						print('\tShut down all processes that use it and try again')
 					( binary_str_flags, binary_bin_flags ) = pax.getflags(binary)

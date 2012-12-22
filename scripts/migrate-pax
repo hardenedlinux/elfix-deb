@@ -117,7 +117,7 @@ def main():
 		# you can always set the pax flags with pax.so
 		# even on a busy text file because it will skip
 		# setting PT_PAX and only set the XATTR_PAX
-		except pax.error:
+		except pax.PaxError:
 			if uid == 0:
 				fail.append(elf)
 				if verbose:
