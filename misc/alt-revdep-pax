@@ -10,13 +10,22 @@
 #
 
 import os
+import sys
 import re
 import pax
 
-def get_forward_linkings():
+def get_forward_needed():
+	"""
+	Return forward_needed dictionary which has structure
+
+		{ full_path_to_ELF_object : [ soname1, soname2, ... ], ... }
+
+	Here the sonames were obtained from the ELF object by readelf -d
+	"""
+
 	var_db_pkg = '/var/db/pkg'
 
-	forward_linkings = {}
+	forward_needed = {}
 	for cat in os.listdir(var_db_pkg):
 		catdir = '%s/%s' % (var_db_pkg, cat)
 		for pkg in os.listdir(catdir):
@@ -30,18 +39,27 @@ def get_forward_linkings():
 					link = re.split(';', line)
 					elf = link[1]
 					sonames = re.split(',', link[4])
-					forward_linkings[elf] = sonames
+					forward_needed[elf] = sonames
 			except IOError:
 				continue #File probably doesn't exist, which is okay
 
-	return forward_linkings
+	return forward_needed
 
 
-def get_library_mappings():
+def get_library():
+	"""
+	Return library2soname dictionary which has structure
+
+		{ full_path_to_library : soname, ... }
+
+	and its inverse which has structure
+
+		{ soname : full_path_to_library, ... }
+	"""
 	var_db_pkg = '/var/db/pkg'
 
-	library2soname_mappings = {}
-	soname2library_mappings = {}
+	library2soname = {}
+	soname2library = {}
 
 	for cat in os.listdir(var_db_pkg):
 		catdir = '%s/%s' % (var_db_pkg, cat)
@@ -56,19 +74,56 @@ def get_library_mappings():
 					link = re.split(';', line)
 					elf = link[1]
 					soname = link[2]
-					if soname:
-						library2soname_mappings[elf] = soname
-						soname2library_mappings[soname] = elf
+					if soname:				#no soname => executable
+						library2soname[elf] = soname
+						soname2library[soname] = elf
 			except IOError:
 				continue #File probably doesn't exist, which is okay
 
-	return ( library2soname_mappings, soname2library_mappings )
+	return ( library2soname, soname2library )
+
+
+def get_soname2soname_linkings( forward_needed, library2soname ):
+	"""
+	Return get_soname2soname_linkings dictionary which has structure:
+
+		{ soname : [ soname1, soname2, ... ], .... }
+
+	"""
+
+	soname2soname_linkings = {}
+
+	for elf in forward_needed:
+		try:
+			soname = library2soname[elf]
+			soname2soname_linkings[soname] = forward_needed[elf]
+		except KeyError:
+			continue	#It doesn't have an soname and prabably isn't a library
+
+	return soname2soname_linkings
+
 
 def main():
-	forward_linkings = get_forward_linkings()
-	( library2soname_mappings, soname2library_mappings ) = get_library_mappings()
 
-	for elf in forward_linkings:
+	# Run as root to be able to real all files
+	uid = os.getuid()
+	if uid != 0:
+		print('RUN AS ROOT: cannot read all flags')
+		sys.exit(0)
+
+	forward_needed = get_forward_needed()
+	( library2soname, soname2library ) = get_library()
+
+	soname2soname_linkings = get_soname2soname_linkings( forward_needed, library2soname )
+
+	for soname in soname2soname_linkings:
+		print("%s" % soname)
+		for s in soname2soname_linkings[soname]:
+			print("\t%s" % s )
+		print('')
+
+	""" Print out all ELF objects and their PaX flags
+	for elf in forward_needed:
 		try:
 			flags = pax.getflags(elf)[0]
 			if flags:
@@ -76,26 +131,28 @@ def main():
 			else:
 				print("NONE: %s" % elf)
 		except pax.error:
-			print("BUSY: %s" % elf)
+			print("CANT: %s" % elf)
 
 	"""
-	for soname in sorted(soname2library_mappings):
-		elf = soname2library_mappings[soname]
+
+	""" Print out all sonames and their library paths
+	for soname in sorted(soname2library):
+		elf = soname2library[soname]
 		print("%s : %s" % ( soname, elf ))
-	"""
 
 	"""	
-	for elf in forward_linkings:
-		sonames = forward_linkings[elf]
+
+	""" Print out all ELF objects and the NEEDED sonames and full library paths
+	for elf in forward_needed:
+		sonames = forward_needed[elf]
 		print("%s" % elf)
-		for soname in sorted(forward_linkings[elf]):
+		for soname in sorted(forward_needed[elf]):
 			try:
-				print("\t%s\t=> %s" % (soname, soname2library_mappings[soname]))
-			except KeyError as e:
+				print("\t%s\t=> %s" % (soname, soname2library[soname]))
+			except KeyError:
 				print("\t%s\t=> ****" % soname)
 		print("\n\n")
 	"""
-
 
 if __name__ == '__main__':
 	main()
