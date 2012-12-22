@@ -13,7 +13,7 @@ import os
 import sys
 import re
 import pax
-from copy import copy
+#from copy import copy
 
 def get_object_needed():
 	"""
@@ -98,23 +98,27 @@ def get_soname_needed( object_needed, library2soname ):
 	for elf in object_needed:
 		try:
 			soname = library2soname[elf]
-			soname_needed[soname] = copy(object_needed[elf]) #copy the list
+			soname_needed[soname] = object_needed[elf]
+			#soname_needed[soname] = copy(object_needed[elf]) #copy the list
 		except KeyError:
 			continue  # no soname, its probably an executable
 
 	return soname_needed
 
 
-def get_soname_linkings( soname_needed ):
+def get_soname_linkings( soname_needed, soname2library ):
 	soname_linkings = {}
 	for soname in soname_needed:
-		needed = copy(soname_needed[soname])
+		needed = soname_needed[soname]
+		#needed = copy(soname_needed[soname]) #copy the list
 		while True:
 			count = 0
 			for s in needed:
 				try:
 					for sf in soname_needed[s]:
-						if not sf in needed:
+						if not sf in needed and sf in soname2library:
+							# This appends to the object_needed and
+							# soname_needed list.  No copy was done
 							needed.append(sf)
 							count = 1
 				except KeyError:
@@ -139,10 +143,11 @@ def main():
 	object_needed = get_object_needed()
 	( library2soname, soname2library ) = get_library()
 	soname_needed = get_soname_needed( object_needed, library2soname )
-	soname_linkings = get_soname_linkings( soname_needed )
-	print soname_linkings
+	soname_linkings = get_soname_linkings( soname_needed, soname2library )
 
-	#forward_linkings = get_forward_linkings( object_needed, soname_linkings )
+	# After the appending in get_soname_linkings, forward_needed has
+	# been extended through the entire chain of linking.:w
+	object_linkings = object_needed
 
 
 	""" Print out all ELF objects and their PaX flags
@@ -162,10 +167,10 @@ def main():
 	for soname in sorted(soname2library):
 		elf = soname2library[soname]
 		print("%s : %s" % ( soname, elf ))
+	"""
 
-	"""	
 
-	""" Print out all ELF objects and the NEEDED sonames and full library paths
+	""" Print out all ELF objects and the NEEDED sonames and full library paths """
 	for elf in object_needed:
 		sonames = object_needed[elf]
 		print("%s" % elf)
@@ -175,7 +180,6 @@ def main():
 			except KeyError:
 				print("\t%s\t=> ****" % soname)
 		print("\n\n")
-	"""
 
 	""" Print out all the soname to soname NEEDED
 	for soname in soname_needed:
