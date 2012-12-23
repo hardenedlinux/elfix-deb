@@ -281,7 +281,7 @@ static PyObject *
 pax_getflags(PyObject *self, PyObject *args)
 {
 	const char *f_name;
-	int fd;
+	int fd, flags_found;
 	uint16_t flags;
 	char buf[FLAGS_SIZE];
 
@@ -308,10 +308,13 @@ pax_getflags(PyObject *self, PyObject *args)
 	 * other but not both.
 	 */
 
+	flags_found = 0;
+
 #ifdef PTPAX
 	flags = get_pt_flags(fd);
 	if( flags != UINT16_MAX )
 	{
+		flags_found = 1;
 		memset(buf, 0, FLAGS_SIZE);
 		bin2string4print(flags, buf);
 	}
@@ -321,6 +324,7 @@ pax_getflags(PyObject *self, PyObject *args)
 	flags = get_xt_flags(fd);
 	if( flags != UINT16_MAX )
 	{
+		flags_found = 1;
 		memset(buf, 0, FLAGS_SIZE);
 		bin2string4print(flags, buf);
 	}
@@ -328,7 +332,7 @@ pax_getflags(PyObject *self, PyObject *args)
 
 	close(fd);
 
-	if( flags == UINT16_MAX )
+	if( !flags_found )
 	{
 		PyErr_SetString(PaxError, "pax_getflags: no PAX flags found");
 		return NULL;

@@ -195,7 +195,7 @@ def print_object_linkings( object_linkings, soname2library, verbose ):
 			sv = '%s ( %s )\n' % ( elf, elf_str_flags )
 			s = sv
 		except pax.PaxError:
-			elf_without_flags.append(elf)
+			elfs_without_flags.append(elf)
 			continue
 
 		count = 0
