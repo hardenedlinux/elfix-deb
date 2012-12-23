@@ -328,7 +328,13 @@ pax_getflags(PyObject *self, PyObject *args)
 
 	close(fd);
 
-	return Py_BuildValue("si", buf, flags);
+	if( flags == UINT16_MAX )
+	{
+		PyErr_SetString(PaxError, "pax_getflags: no PAX flags found");
+		return NULL;
+	}
+	else
+		return Py_BuildValue("si", buf, flags);
 }
 
 
@@ -488,7 +494,14 @@ set_xt_flags(int fd, uint16_t xt_flags)
 
 	memset(buf, 0, FLAGS_SIZE);
 	bin2string(xt_flags, buf);
-	fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), 0);
+
+	if( fsetxattr(fd, PAX_NAMESPACE, buf, strlen(buf), 0))
+	{
+		PyErr_SetString(PaxError, "pax_deletextpax: fremovexattr() failed");
+		return;
+	}
+	else
+		return;
 }
 #endif
 
