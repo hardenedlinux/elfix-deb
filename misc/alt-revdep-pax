@@ -523,6 +523,12 @@ def run_usage():
 
 
 def main():
+	# Are we root?
+	uid = os.getuid()
+	if uid != 0:
+		print('This program must be run as root')
+		sys.exit(1)
+
 	try:
 		opts, args = getopt.getopt(sys.argv[1:], 'hfrb:s:l:vemy')
 	except getopt.GetoptError as err:

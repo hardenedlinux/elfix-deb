@@ -55,6 +55,12 @@ def run_usage():
 
 
 def main():
+	# Are we root?
+	uid = os.getuid()
+	if uid != 0:
+		print('This program must be run as root')
+		sys.exit(1)
+
 	try:
 		opts, args = getopt.getopt(sys.argv[1:], 'vmdh')
 	except getopt.GetoptError as err:
@@ -93,12 +99,6 @@ def main():
 
 	if opt_count == 0 or opt_count > 2 or ( do_migration and do_deleteall):
 		run_usage()
-		sys.exit(1)
-
-	# Are we root?
-	uid = os.getuid()
-	if uid != 0 and do_migration:
-		print('RUN AS ROOT: cannot migrate flags')
 		sys.exit(1)
 
 	# Do we have XATTR_PAX support?
