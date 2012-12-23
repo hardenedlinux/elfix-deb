@@ -365,28 +365,35 @@ def migrate_flags(importer, exporter_str_flags, exporter_bin_flags):
 	pax.setbinflags(importer, result_bin_flags)
 
 
-def run_binary(binary, verbose, mark, allyes):
-	if not os.path.exists(binary):
-		print('%s\tNo such OBJECT' % binary)
+def run_elf(elf, verbose, mark, allyes):
+
+	if not os.path.exists(elf):
+		print('%s\tNo such OBJECT' % elf)
 		return
-	( linkings, mappings ) = get_ldd_linkings(binary)
-	( binary_str_flags, binary_bin_flags ) = pax.getflags(binary)
-	print('%s (%s)\n' % ( binary, binary_str_flags ))
+
+	try:
+		(elf_str_flags, elf_bin_flags) = pax.getflags(elf)
+		print('%s (%s)\n' % (elf, elf_str_flags))
+	except pax.PaxError:
+		print('%s: No PAX flags found\n' % elf)
+		return
+
+	(object_linkings, soname2library) = get_object_linkings()
 
 	mismatched_libraries = []
 
-	for soname in linkings:
+	for soname in object_linkings[elf]:
 		try:
-			library = mappings[soname]
+			library = soname2library[soname]
 			( library_str_flags, library_bin_flags ) = pax.getflags(library)
 			if verbose:
 				print('\t%s\t%s ( %s )' % ( soname, library, library_str_flags ))
-			if binary_str_flags != library_str_flags:
+			if elf_str_flags != library_str_flags:
 				mismatched_libraries.append(library)
 				if not verbose:
 					print('\t%s\t%s ( %s )' % ( soname, library, library_str_flags ))
 		except pax.PaxError:
-			print('file for soname %s not found' % soname)
+			print('%s: file for soname not found' % soname)
 
 	if len(mismatched_libraries) == 0:
 		if not verbose:
@@ -394,7 +401,7 @@ def run_binary(binary, verbose, mark, allyes):
 	else:
 		print('\n'),
 		if mark:
-			print('\tWill mark libraries with %s\n' % binary_str_flags)
+			print('\tWill mark libraries with %s\n' % elf_str_flags)
 			for library in mismatched_libraries:
 				do_marking = False
 				while True:
@@ -413,12 +420,15 @@ def run_binary(binary, verbose, mark, allyes):
 
 				if do_marking:
 					try:
-						migrate_flags(library, binary_str_flags, binary_bin_flags)
+						migrate_flags(library, elf_str_flags, elf_bin_flags)
 					except pax.PaxError:
-						print("\n\tCould not set pax flags on %s, file is probably busy" % library)
-						print("\tShut down all processes that use it and try again")
-					( library_str_flags, library_bin_flags ) = pax.getflags(library)
-					print('\n\t\t%s ( %s )\n' % ( library, library_str_flags ))
+						print('\n\tCould not set PAX flags on %s, text maybe busy' % library)
+
+					try:
+						( library_str_flags, library_bin_flags ) = pax.getflags(library)
+						print('\n\t\t%s ( %s )\n' % ( library, library_str_flags ))
+					except pax.PaxError:
+						print('\n\t\t%s: Could not read PAX flags')
 
 
 def invert_so2library_mappings( so2library_mappings ):
@@ -555,8 +565,8 @@ def main():
 	do_forward = False
 	do_reverse = False
 
-	binary = None
-	soname = None
+	elf     = None
+	soname  = None
 	library = None
 
 	verbose = False
@@ -577,7 +587,7 @@ def main():
 			do_reverse = True
 			opt_count += 1
 		elif o == '-b':
-			binary = a
+			elf = a
 			opt_count += 1
 		elif o == '-s':
 			soname = a
@@ -605,8 +615,8 @@ def main():
 		run_forward(verbose)
 	elif do_reverse:
 		run_reverse(verbose, executable_only)
-	elif binary != None:
-		run_binary(binary, verbose, mark, allyes)
+	elif elf != None:
+		run_elf(elf, verbose, mark, allyes)
 	elif soname != None:
 		run_soname(soname, verbose, True, mark, allyes, executable_only)
 	elif library != None:
