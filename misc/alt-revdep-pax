@@ -134,19 +134,19 @@ def get_soname_needed( object_needed, library2soname ):
 	return soname_needed
 
 """
-Run through the entire chain of sonameX -> sonameY ... -> sonameZ chain.
-We do this by continuously expanding the list pointed to by the dictionary
+Run through the entire chain of obj -> sonameX -> sonameY ... -> sonameZ chain.
+We do this by continuously expanding the list value of the dictionary key elf
 entry until there are no new soname's found.
 """
-def get_soname_linkings( soname_needed, soname2library ):
+def expand_linkings( object_needed, soname2library ):
 
-	for soname in soname_needed:
+	for elf in object_needed:
 		while True:
 			found_new_soname = False
-			for s in soname_needed[soname]:					# For all the next links ...
+			for s in object_needed[elf]:					# For all the next links ...
 				try:
-					for sf in soname_needed[s]:			# ... go one step ahead in the chain
-						if sf in soname_needed[soname]:		# ... skip it if we already included it
+					for sf in object_needed[soname2library[s]]:	# ... go one step ahead in the chain
+						if sf in object_needed[elf]:		# ... skip it if we already included it
 							continue
 						if not sf in soname2library:		# ... skip if its a vdso
 							continue
@@ -155,7 +155,7 @@ def get_soname_linkings( soname_needed, soname2library ):
 						# was done so its the same lists in
 						# memory for both, and its modified
 						# for both.
-						soname_needed[soname].append(sf)	# ... otherwise collapse it back into
+						object_needed[elf].append(sf)		# ... otherwise collapse it back into
 						found_new_soname = True			# first node of the chain.
 
 				except KeyError:					# Not all nodes in the chain have a next node
@@ -172,7 +172,7 @@ def get_object_linkings():
 	object_needed = get_object_needed()
 	( library2soname, soname2library ) = get_libraries()
 	soname_needed = get_soname_needed( object_needed, library2soname )
-	get_soname_linkings( soname_needed, soname2library )
+	expand_linkings( object_needed, soname2library )
 	return ( object_needed, soname2library )
 
 
