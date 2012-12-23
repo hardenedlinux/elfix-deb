@@ -51,6 +51,13 @@ Here the sonames were obtained from the ELF object by scanelf -nm
 """
 def get_object_needed():
 
+	"""
+	import portage
+	vardb = portage.db[portage.root]["vartree"].dbapi
+	vardb.aux_get('sys-apps/coreutils-8.20', ['NEEDED.ELF.2'])
+	vardb.cpv_all() # list of all packages
+	"""
+
 	var_db_pkg = '/var/db/pkg'
 
 	object_needed = {}
