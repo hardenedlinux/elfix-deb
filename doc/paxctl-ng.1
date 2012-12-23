@@ -130,64 +130,53 @@
 .if n .ad l
 .nh
 .SH "NAME"
-paxctl\-ng \- get or set the PaX flags for both PT_PAX and XATTR_PAX markings
+paxctl\-ng \- get, set or create either PT_PAX or XATTR_PAX flags
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
-\&\fBpaxctl-ng\fR [\-PpEeMmRrXxSs] [\-v] \s-1ELF\s0
+\&\fBpaxctl-ng\fR \-PpEeMmRrXxSs|\-Z|\-z [\-L|\-l] [\-v] \s-1ELF\s0
 .PP
-\&\fBpaxctl-ng\fR \-Z [\-v] \s-1ELF\s0
+\&\fBpaxctl-ng\fR \-C|\-c|\-d [\-v] \s-1ELF\s0
 .PP
-\&\fBpaxctl-ng\fR \-z [\-v] \s-1ELF\s0
-.PP
-\&\fBpaxctl-ng\fR \-C [\-v] \s-1ELF\s0
-.PP
-\&\fBpaxctl-ng\fR \-c [\-v] \s-1ELF\s0
-.PP
-\&\fBpaxctl-ng\fR \-d [\-v] \s-1ELF\s0
-.PP
-\&\fBpaxctl-ng\fR \-F [\-v] \s-1ELF\s0
-.PP
-\&\fBpaxctl-ng\fR \-f [\-v] \s-1ELF\s0
-.PP
-\&\fBpaxctl-ng\fR \-L [\-v] \s-1ELF\s0
-.PP
-\&\fBpaxctl-ng\fR \-l [\-v] \s-1ELF\s0
+\&\fBpaxctl-ng\fR \-F|\-f [\-v] \s-1ELF\s0
 .PP
 \&\fBpaxctl-ng\fR [\-h]
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-\&\fBpaxctl-ng\fR is used to get or set the PaX flags on \s-1ELF\s0 executables which determine
-the memory restrictions on process(es) spawned from them.  \fBpaxctl-ng\fR manages
-two types of markings, either the older style \s-1PT_PAX\s0 markings which put the flags
-in an \s-1ELF\s0 program header named \s-1PT_PAX\s0, or the newer style \s-1XATTR_PAX\s0 markings which
-put the flags in an extended attribute field called \*(L"user.pax\*(R" on the filesystem.
-Whenever possible, \fBpaxctl-ng\fR will set both \s-1PT_PAX\s0 and \s-1XATTR_PAX\s0 to the same flags.
+\&\fBpaxctl-ng\fR is used to get, set or create the PaX flags on \s-1ELF\s0 executables which
+determine the memory restrictions on process(es) spawned from them when run under
+a PaX enabled kernel.  \fBpaxctl-ng\fR manages two types of markings, either the older
+style \s-1PT_PAX\s0 markings which put the flags in an \s-1ELF\s0 program header named \s-1PAX_FLAGS\s0,
+or the newer style \s-1XATTR_PAX\s0 markings which put the flags in an extended attribute
+field named user.pax.flags on the filesystem.  Whenever possible, \fBpaxctl-ng\fR
+will try to set both \s-1PT_PAX\s0 and \s-1XATTR_PAX\s0 to the same flags.
 .PP
 There are drawbacks to both \s-1PT_PAX\s0 and \s-1XATTR_PAX\s0 markings.  \s-1PT_PAX\s0 will not work on
-\&\s-1ELF\s0 binaries which do not already have a \s-1PT_PAX\s0 program header.  Unlike the original
-tool, \fBpaxctl\fR, which would try to add this header or convert a \s-1GNU_STACK\s0 header,
-\&\fBpaxctl-ng\fR does not edit the \s-1ELF\s0 in any way, beyond setting the PaX flags if and
-only if the \s-1PT_PAX\s0 program header already exists.  Some \s-1ELF\s0 binaries break when
-they are edited.  Since, \fBpaxctl-ng\fR will never to so, it is always safe to run
-it on such binaries.
+\&\s-1ELF\s0 binaries which do not already have a \s-1PAX_FLAGS\s0 program header.  Unlike the original
+tool, \fBpaxctl\fR, which could be instructed to try to add this header or convert a
+\&\s-1GNU_STACK\s0 header, \fBpaxctl-ng\fR does not edit the \s-1ELF\s0 in any way, beyond setting the
+PaX flags if and only if the \s-1PAX_FLAGS\s0 program header already exists.  Some \s-1ELF\s0 binaries
+break when they are edited.  Since, \fBpaxctl-ng\fR will never to so, it is usually safe
+to run it on such binaries.
 .PP
-Alternatively, \s-1XATTR_PAX\s0 requires a filesystem support Extended Attributes.  Most
-modern filesystems do so, but not all.  Furthermore, one must be careful when
+Alternatively, \s-1XATTR_PAX\s0 requires filesystems that support extended attributes.
+Most modern filesystems do so, but not all.  Furthermore, one must be careful when
 moving \s-1ELF\s0 objects to ensure that the target filesystem or archive supports
-Extended Attributes, otherwise they are lost, unlike \s-1PT_PAX\s0 markings which
+extended attributes, otherwise they are lost, unlike \s-1PT_PAX\s0 markings which
 are carried within the binary itself.
 .PP
 \&\fBpaxctl-ng\fR is opportunistic without taking control away from the user.  If both
-a \s-1PT_PAX\s0 program header and an Extended Attribute field \*(L"user.pax\*(R" exist, then
-both fields will be equally updated when the user modifies flags; unless the
-\&\fB\-L\fR or \fB\-l\fR flags are given, in which case the markings are limiting to just
-\&\s-1PT_PAX\s0 or \s-1XATTR_PAX\s0, respectively.  If only one marking is possible, then only that
-marking will be updated.  Under no circumstances will \fBpaxctl-ng\fR create a \s-1PT_PAX\s0
-program header as \fBpaxctl\fR does.  It will only attempt to create an \s-1XATTR_PAX\s0 Extended
-Attribute field if it is instructed to do so with the \fB\-C\fR or \fB\-c\fR flags, and it
-will attempt to synchronize the \s-1PT_PAX\s0 and \s-1XATTR_PAX\s0 markings if given the \fB\-F\fR or
-\&\fB\-f\fR flags.  Finally, if the user wished, he can remvoe the Extended Attribute
-field \*(L"user.pax\*(R" by running \fBpaxctl-ng\fR with the \fB\-d\fR flag.
+a \s-1PAX_FLAGS\s0 program header and a user.pax.flags extended attribute field exist, then
+both will be equally updated when the user modifies flags; unless the \fB\-L\fR or \fB\-l\fR
+flags are given, in which case the markings are limiting to just \s-1PT_PAX\s0 or \s-1XATTR_PAX\s0,
+respectively.  If only one marking is possible, then only that marking will be updated.
+Under no circumstances will \fBpaxctl-ng\fR create a \s-1PAX_FLAGS\s0 program header as \fBpaxctl\fR
+does.  It will only attempt to create an extended attribute field if it is instructed
+to do so with the \fB\-C\fR or \fB\-c\fR flags, and it will attempt to synchronize the \s-1PT_PAX\s0
+and \s-1XATTR_PAX\s0 markings if given the \fB\-F\fR or \fB\-f\fR flags.  Note that when copying \s-1PT_PAX\s0
+to \s-1XATTR_PAX\s0 with the \fB\-F\fR flag, if the user.pax.flags extended attribute field does
+not exist, \fBpaxctl-ng\fR will create it as if given either the \fB\-C\fR or \fB\-c\fR flags.
+Finally, if the user wishes, he can remove the extended attribute field by running
+\&\fBpaxctl-ng\fR with the \fB\-d\fR flag.
 .SH "OPTIONS"
 .IX Header "OPTIONS"
 .IP "\fB\-P\fR or \fB\-p\fR   Enable or disable \s-1PAGEEXEC\s0" 4
@@ -212,20 +201,21 @@ eg. \-Pp for \s-1PAGEEXEC\s0, then the default setting \- is used.
 .PD 0
 .IP "\fB\-z\fR Set default setting (\-\-\-\-\-\-)" 4
 .IX Item "-z Set default setting (------)"
-.IP "\fB\-C\fR Create \s-1XATTR_PAX\s0 xattr with the most secure PaX settings" 4
-.IX Item "-C Create XATTR_PAX xattr with the most secure PaX settings"
-.IP "\fB\-c\fR Create \s-1XP_PAX\s0 xattr with the default PaX settings" 4
-.IX Item "-c Create XP_PAX xattr with the default PaX settings"
-.IP "\fB\-d\fR Delete \s-1XP_PAX\s0 xattr" 4
-.IX Item "-d Delete XP_PAX xattr"
+.IP "\fB\-C\fR Create \s-1XATTR_PAX\s0 markings with the most secure PaX settings" 4
+.IX Item "-C Create XATTR_PAX markings with the most secure PaX settings"
+.IP "\fB\-c\fR Create \s-1XATTR_PAX\s0 markings with the default PaX settings" 4
+.IX Item "-c Create XATTR_PAX markings with the default PaX settings"
+.ie n .IP "\fB\-d\fR Delete \s-1XATTR_PAX\s0 field, ""user.pax.flags""" 4
+.el .IP "\fB\-d\fR Delete \s-1XATTR_PAX\s0 field, ``user.pax.flags''" 4
+.IX Item "-d Delete XATTR_PAX field, user.pax.flags"
 .IP "\fB\-F\fR Copy \s-1PT_PAX\s0 flags to \s-1XATTR_PAX\s0, if possible" 4
 .IX Item "-F Copy PT_PAX flags to XATTR_PAX, if possible"
 .IP "\fB\-f\fR Copy \s-1XATTR_PAX\s0 flags to \s-1PT_PAX\s0, if possible" 4
 .IX Item "-f Copy XATTR_PAX flags to PT_PAX, if possible"
-.IP "\fB\-L\fR Only set \s-1PT_APX\s0 flags, if both are possible" 4
-.IX Item "-L Only set PT_APX flags, if both are possible"
-.IP "\fB\-l\fR Only set \s-1XATTR_PAX\s0 flags, if both are possible" 4
-.IX Item "-l Only set XATTR_PAX flags, if both are possible"
+.IP "\fB\-L\fR Only set \s-1PT_PAX\s0 flags, if possible" 4
+.IX Item "-L Only set PT_PAX flags, if possible"
+.IP "\fB\-l\fR Only set \s-1XATTR_PAX\s0 flags, if possible" 4
+.IX Item "-l Only set XATTR_PAX flags, if possible"
 .IP "\fB\-v\fR View the flags" 4
 .IX Item "-v View the flags"
 .IP "\fB\-h\fR Print out a short help message and exit." 4

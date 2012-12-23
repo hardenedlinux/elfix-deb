@@ -75,21 +75,28 @@ print_help_exit(char *v)
 		"Bug Reports  : " PACKAGE_BUGREPORT "\n"
 		"Program Name : %s\n"
 		"Description  : Get or set pax flags on an ELF object\n\n"
-		"Usage        : %s -PpEeMmRrSsv ELF | -Zv ELF | -zv ELF\n"
+#if defined(PTPAX) && defined(XTPAX)
+		"Usage        : %s -PpEeMmRrSs|-Z|-z [-L|-l] [-v] ELF\n"
+#else
+		"Usage        : %s -PpEeMmRrSs|-Z|-z [-v] ELF\n"
+#endif
 #ifdef XTPAX
-		"             : %s -Cv ELF | -cv ELF | -dv ELF\n"
+		"             : %s -C|-c|-d [-v] ELF\n"
 #endif
 #if defined(PTPAX) && defined(XTPAX)
-		"             : %s -Fv ELF | -fv ELF\n"
-		"             : %s -Lv ELF | -lv ELF\n"
+		"             : %s -F|-f [-v] ELF\n"
 #endif
-		"             : %s -v ELF | -h\n\n"
+		"             : %s -v ELF\n"
+		"             : %s [-h]\n\n"
 		"Options      : -P enable PAGEEXEC\t-p disable  PAGEEXEC\n"
 		"             : -E enable EMUTRAMP\t-e disable  EMUTRAMP\n"
 		"             : -M enable MPROTECT\t-m disable  MPROTECT\n"
 		"             : -R enable RANDMMAP\t-r disable  RANDMMAP\n"
 		"             : -S enable SEGMEXEC\t-s disable  SEGMEXEC\n"
 		"             : -Z all secure settings\t-z all default settings\n"
+#if defined(PTPAX) && defined(XTPAX)
+		"             : -L set only PT_PAX flags\t-l set only XATTR_PAX flags\n"
+#endif
 		"             :\n"
 #ifdef XTPAX
 		"             : -C create XATTR_PAX with most secure setting\n"
@@ -99,8 +106,6 @@ print_help_exit(char *v)
 #if defined(PTPAX) && defined(XTPAX)
 		"             : -F copy PT_PAX to XATTR_PAX\n"
 		"             : -f copy XATTR_PAX to PT_PAX\n"
-		"             : -L set only PT_PAX flags\n"
-		"             : -l set only XATTR_PAX flags\n"
 #endif
 		"             :\n"
 		"             : -v view the flags, along with any accompanying operation\n"
@@ -113,8 +118,8 @@ print_help_exit(char *v)
 #endif
 #if defined(PTPAX) && defined(XTPAX)
 		basename(v),
-		basename(v),
 #endif
+		basename(v),
 		basename(v)
 	);
 
@@ -127,10 +132,13 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 	int *limit, int *begin, int *end)
 {
 	int i, oc;
-	int compat, solitaire;
+	int setflags, solflags, limitflags, solitaire;
 
-	compat = 0;
+	setflags = 0;
+	solflags = 0;
+	limitflags = 0;
 	solitaire = 0;
+
 	*pax_flags = 0;
 	*verbose = 0;
 	*cp_flags = 0; 
@@ -149,60 +157,66 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 	 * #endif
 	 */
 
+#if defined(PTPAX) && defined(XTPAX)
 	while((oc = getopt(argc, argv,":PpEeMmRrSsZzCcdFfLlvh")) != -1)
+#elif defined(XTPAX) && !defined(PTPAX)
+	while((oc = getopt(argc, argv,":PpEeMmRrSsZzCcdvh")) != -1)
+#else
+	while((oc = getopt(argc, argv,":PpEeMmRrSsZzvh")) != -1)
+#endif
 	{
 		switch(oc)
 		{
 			case 'P':
 				*pax_flags |= PF_PAGEEXEC;
-				compat |= 1;
+				setflags |= 1;
 				break;
 			case 'p':
 				*pax_flags |= PF_NOPAGEEXEC;
-				compat |= 1;
+				setflags |= 1;
 				break ;
 			case 'E':
 				*pax_flags |= PF_EMUTRAMP;
-				compat |= 1;
+				setflags |= 1;
 				break;
 			case 'e':
 				*pax_flags |= PF_NOEMUTRAMP;
-				compat |= 1;
+				setflags |= 1;
 				break ;
 			case 'M':
 				*pax_flags |= PF_MPROTECT;
-				compat |= 1;
+				setflags |= 1;
 				break;
 			case 'm':
 				*pax_flags |= PF_NOMPROTECT;
-				compat |= 1;
+				setflags |= 1;
 				break ;
 			case 'R':
 				*pax_flags |= PF_RANDMMAP;
-				compat |= 1;
+				setflags |= 1;
 				break;
 			case 'r':
 				*pax_flags |= PF_NORANDMMAP;
-				compat |= 1;
+				setflags |= 1;
 				break ;
 			case 'S':
 				*pax_flags |= PF_SEGMEXEC;
-				compat |= 1;
+				setflags |= 1;
 				break;
 			case 's':
 				*pax_flags |= PF_NOSEGMEXEC;
-				compat |= 1;
+				setflags |= 1;
 				break ;
 			case 'Z':
 				*pax_flags = PF_PAGEEXEC | PF_SEGMEXEC | PF_MPROTECT |
 					PF_NOEMUTRAMP | PF_RANDMMAP ;
-				solitaire += 1;
+				solflags += 1;
 				break ;
 			case 'z':
 				*pax_flags = PF_PAGEEXEC | PF_NOPAGEEXEC | PF_SEGMEXEC | PF_NOSEGMEXEC |
 					PF_MPROTECT | PF_NOMPROTECT | PF_EMUTRAMP | PF_NOEMUTRAMP |
 					PF_RANDMMAP | PF_NORANDMMAP ;
-				solitaire += 1;
+				solflags += 1;
 				break;
 #ifdef XTPAX
 			case 'C':
@@ -217,12 +231,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 				solitaire += 1;
 				*cp_flags = DELETE_XT_FLAGS;
 				break;
-#else
-			case 'C':
-			case 'c':
-				break;
-#endif
-#if defined(PTPAX) && defined(XTPAX)
+#ifdef PTPAX
 			case 'F':
 				solitaire += 1;
 				*cp_flags = COPY_PT_TO_XT_FLAGS;
@@ -232,17 +241,14 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 				*cp_flags = COPY_XT_TO_PT_FLAGS;
 				break;
 			case 'L':
+				limitflags += 1;
 				*limit = LIMIT_TO_PT_FLAGS;
 				break;
 			case 'l':
+				limitflags += 1;
 				*limit = LIMIT_TO_XT_FLAGS;
 				break;
-#else
-			case 'F':
-			case 'f':
-			case 'L':
-			case 'l':
-				break;
+#endif
 #endif
 			case 'v':
 				*verbose = 1;
@@ -258,9 +264,10 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 
 	if(
 		(
-		 (compat == 1 && solitaire == 0) ||
-		 (compat == 0 && solitaire == 1) ||
-		 (compat == 0 && solitaire == 0 && *verbose == 1)
+		 (setflags == 1 && solflags == 0 && limitflags <= 1 && solitaire == 0) ||	//-PpEeMmRrSs [-L|-l] [-v] ELF
+		 (setflags == 0 && solflags == 1 && limitflags <= 1 && solitaire == 0) ||	//-Z|-z [-L|-l] [-v] ELF
+		 (setflags == 0 && solflags == 0 && limitflags == 0 && solitaire == 1) ||	//-C|-c|-d|-F|-f [-v] ELF
+		 (setflags == 0 && solflags == 0 && limitflags == 0 && solitaire == 0 && *verbose == 1) // -v ELF
 		)
 		&& argv[optind] != NULL
 	)
