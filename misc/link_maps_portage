@@ -13,6 +13,7 @@ import os
 import sys
 import re
 import pax
+import portage
 
 
 """
@@ -25,25 +26,20 @@ Here the sonames were obtained from the ELF object by scanelf -nm
 """
 def get_object_needed():
 
-	var_db_pkg = '/var/db/pkg'
+	vardb = portage.db[portage.root]["vartree"].dbapi
 
 	object_needed = {}
-	for cat in os.listdir(var_db_pkg):
-		catdir = '%s/%s' % (var_db_pkg, cat)
-		for pkg in os.listdir(catdir):
-			pkgdir = '%s/%s' % (catdir, pkg)
-			need = '%s/%s' % (pkgdir, 'NEEDED.ELF.2')
-			try:
-				g = open(need, 'r')
-				needs = g.readlines()
-				for line in needs:
-					line = line.strip()
-					link = re.split(';', line)
-					elf = link[1]
-					sonames = re.split(',', link[4])
-					object_needed[elf] = sonames
-			except IOError:
-				continue #File probably doesn't exist, which is okay
+
+	for pkg in vardb.cpv_all():
+		needs = vardb.aux_get(pkg, ['NEEDED.ELF.2'])[0].strip()
+		if not needs:			#skip empty lines
+			continue
+		lines = re.split('\n', needs)
+		for line in lines:
+			link = re.split(';', line)
+			elf = link[1]
+			sonames = re.split(',', link[4])
+			object_needed[elf] = sonames
 
 	return object_needed
 
@@ -59,29 +55,23 @@ and its inverse which has structure
 """
 def get_libraries():
 
-	var_db_pkg = '/var/db/pkg'
+	vardb = portage.db[portage.root]["vartree"].dbapi
 
 	library2soname = {}
 	soname2library = {}
 
-	for cat in os.listdir(var_db_pkg):
-		catdir = '%s/%s' % (var_db_pkg, cat)
-		for pkg in os.listdir(catdir):
-			pkgdir = '%s/%s' % (catdir, pkg)
-			need = '%s/%s' % (pkgdir, 'NEEDED.ELF.2')
-			try:
-				g = open(need, 'r')
-				needs = g.readlines()
-				for line in needs:
-					line = line.strip()
-					link = re.split(';', line)
-					elf = link[1]
-					soname = link[2]
-					if soname:				#no soname => executable
-						library2soname[elf] = soname
-						soname2library[soname] = elf
-			except IOError:
-				continue #File probably doesn't exist, which is okay
+	for pkg in vardb.cpv_all():
+		needs = vardb.aux_get(pkg, ['NEEDED.ELF.2'])[0].strip()
+		if not needs:			#skip empty lines
+			continue
+		lines = re.split('\n', needs)
+		for line in lines:
+			link = re.split(';', line)
+			elf = link[1]
+			soname = link[2]
+			if soname:				#no soname => executable
+				library2soname[elf] = soname
+				soname2library[soname] = elf
 
 	return ( library2soname, soname2library )
 
