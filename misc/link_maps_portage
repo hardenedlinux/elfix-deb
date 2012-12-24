@@ -41,9 +41,10 @@ def get_object_needed():
 		lines = re.split('\n', needs)
 		for line in lines:
 			link = re.split(';', line)
+			abi = link[0]
 			elf = link[1]
 			sonames = re.split(',', link[4])
-			object_needed[elf] = sonames
+			object_needed.setdefault(abi,{}).update({elf:sonames})
 
 	return object_needed
 
@@ -71,11 +72,12 @@ def get_libraries():
 		lines = re.split('\n', needs)
 		for line in lines:
 			link = re.split(';', line)
+			abi = link[0]
 			elf = link[1]
 			soname = link[2]
 			if soname:				#no soname => executable
-				library2soname[elf] = soname
-				soname2library[soname] = elf
+				library2soname[elf] = (soname,abi)
+				soname2library[(soname,abi)] = elf
 
 	return ( library2soname, soname2library )
 
