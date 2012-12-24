@@ -112,7 +112,7 @@ def get_soname_needed( object_needed, library2soname ):
 			try:
 				(soname, abi_check) = library2soname[elf]
 				if abi != abi_check:
-					print "This should never happen!"
+					print("This should never happen!")
 					sys.exit(1)
 				soname_needed.setdefault(abi,{}).update({soname:object_needed[abi][elf]})
 			except KeyError:
