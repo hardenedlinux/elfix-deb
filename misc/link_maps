@@ -16,202 +16,200 @@ import pax
 import portage
 
 
-"""
-Return object_needed dictionary which has structure
-
-	{
-		abi1 : { full_path_to_ELF_object : [ soname1, soname2, ... ], ... },
-		abi2 : { full_path_to_ELF_object : [ soname1, soname2, ... ], ... },
-		....
-	}
-
-Here the sonames were obtained from the ELF object by scanelf -nm
-(like readelf -d) during emerge.
-"""
 def get_object_needed():
+    """ Return object_needed dictionary which has structure
 
-	vardb = portage.db[portage.root]["vartree"].dbapi
+        {
+            abi1 : { full_path_to_ELF_object : [ soname1, soname2, ... ], ... },
+            abi2 : { full_path_to_ELF_object : [ soname1, soname2, ... ], ... },
+            ....
+        }
 
-	object_needed = {}
+    Here the sonames were obtained from the ELF object by scanelf -nm
+    (like readelf -d) during emerge.
+    """
 
-	for pkg in vardb.cpv_all():
-		needs = vardb.aux_get(pkg, ['NEEDED.ELF.2'])[0].strip()
-		if not needs:			#skip empty lines
-			continue
-		lines = re.split('\n', needs)
-		for line in lines:
-			link = re.split(';', line)
-			abi = link[0]
-			elf = link[1]
-			sonames = re.split(',', link[4])
-			object_needed.setdefault(abi,{}).update({elf:sonames})
+    vardb = portage.db[portage.root]["vartree"].dbapi
 
-	return object_needed
+    object_needed = {}
+
+    for pkg in vardb.cpv_all():
+        needs = vardb.aux_get(pkg, ['NEEDED.ELF.2'])[0].strip()
+        if not needs:            #skip empty lines
+            continue
+        lines = re.split('\n', needs)
+        for line in lines:
+            link = re.split(';', line)
+            abi = link[0]
+            elf = link[1]
+            sonames = re.split(',', link[4])
+            object_needed.setdefault(abi,{}).update({elf:sonames})
+
+    return object_needed
 
 
-"""
-Return library2soname dictionary which has structure
-
-	{ full_path_to_library : (soname, abi), ... }
-
-and its inverse which has structure
-
-	{ (soname, abi) : full_path_to_library, ... }
-"""
 def get_libraries():
+    """ Return library2soname dictionary which has structure
 
-	vardb = portage.db[portage.root]["vartree"].dbapi
+        { full_path_to_library : (soname, abi), ... }
 
-	library2soname = {}
-	soname2library = {}
+    and its inverse which has structure
 
-	for pkg in vardb.cpv_all():
-		needs = vardb.aux_get(pkg, ['NEEDED.ELF.2'])[0].strip()
-		if not needs:			#skip empty lines
-			continue
-		lines = re.split('\n', needs)
-		for line in lines:
-			link = re.split(';', line)
-			abi = link[0]
-			elf = link[1]
-			soname = link[2]
-			if soname:				#no soname => executable
-				library2soname[elf] = (soname,abi)
-				soname2library[(soname,abi)] = elf
+        { (soname, abi) : full_path_to_library, ... }
+    """
 
-	return ( library2soname, soname2library )
+    vardb = portage.db[portage.root]["vartree"].dbapi
+
+    library2soname = {}
+    soname2library = {}
+
+    for pkg in vardb.cpv_all():
+        needs = vardb.aux_get(pkg, ['NEEDED.ELF.2'])[0].strip()
+        if not needs:                                #skip empty lines
+            continue
+        lines = re.split('\n', needs)
+        for line in lines:
+            link = re.split(';', line)
+            abi = link[0]
+            elf = link[1]
+            soname = link[2]
+            if soname:                               #no soname => executable
+                library2soname[elf] = (soname,abi)
+                soname2library[(soname,abi)] = elf
+
+    return ( library2soname, soname2library )
 
 
-"""
-Return soname_needed dictionary which has structure:
-
-	{
-		abi1: { soname: [ soname1, soname2, ... ], .... },
-		abi2: { soname: [ soname1, soname2, ... ], .... },
-	}
-
-Here the soname1, soname2,... were obtained from soname's corresponding
-ELF object by scanelf -n during emerge.
-"""
 def get_soname_needed( object_needed, library2soname ):
+    """ Return soname_needed dictionary which has structure:
 
-	soname_needed = {}
+        {
+            abi1: { soname: [ soname1, soname2, ... ], .... },
+            abi2: { soname: [ soname1, soname2, ... ], .... },
+        }
 
-	for abi in object_needed:
-		for elf in object_needed[abi]:
-			try:
-				(soname, abi_check) = library2soname[elf]
-				if abi != abi_check:
-					print("This should never happen!")
-					sys.exit(1)
-				soname_needed.setdefault(abi,{}).update({soname:object_needed[abi][elf]})
-			except KeyError:
-				continue  # no soname, its probably an executable
+    Here the soname1, soname2,... were obtained from soname's corresponding
+    ELF object by scanelf -n during emerge.
+    """
 
-	return soname_needed
+    soname_needed = {}
+
+    for abi in object_needed:
+        for elf in object_needed[abi]:
+            try:
+                (soname, abi_check) = library2soname[elf]
+                if abi != abi_check:
+                    print('This should never happen!')
+                    sys.exit(1)
+                soname_needed.setdefault(abi,{}).update({soname:object_needed[abi][elf]})
+            except KeyError:
+                continue  # no soname, its probably an executable
+
+    return soname_needed
 
 
-"""
-Expands the object_needed dictionary which has structure
-
-	{
-		abi1 : { full_path_to_ELF_object : [ soname1, soname2, ... ], ... },
-		abi2 : { full_path_to_ELF_object : [ soname1, soname2, ... ], ... },
-		....
-	}
-
-such that the soname's are traced all the way to the end of
-the link chain.  Here the sonames should be the same as those
-obtained from the ELF object by ldd.
-"""
 def expand_linkings( object_needed, soname2library ):
+    """ Expands the object_needed dictionary which has structure
 
-	for abi in object_needed:
-		for elf in object_needed[abi]:
-			while True:
-				found_new_soname = False
-				for so in object_needed[abi][elf]:					# For all the first links ...
-					try:
-						for sn in object_needed[abi][soname2library[(so,abi)]]:	# go to the next links ...
-							if sn in object_needed[abi][elf]:		# skip if already included ...
-								continue
-							if not (sn,abi) in soname2library:		# skip if vdso ...
-								continue
-							# This appends to the object_needed
-							# and soname_needed lists.  No copy
-							# was done so its the same lists in
-							# memory for both, and its modified
-							# for both.
-							object_needed[abi][elf].append(sn)	# otherwise collapse it back into
-							found_new_soname = True			# first links of the chain.
+        {
+            abi1 : { full_path_to_ELF_object : [ soname1, soname2, ... ], ... },
+            abi2 : { full_path_to_ELF_object : [ soname1, soname2, ... ], ... },
+            ....
+        }
 
-					except KeyError:					# Not all nodes in the chain have a next node
-						continue
+    such that the soname's are traced all the way to the end of
+    the link chain.  Here the sonames should be the same as those
+    obtained from the ELF object by ldd.
+    """
 
-				if not found_new_soname:					# We're done, that last iteration found
-					break							# no new nodes
+    for abi in object_needed:
+        for elf in object_needed[abi]:
+            while True:
+                found_new_soname = False
+                for so in object_needed[abi][elf]:                              # For all the first links ...
+                    try:
+                        for sn in object_needed[abi][soname2library[(so,abi)]]: # go to the next links ...
+                            if sn in object_needed[abi][elf]:                   # skip if already included ...
+                                continue
+                            if not (sn,abi) in soname2library:                  # skip if vdso ...
+                                continue
+                            # This appends to the object_needed
+                            # and soname_needed lists.  No copy
+                            # was done so its the same lists in
+                            # memory for both, and its modified
+                            # for both.
+                            object_needed[abi][elf].append(sn)                  # otherwise collapse it back into
+                            found_new_soname = True                             # first links of the chain.
+
+                    except KeyError:                 # Not all nodes in the chain have a next node
+                        continue
+
+                if not found_new_soname:             # We're done, that last iteration found
+                    break                            # no new nodes
 
 
 def get_object_reverse_linkings( object_linkings ):
-	object_reverse_linkings = {}
+    object_reverse_linkings = {}
 
-	for abi in object_linkings:
-		for elf in object_linkings[abi]:
-			for soname in object_linkings[abi][elf]:
-				object_reverse_linkings.setdefault(abi,{}).setdefault(soname,[]).append(elf)
+    for abi in object_linkings:
+        for elf in object_linkings[abi]:
+            for soname in object_linkings[abi][elf]:
+                object_reverse_linkings.setdefault(abi,{}).setdefault(soname,[]).append(elf)
 
-	return object_reverse_linkings
+    return object_reverse_linkings
 
 
 def main():
 
-	# Run as root to be able to real all files
-	uid = os.getuid()
-	if uid != 0:
-		print('RUN AS ROOT: cannot read all flags')
-		sys.exit(0)
+    # Run as root to be able to real all files
+    uid = os.getuid()
+    if uid != 0:
+        print('RUN AS ROOT: cannot read all flags')
+        sys.exit(0)
 
-	object_needed = get_object_needed()
-	( library2soname, soname2library ) = get_libraries()
-	soname_needed = get_soname_needed( object_needed, library2soname )
+    object_needed = get_object_needed()
+    ( library2soname, soname2library ) = get_libraries()
+    soname_needed = get_soname_needed( object_needed, library2soname )
 
-	# After the appending to needed in expand_linkings(), forward_needed
-	# and soname_needed have been extended through the entire chain of linking.
-	# If we want to keep only the object_needed and soname_needed, then do
-	# a copy before calling expand_linkings().
-	expand_linkings( soname_needed, soname2library )
+    # After the appending to needed in expand_linkings(), forward_needed
+    # and soname_needed have been extended through the entire chain of linking.
+    # If we want to keep only the object_needed and soname_needed, then do
+    # a copy before calling expand_linkings().
+    expand_linkings( soname_needed, soname2library )
 
-	object_linkings = object_needed
-	object_needed = None
+    object_linkings = object_needed
+    object_needed = None
 
-	soname_linkings = soname_needed
-	soname_needed = None
+    soname_linkings = soname_needed
+    soname_needed = None
 
-	object_reverse_linkings = get_object_reverse_linkings( object_linkings )
+    object_reverse_linkings = get_object_reverse_linkings( object_linkings )
 
-	""" Print out all ELF objects and the NEEDED sonames and full library paths """
-	for abi in object_linkings:
-		for elf in object_linkings[abi]:
-			sonames = object_linkings[abi][elf]
-			print("%s: %s" % (abi,elf))
-			for soname in sorted(object_linkings[abi][elf]):
-				try:
-					print("\t%s\t=> %s" % (soname, soname2library[(soname,abi)]))
-				except KeyError:
-					print("\t%s\t=> %s " % (soname, '***'))
-			print("\n\n")
+    layout = "{0:<30} => {1:<30}"
 
-	""" Print out all ELF objects and the NEEDED sonames and full library paths """
-	for abi in object_linkings:
-		for soname in object_reverse_linkings[abi]:
-			try:
-				print("%s: %s\t=> %s" % (abi, soname, soname2library[(soname,abi)]))
-			except KeyError:
-				print("%s: %s\t=>%s " % (abi, soname, '***'))
-			for elf in sorted(object_reverse_linkings[abi][soname]):
-				print("\t%s" % elf)
-			print("\n\n")
+    """ Print out all ELF objects and the NEEDED sonames and full library paths """
+    for abi in object_linkings:
+        for elf in object_linkings[abi]:
+            sonames = object_linkings[abi][elf]
+            print('%s: %s' % (abi,elf))
+            for soname in sorted(object_linkings[abi][elf]):
+                try:
+                    print('\t%s' % layout.format(soname, soname2library[(soname,abi)]))
+                except KeyError:
+                    print('\t%s' % layout.format(soname, '***' ))
+            print('')
+
+    """ Print out all ELF objects and the NEEDED sonames and full library paths """
+    for abi in object_linkings:
+        for soname in object_reverse_linkings[abi]:
+            try:
+                print('%s: %s' % (abi, layout.format(soname, soname2library[(soname,abi)])))
+            except KeyError:
+                print('%s: %s' % (abi, layout.format(soname, '***' )))
+            for elf in sorted(object_reverse_linkings[abi][soname]):
+                print('\t%s' % elf)
+            print('')
 
 
 if __name__ == '__main__':
-	main()
+    main()
