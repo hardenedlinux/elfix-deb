@@ -1,11 +1,23 @@
 #!/usr/bin/env python
+#
+#    LinkMap.py: this file is part of the elfix package
+#    Copyright (C) 2011  Anthony G. Basile
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import sys
 import re
-import pax
 import portage
-
 
 class LinkMap:
 
@@ -22,6 +34,7 @@ class LinkMap:
 
         See /usr/lib/portage/bin/misc-functions.sh ~line 520
         """
+
         vardb = portage.db[portage.root]["vartree"].dbapi
 
         self.pkgs = []
@@ -183,43 +196,3 @@ class LinkMap:
 
         return ( object_linkings, object_reverse_linkings, library2soname, soname2library )
 
-
-def main():
-
-    # Run as root to be able to real all files
-    uid = os.getuid()
-    if uid != 0:
-        print('RUN AS ROOT: cannot read all flags')
-        sys.exit(0)
-
-    link_maps = LinkMap()
-    ( object_linkings, object_reverse_linkings, library2soname, soname2library ) = link_maps.get_maps()
-
-    layout = "{0:<30} => {1:<30}"
-
-    #Print out all ELF objects and the NEEDED sonames and full library paths
-    for abi in object_linkings:
-        for elf in object_linkings[abi]:
-            sonames = object_linkings[abi][elf]
-            print('%s: %s' % (abi,elf))
-            for soname in sorted(object_linkings[abi][elf]):
-                try:
-                    print('\t%s' % layout.format(soname, soname2library[(soname,abi)]))
-                except KeyError:
-                    print('\t%s' % layout.format(soname, '***' ))
-            print('')
-
-    # Print out all ELF objects and the NEEDED sonames and full library paths
-    for abi in object_linkings:
-        for soname in object_reverse_linkings[abi]:
-            try:
-                print('%s: %s' % (abi, layout.format(soname, soname2library[(soname,abi)])))
-            except KeyError:
-                print('%s: %s' % (abi, layout.format(soname, '***' )))
-            for elf in sorted(object_reverse_linkings[abi][soname]):
-                print('\t%s' % elf)
-            print('')
-
-
-if __name__ == '__main__':
-    main()
