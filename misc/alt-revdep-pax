@@ -41,15 +41,7 @@ def get_input(prompt):
         return raw_input(prompt)
 
 
-def print_problems(elfs_without_flags, sonames_without_flags, sonames_missing_library):
-    elfs_without_flags = set(elfs_without_flags)
-    print('\n**** ELF objections without any PAX flags ****')
-    for m in elfs_without_flags:
-        print('\t%s' % m)
-    sonames_without_flags = set(sonames_without_flags)
-    print('\n**** SONAMEs with library files without PAX flags ****')
-    for m in sonames_without_flags:
-        print('\t%s' % m)
+def print_problems(sonames_missing_library):
     sonames_missing_library = set(sonames_missing_library)
     print('\n**** SONAMES without any library files ****')
     for m in sonames_missing_library:
@@ -59,8 +51,6 @@ def print_problems(elfs_without_flags, sonames_without_flags, sonames_missing_li
 def run_forward(verbose):
     (object_linkings, object_reverse_linkings, library2soname, soname2library) = LinkMap().get_maps()
 
-    elfs_without_flags = []
-    sonames_without_flags = []
     sonames_missing_library = []
 
     for abi in object_linkings:
@@ -70,22 +60,24 @@ def run_forward(verbose):
                 sv = '%s :%s ( %s )' % (elf, abi, elf_str_flags)
                 s = sv
             except pax.PaxError:
-                elfs_without_flags.append(elf)
+                sv = '%s :%s ( %s )' % (elf, abi, '****')
+                s = sv
                 continue
 
             count = 0
             for soname in object_linkings[abi][elf]:
                 try:
-                    library = soname2library[(soname,abi)]
-                    (library_str_flags, library_bin_flags) = pax.getflags(library)
+                    library = soname2library[(soname, abi)]
+                    try:
+                        (library_str_flags, library_bin_flags) = pax.getflags(library)
+                    except pax.PaxError:
+                        library_str_flags = '****'
                     sv = '%s\n\t%s\t%s ( %s )' % (sv, soname, library, library_str_flags)
                     if elf_str_flags != library_str_flags:
                         s = '%s\n\t%s\t%s ( %s )' % (s, soname, library, library_str_flags)
                         count = count + 1
                 except KeyError:
                     sonames_missing_library.append(soname)
-                except pax.PaxError:
-                    sonames_without_flags.append(soname)
 
             if verbose:
                 print('%s\n' % sv)
@@ -98,7 +90,7 @@ def run_forward(verbose):
                     print('%s\n\n' % s)
 
     if verbose:
-        print_problems(elfs_without_flags, sonames_without_flags, sonames_missing_library)
+        print_problems(sonames_missing_library)
 
 
 def run_reverse(verbose, executable_only):
@@ -106,39 +98,38 @@ def run_reverse(verbose, executable_only):
 
     shell_path = path = os.getenv('PATH').split(':')
 
-    elfs_without_flags = []
-    sonames_without_flags = []
     sonames_missing_library = []
 
     for abi in object_reverse_linkings:
         for soname in object_reverse_linkings[abi]:
             try:
-                library = soname2library[(soname,abi)]
-                (library_str_flags, library_bin_flags) = pax.getflags(library)
+                library = soname2library[(soname, abi)]
+                try:
+                    (library_str_flags, library_bin_flags) = pax.getflags(library)
+                except pax.PaxError:
+                    library_str_flags = '****'
                 sv = '%s\t%s :%s ( %s )' % (soname, library, abi, library_str_flags)
                 s = sv
             except KeyError:
                 sonames_missing_library.append(soname)
-            except pax.PaxError:
-                sonames_without_flags.append(soname)
 
             count = 0
             for elf in object_reverse_linkings[abi][soname]:
                 try:
                     (elf_str_flags, elf_bin_flags) = pax.getflags(elf)
-                    if executable_only:
-                        if os.path.dirname(elf) in shell_path:
-                            sv = '%s\n\t%s ( %s )' % (sv, elf, elf_str_flags)
-                            if library_str_flags != elf_str_flags:
-                                s = '%s\n\t%s ( %s )' % (s, elf, elf_str_flags)
-                                count = count + 1
-                    else:
+                except pax.PaxError:
+                    elf_str_flags = '****'
+                if executable_only:
+                    if os.path.dirname(elf) in shell_path:
                         sv = '%s\n\t%s ( %s )' % (sv, elf, elf_str_flags)
                         if library_str_flags != elf_str_flags:
                             s = '%s\n\t%s ( %s )' % (s, elf, elf_str_flags)
                             count = count + 1
-                except pax.PaxError:
-                    elfs_without_flags.append(elf)
+                else:
+                    sv = '%s\n\t%s ( %s )' % (sv, elf, elf_str_flags)
+                    if library_str_flags != elf_str_flags:
+                        s = '%s\n\t%s ( %s )' % (s, elf, elf_str_flags)
+                        count = count + 1
 
             if verbose:
                 print('%s\n' % sv)
@@ -151,7 +142,7 @@ def run_reverse(verbose, executable_only):
                     print('%s\n\n' % s)
 
     if verbose:
-        print_problems( elfs_without_flags, sonames_without_flags, sonames_missing_library)
+        print_problems(sonames_missing_library)
 
 
 def migrate_flags(importer, exporter_str_flags, exporter_bin_flags):
@@ -180,7 +171,12 @@ def migrate_flags(importer, exporter_str_flags, exporter_bin_flags):
         'R':1<<14, 'r':1<<15
     }
 
-    (importer_str_flags, importer_bin_flags) = pax.getflags(importer)
+    try:
+        (importer_str_flags, importer_bin_flags) = pax.getflags(importer)
+    except pax.PaxError:
+        # The importer has no flags, so just set them
+        pax.setbinflags(importer, exporter_bin_flags)
+        return
 
     # Start with the exporter's flags
     result_bin_flags = exporter_bin_flags
@@ -226,21 +222,24 @@ def run_elf(elf, verbose, mark, allyes):
         for soname in object_linkings[abi][elf]:
             try:
                 library = soname2library[(soname,abi)]
-                (library_str_flags, library_bin_flags) = pax.getflags(library)
+                try:
+                    (library_str_flags, library_bin_flags) = pax.getflags(library)
+                except pax.PaxError:
+                    library_str_flags = '****'
                 if verbose:
                     print('\t%s\t%s :%s ( %s )' % (soname, library, abi, library_str_flags))
                 if elf_str_flags != library_str_flags:
                     mismatched_libraries.append(library)
                     if not verbose:
                         print('\t%s\t%s :%s ( %s )' % (soname, library, abi, library_str_flags))
-            except pax.PaxError:
-                print('%s :%s: file for soname not found' % (soname,abi))
+            except KeyError:
+                print('%s :%s: file for soname not found' % (soname, abi))
 
         if len(mismatched_libraries) == 0:
             if not verbose:
                 print('\tNo mismatches\n')
         else:
-            print('\n'),
+            print('')
             if mark:
                 print('\tWill mark libraries with %s\n' % elf_str_flags)
                 for library in mismatched_libraries:
@@ -249,7 +248,7 @@ def run_elf(elf, verbose, mark, allyes):
                         if allyes:
                             ans = 'y'
                         else:
-                            ans = get_input('\tSet flags for %s :%s (y/n): ' % (library,abi))
+                            ans = get_input('\tSet flags for %s :%s (y/n): ' % (library, abi))
                         if ans == 'y':
                             do_marking = True
                             break
@@ -263,7 +262,7 @@ def run_elf(elf, verbose, mark, allyes):
                         try:
                             migrate_flags(library, elf_str_flags, elf_bin_flags)
                         except pax.PaxError:
-                            print('\n\tCould not set PAX flags on %s, text maybe busy' % (library,abi))
+                            print('\n\tCould not set PAX flags on %s, text maybe busy' % (library, abi))
 
                         try:
                             (library_str_flags, library_bin_flags) = pax.getflags(library)
@@ -303,46 +302,42 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
         if not soname in object_reverse_linkings[abi]:
             continue
 
-        library = soname2library[(soname,abi)]
-        (library_str_flags, library_bin_flags) = pax.getflags(library)
-        print('%s\t%s :%s (%s)\n' % (soname, library, ", ".join(abi_list), library_str_flags))
+        library = soname2library[(soname, abi)]
+
+        try:
+           (library_str_flags, library_bin_flags) = pax.getflags(library)
+           print('%s\t%s :%s (%s)\n' % (soname, library, abi, library_str_flags))
+        except pax.PaxError:
+           print('%s :%s : No PAX flags found\n' % (library, abi))
+           continue
 
         for elf in object_reverse_linkings[abi][soname]:
             try:
                 (elf_str_flags, elf_bin_flags ) = pax.getflags(elf)
-                if verbose:
-                    if executable_only:
-                        if os.path.dirname(elf) in shell_path:
-                            print('\t%s ( %s )' % (elf, elf_str_flags ))
-                    else:
-                        print('\t%s ( %s )' % ( elf, elf_str_flags ))
-                if library_str_flags != elf_str_flags:
-                    if executable_only:
-                        if os.path.dirname(elf) in shell_path:
-                            mismatched_elfs.append(elf)
-                            if not verbose:
-                                print('\t%s ( %s )' % (elf, elf_str_flags ))
-                    else:
-                        mismatched_elfs.append(elf)
-                        if not verbose:
-                            print('\t%s ( %s )' % (elf, elf_str_flags ))
             except pax.PaxError:
-                # If you can't get the pax flags, then its automatically mismatched
+                elf_str_flags = '****'
+            if verbose:
+                if executable_only:
+                    if os.path.dirname(elf) in shell_path:
+                        print('\t%s ( %s )' % (elf, elf_str_flags))
+                else:
+                    print('\t%s ( %s )' % (elf, elf_str_flags))
+            if library_str_flags != elf_str_flags:
                 if executable_only:
                     if os.path.dirname(elf) in shell_path:
                         mismatched_elfs.append(elf)
                         if not verbose:
-                            print('\t%s ( %s )' % (elf, '****' ))
+                            print('\t%s ( %s )' % (elf, elf_str_flags))
                 else:
                     mismatched_elfs.append(elf)
                     if not verbose:
-                        print('\t%s ( %s )' % (elf, '****' ))
+                        print('\t%s ( %s )' % (elf, elf_str_flags))
 
         if len(mismatched_elfs) == 0:
             if not verbose:
                 print('\tNo mismatches\n')
         else:
-            print('\n'),
+            print('')
             if mark:
                 print('\tWill mark elf with %s\n' % library_str_flags)
                 for elf in mismatched_elfs:
@@ -370,7 +365,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
                             print('\n\tCould not set pax flags on %s, file is probably busy' % elf)
                             print('\tShut down all processes that use it and try again')
                         (elf_str_flags, elf_bin_flags) = pax.getflags(elf)
-                        print('\n\t\t%s ( %s )\n' % (elf, elf_str_flags ))
+                        print('\n\t\t%s ( %s )\n' % (elf, elf_str_flags))
 
 
 def run_usage():
