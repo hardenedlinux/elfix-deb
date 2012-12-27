@@ -33,3 +33,4 @@ dummy
 revdepbin
 #
 scripts/build
+misc/__pycache__
