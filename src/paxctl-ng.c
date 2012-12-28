@@ -707,6 +707,9 @@ create_xt_flags(int fd, int cp_flags)
 			PF_NOEMUTRAMP | PF_RANDMMAP ;
 	else if(cp_flags == CREATE_XT_FLAGS_DEFAULT)
 		xt_flags = 0;
+	else
+		//Why are we here?
+		return EXIT_FAILURE;
 
 	memset(buf, 0, FLAGS_SIZE);
 	bin2string(xt_flags, buf);
