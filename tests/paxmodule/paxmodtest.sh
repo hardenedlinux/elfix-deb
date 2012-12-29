@@ -1,20 +1,20 @@
 #!/bin/bash
 #
-#	paxmodtest.sh: this file is part of the elfix package
-#	Copyright (C) 2011  Anthony G. Basile
+#    paxmodtest.sh: this file is part of the elfix package
+#    Copyright (C) 2011, 2012  Anthony G. Basile
 #
-#	This program is free software: you can redistribute it and/or modify
-#	it under the terms of the GNU General Public License as published by
-#	the Free Software Foundation, either version 3 of the License, or
-#	(at your option) any later version.
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
 #
-#	This program is distributed in the hope that it will be useful,
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#	GNU General Public License for more details.
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
 #
-#	You should have received a copy of the GNU General Public License
-#	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
 echo "================================================================================"
@@ -36,19 +36,19 @@ pythonversion=${pythonversion%\.*}
 PYTHONPATH="../../scripts/build/lib.linux-${unamem}-${pythonversion}"
 
 if [ ! -d ${PYTHONPATH} ]; then
-	echo "  (Re)building pax module"
+  echo " (Re)building pax module"
 
-	#NOTE: the last -D or -U wins as it does for gcc $CFLAGS
-	for f in $@; do
-		[ $f = "-UXTPAX" ] && unset XTPAX
-		[ $f = "-DXTPAX" ] && XTPAX=1
-		[ $f = "-UPTPAX" ] && unset PTPAX
-		[ $f = "-DPTPAX" ] && PTPAX=1
-	done
-	export XTPAX
-	export PTPAX
+  #NOTE: the last -D or -U wins as it does for gcc $CFLAGS
+  for f in $@; do
+    [ $f = "-UXTPAX" ] && unset XTPAX
+    [ $f = "-DXTPAX" ] && XTPAX=1
+    [ $f = "-UPTPAX" ] && unset PTPAX
+    [ $f = "-DPTPAX" ] && PTPAX=1
+  done
+  export XTPAX
+  export PTPAX
 
-	( cd ../../scripts; exec ./setup.py build ) >/dev/null
+  ( cd ../../scripts; exec ./setup.py build ) >/dev/null
 fi
 
 count=0
@@ -82,6 +82,8 @@ for pf in "p" "P" "-"; do
 
           if [ "${verbose}" != 0 ] ;then
             echo
+          else
+            echo -n "."
           fi
 
         done
@@ -89,6 +91,8 @@ for pf in "p" "P" "-"; do
     done
   done
 done
+
+echo
 
 for pf in "p" "P" "-"; do
   for ef in "e" "E" "-"; do
@@ -120,6 +124,8 @@ for pf in "p" "P" "-"; do
 
           if [ "${verbose}" != 0 ] ;then
             echo
+          else
+            echo -n "."
           fi
 
         done
@@ -128,6 +134,10 @@ for pf in "p" "P" "-"; do
   done
 done
 
+if [ "${verbose}" = 0 ] ;then
+  echo
+  echo
+fi
 echo " Mismatches = ${count}"
 echo
 echo "================================================================================"
