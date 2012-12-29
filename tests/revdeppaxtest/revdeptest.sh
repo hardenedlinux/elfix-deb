@@ -45,23 +45,16 @@ RM="/bin/rm -f"
 MKDIR="/bin/mkdir -p"
 RMDIR="/bin/rmdir"
 LDD="/usr/bin/ldd"
-LDCONFIG="/sbin/ldconfig"
-LDCONFIGD="/etc/ld.so.conf.d/revdeptest.conf"
 
 
-# create a ld.so.conf.d/ file
-cat << EOF > "${LDCONFIGD}"
-${LIBSPATH}
-EOF
-${LDCONFIG}
-
-# create our /var/db/pkg/${CAT}/${PKG}/NEEDED
+# create our /var/db/pkg/${CAT}/${PKG}/NEEDED.ELF.2
 CAT="zzz"
 PKG="revdepbin-1"
 VARDBPKG="/var/db/pkg"
 ${MKDIR} "${VARDBPKG}/${CAT}/${PKG}"
-cat << EOF > "${VARDBPKG}/${CAT}/${PKG}/NEEDED"
-${LIBSPATH}/${BINARY} ${SONAME}
+cat << EOF > "${VARDBPKG}/${CAT}/${PKG}/NEEDED.ELF.2"
+XYZ;${LIBSPATH}/${BINARY};;;${SONAME}
+XYZ;${LIBSPATH}/${LIBRARY};${SONAME};;
 EOF
 
 if [ "${verbose}" = 0 ] ;then
@@ -104,14 +97,14 @@ do
 		$PAXCTLNG -m${lf}  "${LIBSPATH}/${LIBRARY}"
 
 		p=$($PAXCTLNG -v ${LIBSPATH}/${BINARY})
-		p=$(echo $p | awk '{ print $3 }')
+		p=$(echo $p | awk '{ print $4 }')
 		if [ "${verbose}" != 0 ] ;then
 			echo " BEFORE: "
 			echo "  Binary:  $p"
 		fi
 
 		p=$($PAXCTLNG -v ${LIBSPATH}/${LIBRARY})
-		p=$(echo $p | awk '{ print $3 }')
+		p=$(echo $p | awk '{ print $4 }')
 		if [ "${verbose}" != 0 ] ;then
 			echo "  Library: $p"
 		fi
@@ -119,14 +112,14 @@ do
 		$REVDEPPAX -m -y -s ${SONAME} >/dev/null 2>&1
 
 		ba=$($PAXCTLNG -v ${LIBSPATH}/${BINARY})
-		ba=$(echo $ba | awk '{ print $3 }')
+		ba=$(echo $ba | awk '{ print $4 }')
 		if [ "${verbose}" != 0 ] ;then
 			echo " AFTER: "
 			echo "  Binary:  $ba"
 		fi
 
 		p=$($PAXCTLNG -v ${LIBSPATH}/${LIBRARY})
-		p=$(echo $p | awk '{ print $3 }')
+		p=$(echo $p | awk '{ print $4 }')
 		if [ "${verbose}" != 0 ] ;then
 			echo "  Library: $p"
 		fi
@@ -165,14 +158,10 @@ done
 # do test here
 #
 
-# clean up our /var/db/pkg/${CAT}/${PKG}/NEEDED
-${RM} ${VARDBPKG}/${CAT}/${PKG}/NEEDED
+# clean up our /var/db/pkg/${CAT}/${PKG}/NEEDED.ELF.2
+${RM} ${VARDBPKG}/${CAT}/${PKG}/NEEDED.ELF.2
 ${RMDIR} ${VARDBPKG}/${CAT}/${PKG}
 ${RMDIR} ${VARDBPKG}/${CAT}
-
-# clean up our ld.so.conf.d/ file
-${RM} ${LDCONFIGD}
-${LDCONFIG}
 
 if [ "${verbose}" = 0 ] ;then
 	echo
