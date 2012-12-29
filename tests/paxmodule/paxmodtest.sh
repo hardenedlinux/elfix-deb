@@ -105,7 +105,7 @@ for pf in "p" "P" "-"; do
           ${PYPAXCTL} -s "${flags}" ${TESTFILE} >/dev/null 2>&1
 
           sflags=$(${PAXCTLNG} -v ${TESTFILE})
-          sflags=$(echo ${sflags} | awk '{print $3}')
+          sflags=$(echo ${sflags} | awk '{print $4}')
 
           if [ "${verbose}" != 0 ] ;then
             echo "GOT    :"  ${sflags}
