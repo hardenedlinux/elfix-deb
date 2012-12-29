@@ -139,6 +139,8 @@ paxctl\-ng \- get, set or create either PT_PAX or XATTR_PAX flags
 .PP
 \&\fBpaxctl-ng\fR \-F|\-f [\-v] \s-1ELF\s0
 .PP
+\&\fBpaxctl-ng\fR \-L|\-l
+.PP
 \&\fBpaxctl-ng\fR [\-h]
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
@@ -195,27 +197,27 @@ Finally, if the user wishes, he can remove the extended attribute field by runni
 .IP "" 4
 .PD
 If both enabling and disabling flags are set for one item, 
-eg. \-Pp for \s-1PAGEEXEC\s0, then the default setting \- is used.
-.IP "\fB\-Z\fR Set most secure settings (PSMeRx)" 4
-.IX Item "-Z Set most secure settings (PSMeRx)"
+eg. \-Pp for \s-1PAGEEXEC\s0, then the default setting '\-' is used.
+.IP "\fB\-Z\fR Set most secure settings (PSMeRx)." 4
+.IX Item "-Z Set most secure settings (PSMeRx)."
 .PD 0
-.IP "\fB\-z\fR Set default setting (\-\-\-\-\-\-)" 4
-.IX Item "-z Set default setting (------)"
-.IP "\fB\-C\fR Create \s-1XATTR_PAX\s0 markings with the most secure PaX settings" 4
-.IX Item "-C Create XATTR_PAX markings with the most secure PaX settings"
-.IP "\fB\-c\fR Create \s-1XATTR_PAX\s0 markings with the default PaX settings" 4
-.IX Item "-c Create XATTR_PAX markings with the default PaX settings"
-.ie n .IP "\fB\-d\fR Delete \s-1XATTR_PAX\s0 field, ""user.pax.flags""" 4
-.el .IP "\fB\-d\fR Delete \s-1XATTR_PAX\s0 field, ``user.pax.flags''" 4
-.IX Item "-d Delete XATTR_PAX field, user.pax.flags"
-.IP "\fB\-F\fR Copy \s-1PT_PAX\s0 flags to \s-1XATTR_PAX\s0, if possible" 4
-.IX Item "-F Copy PT_PAX flags to XATTR_PAX, if possible"
-.IP "\fB\-f\fR Copy \s-1XATTR_PAX\s0 flags to \s-1PT_PAX\s0, if possible" 4
-.IX Item "-f Copy XATTR_PAX flags to PT_PAX, if possible"
-.IP "\fB\-L\fR Only set \s-1PT_PAX\s0 flags, if possible" 4
-.IX Item "-L Only set PT_PAX flags, if possible"
-.IP "\fB\-l\fR Only set \s-1XATTR_PAX\s0 flags, if possible" 4
-.IX Item "-l Only set XATTR_PAX flags, if possible"
+.IP "\fB\-z\fR Set default setting (\-\-\-\-\-\-)." 4
+.IX Item "-z Set default setting (------)."
+.IP "\fB\-C\fR Create \s-1XATTR_PAX\s0 markings with the most secure PaX settings." 4
+.IX Item "-C Create XATTR_PAX markings with the most secure PaX settings."
+.IP "\fB\-c\fR Create \s-1XATTR_PAX\s0 markings with the default PaX settings." 4
+.IX Item "-c Create XATTR_PAX markings with the default PaX settings."
+.ie n .IP "\fB\-d\fR Delete \s-1XATTR_PAX\s0 field, ""user.pax.flags""." 4
+.el .IP "\fB\-d\fR Delete \s-1XATTR_PAX\s0 field, ``user.pax.flags''." 4
+.IX Item "-d Delete XATTR_PAX field, user.pax.flags."
+.IP "\fB\-F\fR Copy \s-1PT_PAX\s0 flags to \s-1XATTR_PAX\s0, if possible." 4
+.IX Item "-F Copy PT_PAX flags to XATTR_PAX, if possible."
+.IP "\fB\-f\fR Copy \s-1XATTR_PAX\s0 flags to \s-1PT_PAX\s0, if possible." 4
+.IX Item "-f Copy XATTR_PAX flags to PT_PAX, if possible."
+.IP "\fB\-L\fR When given with other flags, only set \s-1PT_PAX\s0 flags, if possible.  When given alone, return \s-1EXIT_SUCCESS\s0 if \s-1PT_PAX\s0 is supported, else return \s-1EXIT_FAILURE\s0." 4
+.IX Item "-L When given with other flags, only set PT_PAX flags, if possible.  When given alone, return EXIT_SUCCESS if PT_PAX is supported, else return EXIT_FAILURE."
+.IP "\fB\-l\fR When given with other flags, only set \s-1XATTR_PAX\s0 flags, if possible.  When given alone, return \s-1EXIT_SUCCESS\s0 if \s-1XATTR_PAX\s0 is supported, else return \s-1EXIT_FAILURE\s0." 4
+.IX Item "-l When given with other flags, only set XATTR_PAX flags, if possible.  When given alone, return EXIT_SUCCESS if XATTR_PAX is supported, else return EXIT_FAILURE."
 .IP "\fB\-v\fR View the flags" 4
 .IX Item "-v View the flags"
 .IP "\fB\-h\fR Print out a short help message and exit." 4
@@ -223,7 +225,7 @@ eg. \-Pp for \s-1PAGEEXEC\s0, then the default setting \- is used.
 .PD
 .SH "HOMEPAGE"
 .IX Header "HOMEPAGE"
-http://dev.gentoo.org/~blueness/elfix
+http://www.gentoo.org/proj/en/hardened/pax\-quickstart.xml
 .SH "REPORTING BUGS"
 .IX Header "REPORTING BUGS"
 Please report bugs at http://bugs.gentoo.org.

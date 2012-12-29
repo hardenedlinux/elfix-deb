@@ -39,7 +39,7 @@ what flags it found.
 
 =head1 HOMEPAGE
 
-http://dev.gentoo.org/~blueness/elfix
+http://www.gentoo.org/proj/en/hardened/pax-quickstart.xml
 
 =head1 REPORTING BUGS
 

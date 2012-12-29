@@ -10,6 +10,8 @@ B<paxctl-ng> -C|-c|-d [-v] ELF
 
 B<paxctl-ng> -F|-f [-v] ELF
 
+B<paxctl-ng> -L|-l
+
 B<paxctl-ng> [-h]
 
 =head1 DESCRIPTION
@@ -69,25 +71,25 @@ B<paxctl-ng> with the B<-d> flag.
 =item
 
 If both enabling and disabling flags are set for one item, 
-eg. -Pp for PAGEEXEC, then the default setting - is used.
+eg. -Pp for PAGEEXEC, then the default setting '-' is used.
 
-=item B<-Z> Set most secure settings (PSMeRx)
+=item B<-Z> Set most secure settings (PSMeRx).
 
-=item B<-z> Set default setting (------)
+=item B<-z> Set default setting (------).
 
-=item B<-C> Create XATTR_PAX markings with the most secure PaX settings
+=item B<-C> Create XATTR_PAX markings with the most secure PaX settings.
 
-=item B<-c> Create XATTR_PAX markings with the default PaX settings
+=item B<-c> Create XATTR_PAX markings with the default PaX settings.
 
-=item B<-d> Delete XATTR_PAX field, "user.pax.flags"
+=item B<-d> Delete XATTR_PAX field, "user.pax.flags".
 
-=item B<-F> Copy PT_PAX flags to XATTR_PAX, if possible
+=item B<-F> Copy PT_PAX flags to XATTR_PAX, if possible.
 
-=item B<-f> Copy XATTR_PAX flags to PT_PAX, if possible
+=item B<-f> Copy XATTR_PAX flags to PT_PAX, if possible.
 
-=item B<-L> Only set PT_PAX flags, if possible
+=item B<-L> When given with other flags, only set PT_PAX flags, if possible.  When given alone, return EXIT_SUCCESS if PT_PAX is supported, else return EXIT_FAILURE.
 
-=item B<-l> Only set XATTR_PAX flags, if possible
+=item B<-l> When given with other flags, only set XATTR_PAX flags, if possible.  When given alone, return EXIT_SUCCESS if XATTR_PAX is supported, else return EXIT_FAILURE.
 
 =item B<-v> View the flags
 
@@ -97,7 +99,7 @@ eg. -Pp for PAGEEXEC, then the default setting - is used.
 
 =head1 HOMEPAGE
 
-http://dev.gentoo.org/~blueness/elfix
+http://www.gentoo.org/proj/en/hardened/pax-quickstart.xml
 
 =head1 REPORTING BUGS
 

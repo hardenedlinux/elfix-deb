@@ -82,7 +82,7 @@ so that the PaX flags of the target inherit the flags of the source.
 
 =head1 HOMEPAGE
 
-http://dev.gentoo.org/~blueness/elfix
+http://www.gentoo.org/proj/en/hardened/pax-quickstart.xml
 
 =head1 REPORTING BUGS
 

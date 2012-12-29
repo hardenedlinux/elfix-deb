@@ -58,9 +58,10 @@
 #if defined(PTPAX) && defined(XTPAX)
  #define COPY_PT_TO_XT_FLAGS            4
  #define COPY_XT_TO_PT_FLAGS            5
- #define LIMIT_TO_PT_FLAGS              6
- #define LIMIT_TO_XT_FLAGS              7
 #endif
+
+#define LIMIT_TO_PT_FLAGS               6
+#define LIMIT_TO_XT_FLAGS               7
 
 #define FLAGS_SIZE                      6
 
@@ -87,6 +88,7 @@ print_help_exit(char *v)
 		"             : %s -F|-f [-v] ELF\n"
 #endif
 		"             : %s -v ELF\n"
+		"             : %s -L|-l\n"
 		"             : %s [-h]\n\n"
 		"Options      : -P enable PAGEEXEC\t-p disable  PAGEEXEC\n"
 		"             : -E enable EMUTRAMP\t-e disable  EMUTRAMP\n"
@@ -107,7 +109,16 @@ print_help_exit(char *v)
 		"             : -F copy PT_PAX to XATTR_PAX\n"
 		"             : -f copy XATTR_PAX to PT_PAX\n"
 #endif
-		"             :\n"
+#ifdef PTPAX
+		"             : -L when given alone, EXIT_SUCCESS (PT_PAX is supported)\n"
+#else
+		"             : -L when given alone, EXIT_FAILURE (PT_PAX is not supported)\n"
+#endif
+#ifdef XTPAX
+		"             : -l when given alone, EXIT_SUCCESS (XATTR_PAX is supported)\n"
+#else
+		"             : -l when given alone, EXIT_FAILURE (XATTR_PAX is not supported)\n"
+#endif
 		"             : -v view the flags, along with any accompanying operation\n"
 		"             : -h print out this help\n\n"
 		"Note         :  If both enabling and disabling flags are set, the default - is used\n\n",
@@ -119,6 +130,7 @@ print_help_exit(char *v)
 #if defined(PTPAX) && defined(XTPAX)
 		basename(v),
 #endif
+		basename(v),
 		basename(v),
 		basename(v)
 	);
@@ -143,26 +155,12 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 	*verbose = 0;
 	*cp_flags = 0; 
 
-	/* Accept all options and silently ignore irrelevant ones below.
-	 * We can then pass any parameter in scripts without failure.
-	 *
-	 * Alternatively we could do
-	 *
-	 * #if !defined(PTPAX) && defined(XTPAX)
-	 *	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcvh")) != -1)
-	 * #elif defined(PTPAX) && defined(XTPAX)
-	 *	while((oc = getopt(argc, argv,":PpSsMmEeRrZzCcFfvh")) != -1)
-	 * #else
-	 *	while((oc = getopt(argc, argv,":PpSsMmEeRrZzvh")) != -1)
-	 * #endif
-	 */
-
 #if defined(PTPAX) && defined(XTPAX)
 	while((oc = getopt(argc, argv,":PpEeMmRrSsZzCcdFfLlvh")) != -1)
 #elif defined(XTPAX) && !defined(PTPAX)
-	while((oc = getopt(argc, argv,":PpEeMmRrSsZzCcdvh")) != -1)
+	while((oc = getopt(argc, argv,":PpEeMmRrSsZzCcdLlvh")) != -1)
 #else
-	while((oc = getopt(argc, argv,":PpEeMmRrSsZzvh")) != -1)
+	while((oc = getopt(argc, argv,":PpEeMmRrSsZzLlvh")) != -1)
 #endif
 	{
 		switch(oc)
@@ -240,6 +238,8 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 				solitaire += 1;
 				*cp_flags = COPY_XT_TO_PT_FLAGS;
 				break;
+#endif
+#endif
 			case 'L':
 				limitflags += 1;
 				*limit = LIMIT_TO_PT_FLAGS;
@@ -248,8 +248,6 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 				limitflags += 1;
 				*limit = LIMIT_TO_XT_FLAGS;
 				break;
-#endif
-#endif
 			case 'v':
 				*verbose = 1;
 				break;
@@ -263,11 +261,31 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 	}
 
 	if(
+		  (setflags == 0 && solflags == 0 && limitflags == 1 && solitaire == 0)
+		&& *verbose == 0
+		&& argv[optind] == NULL								// -L|-l
+	)
+	{
+
+#ifdef PTPAX
+		if(*limit == LIMIT_TO_PT_FLAGS)
+			exit(EXIT_SUCCESS);
+#endif
+
+#ifdef XTPAX
+		if(*limit == LIMIT_TO_XT_FLAGS)
+			exit(EXIT_SUCCESS);
+#endif
+
+		exit(EXIT_FAILURE);
+	}
+
+	if(
 		(
-		 (setflags == 1 && solflags == 0 && limitflags <= 1 && solitaire == 0) ||	//-PpEeMmRrSs [-L|-l] [-v] ELF
-		 (setflags == 0 && solflags == 1 && limitflags <= 1 && solitaire == 0) ||	//-Z|-z [-L|-l] [-v] ELF
-		 (setflags == 0 && solflags == 0 && limitflags == 0 && solitaire == 1) ||	//-C|-c|-d|-F|-f [-v] ELF
-		 (setflags == 0 && solflags == 0 && limitflags == 0 && solitaire == 0 && *verbose == 1) // -v ELF
+		    (setflags == 1 && solflags == 0 && limitflags <= 1 && solitaire == 0)		//-PpEeMmRrSs [-L|-l] [-v] ELF
+		 || (setflags == 0 && solflags == 1 && limitflags <= 1 && solitaire == 0)		//-Z|-z [-L|-l] [-v] ELF
+		 || (setflags == 0 && solflags == 0 && limitflags == 0 && solitaire == 1)		//-C|-c|-d|-F|-f [-v] ELF
+		 || (setflags == 0 && solflags == 0 && limitflags == 0 && solitaire == 0 && *verbose == 1) // -v ELF
 		)
 		&& argv[optind] != NULL
 	)
