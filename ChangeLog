@@ -1,7 +1,7 @@
 2012-12-28
 
 	* src/paxctl-ng.c: -L/-l alone report if PT_PAX/XATTR_PAX is supported.
-	* Use NEEDED.ELF.2 for migrate-pax
+	* Use NEEDED.ELF.2 for revdep-pax and migrate-pax
 
 2012-12-26
 
