@@ -1,4 +1,4 @@
 
-	* src/paxctl-ng.c: add verbose error reporting for xattr (like for set/get phdr)
 	* src/paxctl-ng.c, scripts/paxmodule.c: reduce the shared code to a convenience library
-	* scripts/revdep-pax: don't use /var/db/pkg but some $PATH to find all exes.
+	* misc/revdep-pax-np: (non-gentoo) use $PATH to find all exe's and ldd for libraries
+
