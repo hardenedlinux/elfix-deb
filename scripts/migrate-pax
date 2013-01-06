@@ -132,6 +132,7 @@ def main():
 
             if do_migration:
                 flags = re.sub('-','',flags)
+                if flags == 'e': continue # Don't create XATTR_PAX for default
                 pax.setstrflags(elf, flags)
 
             if do_deleteall:
