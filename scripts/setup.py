@@ -103,7 +103,7 @@ else:
 
 setup(
 	name = 'PaxPython',
-	version = '0.6.1',
+	version = '0.8',
 	author = 'Anthony G. Basile',
 	author_email = 'blueness@gentoo.org',
 	url = 'http://dev.gentoo.org/~blueness/elfix',
