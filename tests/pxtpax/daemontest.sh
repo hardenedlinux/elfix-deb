@@ -58,6 +58,8 @@ if [[ "$unamem" != "i686" && "$unamem" != "x86_64" ]]; then
   exit 0
 fi
 
+dots=0
+
 for pf in "p" "P" "-"; do
   for ef in "e" "E" "-"; do
     for mf in "m" "M" "-"; do
@@ -123,7 +125,12 @@ for pf in "p" "P" "-"; do
           if [[ "${verbose}" != 0 ]] ;then
             echo
           else
+            (( dots = dots + 1 ))
             echo -n "."
+            if [[ "$dots" = "80" ]]; then
+              dots=0
+              echo
+            fi
           fi
 
         done
