@@ -33,8 +33,8 @@ if [ "$ID" != 0 ]; then
   exit 1
 fi
 
-PAXCTLNG="../../src/paxctl-ng"
-REVDEPPAX="../../scripts/revdep-pax"
+PAXCTLNG="$(pwd)/../../src/paxctl-ng"
+REVDEPPAX="$(pwd)/../../scripts/revdep-pax"
 
 LIBSPATH="$(pwd)/.libs"
 BINARY="revdepbin"
@@ -65,23 +65,21 @@ unamem=$(uname -m)
 pythonversion=$(python --version 2>&1)
 pythonversion=$(echo ${pythonversion} | awk '{ print $2 }')
 pythonversion=${pythonversion%\.*}
-PYTHONPATH="../../scripts/build/lib.linux-${unamem}-${pythonversion}"
+export PYTHONPATH="$(pwd)/../../scripts/build/lib.linux-${unamem}-${pythonversion}"
 
-# Assume the pax.so module is built if the path exists
-# otherwise build it ourselves!
-if [ ! -d ${PYTHONPATH} ]; then
-  echo "  (Re)building pax module"
+#NOTE: the last -D or -U wins as it does for gcc $CFLAGS
+for f in $@; do
+  [ $f = "-UXTPAX" ] && unset XTPAX
+  [ $f = "-DXTPAX" ] && XTPAX=1
+  [ $f = "-UPTPAX" ] && unset PTPAX
+  [ $f = "-DPTPAX" ] && PTPAX=1
+done
+export XTPAX
+export PTPAX
 
-  #NOTE: the last -D or -U wins as it does for gcc $CFLAGS
-  for f in $@; do
-    [ $f = "-UXTPAX" ] && unset XTPAX
-    [ $f = "-DXTPAX" ] && XTPAX=1
-    [ $f = "-UPTPAX" ] && unset PTPAX
-    [ $f = "-DPTPAX" ] && PTPAX=1
-  done
-  export XTPAX
-  export PTPAX
-
+if [ -d ${PYTHONPATH} ]; then
+  rm -rf ${PYTHONPATH}
+  echo " (Re)building pax module"
   ( cd ../../scripts; exec ./setup.py build ) >/dev/null
 fi
 
