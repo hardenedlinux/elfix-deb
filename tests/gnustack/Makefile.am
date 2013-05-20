@@ -8,7 +8,7 @@ bad-gnustack.s: bad-gnustack.c
 	$(CC) -S $<
 	$(SED) -i -e 's/GNU-stack,"",/GNU-stack,"x",/' $@
 
-bad-gnustack: bad-gnustack.s
+bad-gnustack$(EXEEXT): bad-gnustack.s
 	$(CC) -o $@ $<
 
 check_SCRIPTS = gnustacktest
