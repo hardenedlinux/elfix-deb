@@ -473,24 +473,24 @@ print_flags(int fd, int verbose)
 #ifdef PTPAX
 	flags = get_pt_flags(fd, verbose);
 	if( flags == UINT16_MAX )
-		printf("\tPT_PAX   : not found\n");
+		printf("\tPT_PAX    : not found\n");
 	else
 	{
 		memset(buf, 0, FLAGS_SIZE);
 		bin2string4print(flags, buf);
-		printf("\tPT_PAX   : %s\n", buf);
+		printf("\tPT_PAX    : %s\n", buf);
 	}
 #endif
 
 #ifdef XTPAX
 	flags = get_xt_flags(fd);
 	if( flags == UINT16_MAX )
-		printf("\tXATTR_PAX: not found\n");
+		printf("\tXATTR_PAX : not found\n");
 	else
 	{
 		memset(buf, 0, FLAGS_SIZE);
 		bin2string4print(flags, buf);
-		printf("\tXATTR_PAX: %s\n", buf);
+		printf("\tXATTR_PAX : %s\n", buf);
 	}
 #endif
 }

@@ -37,21 +37,22 @@ export PYTHONPATH="$(pwd)/../../scripts/build/lib.linux-${unamem}-${pythonversio
 
 #NOTE: the last -D or -U wins as it does for gcc $CFLAGS
 for f in $@; do
-  [ $f = "-UXTPAX" ] && unset XTPAX
-  [ $f = "-DXTPAX" ] && XTPAX=1
-  [ $f = "-UPTPAX" ] && unset PTPAX
-  [ $f = "-DPTPAX" ] && PTPAX=1
+  [[ $f = "-UXTPAX" ]] && unset XTPAX
+  [[ $f = "-DXTPAX" ]] && XTPAX=1
+  [[ $f = "-UPTPAX" ]] && unset PTPAX
+  [[ $f = "-DPTPAX" ]] && PTPAX=1
 done
 export XTPAX
 export PTPAX
 
-if [ -d ${PYTHONPATH} ]; then
+if [[ -d ${PYTHONPATH} ]]; then
   rm -rf ${PYTHONPATH}
-  echo " (Re)building pax module"
-  ( cd ../../scripts; exec ./setup.py build ) >/dev/null
 fi
+echo " Rebuilding pax module"
+( cd ../../scripts; exec ./setup.py build ) >/dev/null
 
 count=0
+dots=0
 
 for pf in "p" "P" "-"; do
   for ef in "e" "E" "-"; do
@@ -60,7 +61,7 @@ for pf in "p" "P" "-"; do
         for sf in "s" "S" "-"; do
 
           pflags="${pf}${ef}${mf}${rf}${sf}"
-          if [ "${verbose}" != 0 ] ;then
+          if [[ "${verbose}" != 0 ]] ;then
             echo "SET TO :" ${pflags}
           fi
 
@@ -69,21 +70,26 @@ for pf in "p" "P" "-"; do
 
           sflags=$(${PYPAXCTL} -g ${TESTFILE})
 
-          if [ "${verbose}" != 0 ] ;then
+          if [[ "${verbose}" != 0 ]] ;then
             echo "GOT    :"  ${sflags}
           fi
 
-          if [ "${pflags}" != "${sflags}" ]; then
+          if [[ "${pflags}" != "${sflags}" ]]; then
             (( count = count + 1 ))
-            if [ "${verbose}" != 0 ] ;then
+            if [[ "${verbose}" != 0 ]] ;then
               echo "Mismatch: ${pflags} ${sflags}"
             fi
           fi
 
-          if [ "${verbose}" != 0 ] ;then
+          if [[ "${verbose}" != 0 ]] ;then
             echo
           else
+            (( dots = dots + 1 ))
             echo -n "."
+            if [[ "$dots" = "80" ]]; then
+              dots=0
+              echo
+            fi
           fi
 
         done
@@ -94,6 +100,8 @@ done
 
 echo
 
+dots=0
+
 for pf in "p" "P" "-"; do
   for ef in "e" "E" "-"; do
     for mf in "m" "M" "-"; do
@@ -101,7 +109,7 @@ for pf in "p" "P" "-"; do
         for sf in "s" "S" "-"; do
 
           pflags="${pf}${ef}${mf}${rf}${sf}"
-          if [ "${verbose}" != 0 ] ;then
+          if [[ "${verbose}" != 0 ]] ;then
             echo "SET TO :" ${pflags}
           fi
 
@@ -111,21 +119,26 @@ for pf in "p" "P" "-"; do
           sflags=$(${PAXCTLNG} -v ${TESTFILE})
           sflags=$(echo ${sflags} | awk '{print $4}')
 
-          if [ "${verbose}" != 0 ] ;then
+          if [[ "${verbose}" != 0 ]] ;then
             echo "GOT    :"  ${sflags}
           fi
 
-          if [ "${pflags}" != "${sflags}" ]; then
+          if [[ "${pflags}" != "${sflags}" ]]; then
             (( count = count + 1 ))
-            if [ "${verbose}" != 0 ] ;then
+            if [[ "${verbose}" != 0 ]] ;then
               echo "Mismatch: ${pflags} ${sflags}"
             fi
           fi
 
-          if [ "${verbose}" != 0 ] ;then
+          if [[ "${verbose}" != 0 ]] ;then
             echo
           else
+            (( dots = dots + 1 ))
             echo -n "."
+            if [[ "$dots" = "80" ]]; then
+              dots=0
+              echo
+            fi
           fi
 
         done
@@ -134,7 +147,7 @@ for pf in "p" "P" "-"; do
   done
 done
 
-if [ "${verbose}" = 0 ] ;then
+if [[ "${verbose}" = 0 ]] ;then
   echo
   echo
 fi

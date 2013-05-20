@@ -79,9 +79,9 @@ export PTPAX
 
 if [ -d ${PYTHONPATH} ]; then
   rm -rf ${PYTHONPATH}
-  echo " (Re)building pax module"
-  ( cd ../../scripts; exec ./setup.py build ) >/dev/null
 fi
+echo " Rebuilding pax module"
+( cd ../../scripts; exec ./setup.py build ) >/dev/null
 
 count=0
 
