@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
+SUBDIRS = src scripts doc
 if TEST
-SUBDIRS_TESTS = tests
+SUBDIRS += tests
 endif
-SUBDIRS = src scripts doc $(SUBDIRS_TESTS)

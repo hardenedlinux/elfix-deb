@@ -1,3 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = gnustack paxmodule pxtpax revdeppaxtest
+SUBDIRS = paxmodule pxtpax revdeppaxtest
+if BUILD_ELF
+SUBDIRS += gnustack
+endif

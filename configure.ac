@@ -50,6 +50,10 @@ AC_CHECK_HEADERS(
 	[AC_MSG_ERROR(["Missing necessary header"])]
 )
 
+# Checks for DECLs.
+AC_CHECK_DECL([ELF_C_RDWR_MMAP],[],[],[[#include <libelf.h>]])
+AM_CONDITIONAL([BUILD_ELF],[test "x$ac_cv_have_decl_ELF_C_RDWR_MMAP" = "xyes"])
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
@@ -82,15 +86,21 @@ AC_ARG_ENABLE(
 AS_IF(
 	[test "x$enable_ptpax" != "xno"],
 	[
-		AC_CHECK_DECLS(
-			[PT_PAX_FLAGS, PF_PAGEEXEC, PF_MPROTECT, PF_RANDMMAP],
-			[],
+		AS_IF(
+			[test "x$ac_cv_have_decl_ELF_C_RDWR_MMAP" = "xyes"],
 			[
-				CFLAGS+=" -DNEED_PAX_DECLS"
+				AC_CHECK_DECLS(
+					[PT_PAX_FLAGS, PF_PAGEEXEC, PF_MPROTECT, PF_RANDMMAP],
+					[],
+					[
+						CFLAGS+=" -DNEED_PAX_DECLS"
+					],
+					[[#include <gelf.h>]]
+				)
+				CFLAGS+=" -DPTPAX"
 			],
-			[[#include <gelf.h>]]
+			[AC_MSG_ERROR(["Missing necessary DECL ELF_C_RDWR_MMAP in libelf"])]
 		)
-		CFLAGS+=" -DPTPAX"
 	],
 	[
 		CFLAGS+=" -UPTPAX -DNEED_PAX_DECLS"
