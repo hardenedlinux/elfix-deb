@@ -51,7 +51,7 @@ echo "        CONFIG_PAX_RANDMMAP"
 echo "        CONFIG_PAX_SEGMEXEC"
 echo
 
-if [ "$unamem" != "i686" -a "$unamem" != "x86_64" ]; then
+if [[ "$unamem" != "i686" && "$unamem" != "x86_64" ]]; then
   echo "This test is only for i686 or x86_64"
   echo
   echo "================================================================================"
@@ -65,16 +65,16 @@ for pf in "p" "P" "-"; do
         for sf in "s" "S" "-"; do
 
           pflags="${pf}${ef}${mf}${rf}${sf}"
-          if [ "${verbose}" != 0 ] ;then
+          if [[ "${verbose}" != 0 ]] ;then
             echo "SET TO :" ${pflags}
           fi
 
           flags="${pf/-/Pp}${ef/-/Ee}${mf/-/Mm}${rf/-/Rr}${sf/-/Ss}"
           ${PAXCTLNG} -"${flags}" ${DAEMON} >/dev/null 2>&1
 
-          if [ "${verbose}" != 0 ] ;then
+          if [[ "${verbose}" != 0 ]] ;then
             sflags=$(${PAXCTLNG} -v ${DAEMON})
-            if [ "${dotest}" = "0" ]; then
+            if [[ "${dotest}" = "0" ]]; then
               sflags=$(echo ${sflags} | awk '{print $3}')
               echo "GOT    :"  ${sflags}
             else
@@ -86,22 +86,22 @@ for pf in "p" "P" "-"; do
           fi
 
           ${INITSH} start
-          if [ -f "${PIDFILE}" ]
+          if [[ -f "${PIDFILE}" ]]
           then
             rflags=$(cat /proc/$(cat ${PIDFILE})/status | grep ^PaX | awk '{ print $2 }')
-            if [ "${verbose}" != 0 ] ;then
+            if [[ "${verbose}" != 0 ]] ;then
               echo "RUNNING: "${rflags}
             fi
             ${INITSH} stop
           else
-            if [ "${verbose}" != 0 ] ;then
+            if [[ "${verbose}" != 0 ]] ;then
               echo "RUNNING: no daemon"
             fi
             rflags="-----"
           fi
 
 
-          if [ "$unamem" = "i686" ]; then
+          if [[ "$unamem" = "i686" ]]; then
             # Skip i = 0 which is P which is not set on i686
             list="1 2 3 4"
           else
@@ -112,15 +112,15 @@ for pf in "p" "P" "-"; do
           for i in $list; do
             p=${pflags:$i:1}
             r=${rflags:$i:1}
-            if [ $p != "-" ]; then
-              if [ $p != $r -a $r != "-" ]; then
+            if [[ $p != "-" ]]; then
+              if [[ $p != $r && $r != "-" ]]; then
                 (( count = count + 1 ))
                 echo "Mismatch: ${pflags} ${rflags}"
               fi
             fi
           done
 
-          if [ "${verbose}" != 0 ] ;then
+          if [[ "${verbose}" != 0 ]] ;then
             echo
           else
             echo -n "."
@@ -132,7 +132,7 @@ for pf in "p" "P" "-"; do
   done
 done
 
-if [ "${verbose}" = 0 ] ;then
+if [[ "${verbose}" = 0 ]] ;then
   echo
   echo
 fi
