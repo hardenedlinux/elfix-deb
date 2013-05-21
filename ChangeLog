@@ -1,3 +1,13 @@
+2013-05-20
+
+	* Bump to automake 1.12
+	* Add check if ELF_C_RDWR_MMAP is declared in libelf.h.  This distinguishes
+	elfutils from libelf.  The former will not build on uclibc, but the laster
+	does not provide ELF_C_RDWR_MMAP.
+	* Clean up the tests so they work for all combinations of --{en,dis}able-{pt,xt}pax
+	* Add a bash utility which does pax-marking like the eclass.  This is for
+	build systems that do pax-marking during the build.
+
 2012-12-28
 
 	* src/paxctl-ng.c: -L/-l alone report if PT_PAX/XATTR_PAX is supported.
