@@ -5,7 +5,7 @@ has() {
 	return 1
 }
 
-pax-mark() {
+paxmarksh() {
 
 	local f					# loop over paxables
 	local flags				# pax flags
@@ -108,4 +108,4 @@ pax-mark() {
 }
 
 PAX_MARKINGS=${PAX_MARKINGS:="PT XT"}
-pax-mark "$@"
+paxmarksh "$@"

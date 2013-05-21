@@ -5,8 +5,8 @@
 	elfutils from libelf.  The former will not build on uclibc, but the laster
 	does not provide ELF_C_RDWR_MMAP.
 	* Clean up the tests so they work for all combinations of --{en,dis}able-{pt,xt}pax
-	* Add a bash utility which does pax-marking like the eclass.  This is for
-	build systems that do pax-marking during the build.
+	* Add a bash utility, paxmark.sh, which does PaX marking like the eclass.  This is for
+	build systems that do PaX marking during the build.
 
 2012-12-28
 
