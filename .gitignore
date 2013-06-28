@@ -34,3 +34,10 @@ revdepbin
 #
 scripts/build
 misc/__pycache__
+#
+misc/change-interp/bash
+misc/change-interp/change-interp
+misc/elf-manipulate/clear-dt-path
+misc/elf-manipulate/parse-elf
+misc/elf-manipulate/print-sections
+misc/elf-manipulate/remove-ptpax
