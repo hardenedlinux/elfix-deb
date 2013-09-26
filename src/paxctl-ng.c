@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 #ifdef PTPAX
  #include <gelf.h>
@@ -744,7 +745,15 @@ delete_xt_flags(int fd)
 	if( !fremovexattr(fd, PAX_NAMESPACE) )
 		return EXIT_SUCCESS;
 	else
-		return EXIT_FAILURE;
+	{
+		// If this fails because there was no such named xattr
+		// in the first place, then in a sense, we succeeded.
+		// See: https://bugs.gentoo.org/show_bug.cgi?id=485908
+		if( errno == ENOATTR )
+			return EXIT_SUCCESS;
+		else
+			return EXIT_FAILURE;
+	}
 }
 #endif
 
