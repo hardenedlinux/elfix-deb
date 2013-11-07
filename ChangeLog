@@ -1,3 +1,8 @@
+2013-09-26
+
+	* Return EXIT_SUCCESS if user.pax.flags is done after paxctl-ng -d.  This
+	addresses https://bugs.gentoo.org/485908
+
 2013-05-20
 
 	* Bump to automake 1.12
