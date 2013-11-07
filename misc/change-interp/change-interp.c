@@ -63,7 +63,7 @@ int main( int argc, char *argv[])
 						data->d_version
 					);
 					*/
-					
+
 					if(data->d_size >= strlen(argv[2]))
 					{
 						memset(data->d_buf, 0, data->d_size);
