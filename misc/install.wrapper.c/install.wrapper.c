@@ -266,12 +266,12 @@ main(int argc, char* argv[], char* envp[])
 		case 0:
 			install = which(dirname(argv[0]));
 			execve(install, argv, envp);
-			/* When the child exists, the kernel will free(install) for us.
-			 * Also, no break since we never return from execve.
-			 */
+			/* The kernel will free(install) for us. */
+			err(1, "execve() failed");
 
 		default:
 			wait(&status);
+			status = WEXITSTATUS(status);
 
 			/* If all the targets are directories, do nothing. */
 			if (opts_directory)
@@ -313,7 +313,6 @@ main(int argc, char* argv[], char* envp[])
 
 			return status;
 	}
-
 
 	/* We should never get here */
 	return EXIT_FAILURE;
