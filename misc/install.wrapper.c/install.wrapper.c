@@ -7,33 +7,83 @@
  * Wrapper for coreutil's install to preserve extended attributes.
  */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <err.h>
 #include <fnmatch.h>
 #include <ctype.h>
-#include <libgen.h>
 #include <getopt.h>
-
+#include <libgen.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/xattr.h>
 
+static void *
+xmalloc(size_t size)
+{
+	char *ret = malloc(size);
+	if (ret < 0)
+		err(1, "malloc() failed");
+	return ret;
+}
+
+static char *
+path_join(const char *path, const char *file)
+{
+	size_t len_path = strlen(path);
+	size_t len_file = strlen(file);
+	char *ret = xmalloc(len_path + len_file + 2);
+
+	memcpy(ret, path, len_path);
+	ret[len_path] = '/';
+	memcpy(ret + len_path + 1, file, len_file);
+	ret[len_path + len_file + 1] = '\0';
+
+	return ret;
+}
+
+static ssize_t
+xlistxattr(const char *path, char *list, size_t size)
+{
+	ssize_t ret = listxattr(path, list, size);
+	if (ret < 0)
+		err(1, "listxattr() failed");
+	return ret;
+}
+
+static ssize_t
+xgetxattr(const char *path, char *list, char *value, size_t size)
+{
+	ssize_t ret = getxattr(path, list, value, size);
+	if (ret < 0)
+		err(1, "getxattr() failed");
+	return ret;
+}
+
+static ssize_t
+xsetxattr(const char *path, char *list, char *value , size_t size)
+{
+	ssize_t ret = setxattr(path, list, value, size, 0);
+	if (ret < 0)
+		err(1, "setxattr() failed");
+	return ret;
+}
+
 static void
 copyxattr(const char *source, const char *target)
 {
-	int i, j;
 	char *exclude, *portage_xattr_exclude;  /* strings of excluded xattr names              */
-	int len;                                /* length of the string of excluded xattr names */
+	size_t i, j;                            /* counters to walk through strings             */
+	size_t len;                             /* length of the string of excluded xattr names */
 	ssize_t lsize, xsize;   /* size in bytes of the list of xattrs and the values           */
 	char *lxattr, *value;   /* string of xattr names and the values                         */
 
-	lsize = listxattr(source, 0, 0);
-	lxattr = (char *)malloc(lsize);
-	listxattr(source, lxattr, lsize);
+	lsize = xlistxattr(source, 0, 0);
+	lxattr = xmalloc(lsize);
+	xlistxattr(source, lxattr, lsize);
 
 	portage_xattr_exclude = getenv("PORTAGE_XATTR_EXCLUDE");
 	if (portage_xattr_exclude == NULL)
@@ -43,40 +93,44 @@ copyxattr(const char *source, const char *target)
 
 	len = strlen(exclude);
 
-	/* We convert exclude[] to an array of concatenated null   */
-	/* terminated strings.  lxattr[] is already such an array. */
+	/* We convert exclude[] to an array of concatenated null
+	 * terminated strings.  lxattr[] is already such an array.
+         */
 	for (i = 0; i < len; i++)
 		if (isspace(exclude[i]))
 			exclude[i] = 0;
 
-	i = 0 ;
-	while(1) {
-		while (lxattr[i++] == 0);
+	i = 0;
+	while (1) {
+		while (lxattr[i++] == 0)
+			continue;
 		if (i >= lsize)
 			break;
 
-		j = 0 ;
-		while(1) {
-			while (exclude[j++] == 0);
+		j = 0;
+		while (1) {
+			while (exclude[j++] == 0)
+				continue;
 			if (j >= len)
 				break;
 			if (!fnmatch(&exclude[j-1], &lxattr[i-1], 0))
 				goto skip;
-			while (exclude[j++] != 0);
+			while (exclude[j++] != 0)
+				continue;
 			if (j >= len)
 				break;
 		}
 
-		xsize = getxattr(source, &lxattr[i-1], 0, 0);
-		if (xsize != -1) {
-			value = (char *)malloc(xsize);
+		xsize = xgetxattr(source, &lxattr[i-1], 0, 0);
+		if (xsize > 0) {
+			value = xmalloc(xsize);
 			memset(value, 0, xsize);
-			getxattr(source, &lxattr[i-1], value, xsize);
-			setxattr(target, &lxattr[i-1], value, xsize, 0);
+			xgetxattr(source, &lxattr[i-1], value, xsize);
+			xsetxattr(target, &lxattr[i-1], value, xsize);
 			free(value);
 		}
 
-	skip:
+ skip:
 		while (lxattr[i++] != 0);
 		if (i >= lsize)
 			break;
@@ -84,25 +138,26 @@ copyxattr(const char *source, const char *target)
 
 	free(lxattr);
 	free(exclude);
-
-	return;
 }
 
 
 static char *
-which(char *mydir)
+which(const char *mydir)
 {
 	char *mycandir = realpath(mydir, NULL);  /* canonical value of argv[0]'s dirname */
 	char *path, *env_path = getenv("PATH");  /* full $PATH string                    */
 
 	/* If we don't have $PATH in our environment, then pick a sane path. */
-	if (env_path == NULL)
-		path = strdup("/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin");
+	if (env_path == NULL) {
+		size_t len = confstr(_CS_PATH, 0, 0);
+		path = xmalloc(len);
+		confstr(_CS_PATH, path, len);
+	}
 	else
 		path = strdup(env_path);
 
 	char *dir;       /* one directory in the $PATH string */
-	char *candir ;   /* canonical value of that directory */
+	char *candir;    /* canonical value of that directory */
 	char *file;      /* file name = path + "/install"     */
 	char *savedptr;  /* reentrant context for strtok_r()  */
 
@@ -113,20 +168,21 @@ which(char *mydir)
 	while (dir) {
 		candir = realpath(dir, NULL);
 
-		/* You don't get a canonical path for ~/bin etc., so skip. */
+		/* ignore invalid paths that cannot be cannoicalized */
 		if (!candir)
 			goto skip;
 
-		/* If argv[0]'s canonical dirname == the path's canonical dirname, then we  */
-		/* skip this path otheriwise we get into an infinite self-invocation.       */
-		if ( !fnmatch(mycandir, candir, 0) )
+		/* If argv[0]'s canonical dirname == the path's canonical dirname, then we
+		 * skip this path otheriwise we get into an infinite self-invocation.
+                 */
+		if (!fnmatch(mycandir, candir, 0))
 			goto skip;
 
-		if (asprintf(&file,"%s/%s", candir, "install") == -1)
-			abort();
+		file = path_join(candir, "install");
 
-		/* If the file exists and is either a regular file or sym link, */
-		/* assume we found the system's install. */
+		/* If the file exists and is either a regular file or sym link,
+		 * assume we found the system's install.
+                 */
 		if (stat(file, &s) == 0)
 			if (S_ISREG(s.st_mode) || S_ISLNK(s.st_mode)) {
 				free(candir);
@@ -137,13 +193,12 @@ which(char *mydir)
 
 		free(file);
 
-	skip:
+ skip:
 		free(candir);
 		dir = strtok_r(NULL, ":", &savedptr);
 	}
 
-	/* If we got here, then we didn't find install in the path */
-	abort();
+	err(1, "failed to find system 'install'");
 }
 
 
@@ -151,8 +206,8 @@ which(char *mydir)
 int
 main(int argc, char* argv[], char* envp[])
 {
-	int i ;
-	int status ;                   /* exit status of child "install" process                       */
+	int i;
+	int status;                    /* exit status of child "install" process                       */
 
 	int opts_directory = 0;        /* if -d was given, then all arguments are directories          */
 	int opts_target_directory = 0; /* if -t was given, then we're installing to a target directory */
@@ -166,7 +221,7 @@ main(int argc, char* argv[], char* envp[])
 	struct stat s;                 /* test if a file is a regular file or a directory              */
 
 
-	opterr = 0; /* we skip many legitimate arguments, so silence any warning */
+	opterr = 0; /* we skip many legitimate flags, so silence any warning */
 
 	while (1) {
 		static struct option long_options[] = {
@@ -175,88 +230,91 @@ main(int argc, char* argv[], char* envp[])
 			{                     0,                 0, 0,  0 }
 		};
 
-		int option_index = 0;
-
+		int option_index;
 		int c = getopt_long(argc, argv, "dt:", long_options, &option_index);
  
 		if (c == -1)
 			break;
 
 		switch (c) {
-			case  0 :
+			case 0:
 			case '?':
+				/* We skip the flags we don't care about */
 				break;
 
 			case 'd':
-				opts_directory = 1 ;
+				opts_directory = 1;
 				break;
 
 			case 't':
-				opts_target_directory = 1 ;
-				if (asprintf(&target, "%s", optarg) == -1)
-					abort();
+				opts_target_directory = 1;
+				target = optarg;
 				break;
 
 			default:
-				abort();
+				err(1, "getopt_long() failed");
 		}
 	}
 
 	first = optind;
-	last = argc-1;
+	last = argc - 1;
 
 	switch (fork()) {
 		case -1:
-			abort();
+			err(1, "fork() failed");
 
 		case 0:
 			install = which(dirname(argv[0]));
 			execve(install, argv, envp);
-			free(install);
-			break;
+			/* When the child exists, the kernel will free(install) for us.
+			 * Also, no break since we never return from execve.
+			 */
 
 		default:
 			wait(&status);
 
 			/* If all the targets are directories, do nothing. */
 			if (opts_directory)
-				return EXIT_SUCCESS;
+				return status;
 
 			if (!opts_target_directory) {
-				target = strdup(argv[last]);
+				target = argv[last];
 				if (stat(target, &s) != 0)
 					return EXIT_FAILURE;
-				target_is_directory = s.st_mode & S_IFDIR;
+				target_is_directory = S_ISDIR(s.st_mode);
 			} else {
 				/* target was set above with the -t option */
 				target_is_directory = 1;
 			}
 
 			if (target_is_directory) {
-				/* If -t was passed, then the last argv *is* */
-				/* a file, so we include it for copyxattr(). */
+				/* If -t was passed, then the last argv *is*
+				 * a file, so we include it for copyxattr().
+                                 */
 				if (opts_target_directory)
 					last++;
 
 				for (i = first; i < last; i++) {
-					/* We reproduce install's behavior and skip  */
-					/* all extra directories on the command line */
-					/* that are not the final target directory.  */
-					stat(argv[i], &s);
+					if (stat(argv[i], &s) != 0)
+						return EXIT_FAILURE;
+					/* We reproduce install's behavior and skip
+					 * all extra directories on the command line
+					 * that are not the final target directory.
+                                         */
 					if (S_ISDIR(s.st_mode))
 						continue;
-					if (asprintf(&path, "%s/%s", target, argv[i]) == -1)
-						abort();
 
+					path = path_join(target, argv[i]);
 					copyxattr(argv[i], path);
-
 					free(path);
 				}
 			} else
 				copyxattr(argv[first], target);
 
-			free(target);
+			return status;
 	}
 
-	return EXIT_SUCCESS;
+
+	/* We should never get here */
+	return EXIT_FAILURE;
 }
