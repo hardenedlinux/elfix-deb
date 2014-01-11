@@ -1,5 +1,4 @@
-/*
- * Copyright 2014 Gentoo Foundation
+/* Copyright 2014 Gentoo Foundation
  * Distributed under the terms of the GNU General Public License v2
  *
  * Copyright 2014 Anthony G. Basile - <blueness@gentoo.org>
@@ -227,6 +226,7 @@ main(int argc, char* argv[], char* envp[])
 		static struct option long_options[] = {
 			{           "directory",       no_argument, 0, 'd'},
 			{    "target-directory", required_argument, 0, 't'},
+			{                "help",       no_argument, 0,  0 },
 			{                     0,                 0, 0,  0 }
 		};
 
@@ -265,13 +265,21 @@ main(int argc, char* argv[], char* envp[])
 
 		case 0:
 			install = which(dirname(argv[0]));
-			execve(install, argv, envp);
-			/* The kernel will free(install) for us. */
+			argv[0] = "install";         /* so coreutils' lib/program.c behaves */
+			execve(install, argv, envp); /* The kernel will free(install).      */
 			err(1, "execve() failed");
 
 		default:
 			wait(&status);
 			status = WEXITSTATUS(status);
+
+			/* Are there enough files/directories on the cmd line to
+			 * proceed?  This can happen if install is called with no
+			 * arguments or with just --help.  In which case there is
+			 * nothing the parent to do.
+                         */
+			if (first >= last)
+				return status;
 
 			/* If all the targets are directories, do nothing. */
 			if (opts_directory)
@@ -314,6 +322,6 @@ main(int argc, char* argv[], char* envp[])
 			return status;
 	}
 
-	/* We should never get here */
+	/* We should never get here. */
 	return EXIT_FAILURE;
 }
