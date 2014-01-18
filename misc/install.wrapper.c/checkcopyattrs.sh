@@ -30,3 +30,7 @@ setfattr -n user.pax.flags -v "r" c
 [ "$(getfattr --only-values -n user.pax.flags e/a)" == "mr" ]
 [ "$(getfattr --only-values -n user.pax.flags e/b)" == "p" ]
 [ "$(getfattr --only-values -n user.pax.flags e/c)" == "r" ]
+
+./install-xattr a -D f/a
+[ "$(getfattr --only-values -n user.foo f/a)" == "bar" ]
+[ "$(getfattr --only-values -n user.pax.flags f/a)" == "mr" ]

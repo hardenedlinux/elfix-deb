@@ -10,7 +10,7 @@ checkcopyattrs:
 	$(srcdir)/checkcopyattrs.sh
 
 EXTRA_DIST = checkcopyattrs.sh
-CLEANFILES = a b c x y z d/* e/*
+CLEANFILES = a b c x y z d/* e/* f/*
 
 clean-local:
-	-rm -rf d e
+	-rm -rf d e f

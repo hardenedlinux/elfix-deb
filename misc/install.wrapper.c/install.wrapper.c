@@ -23,8 +23,8 @@
 static void *
 xmalloc(size_t size)
 {
-	char *ret = malloc(size);
-	if (ret < 0)
+	void *ret = malloc(size);
+	if (ret == NULL)
 		err(1, "malloc() failed");
 	return ret;
 }
@@ -63,7 +63,7 @@ xgetxattr(const char *path, char *list, char *value, size_t size)
 }
 
 static ssize_t
-xsetxattr(const char *path, char *list, char *value , size_t size)
+xsetxattr(const char *path, char *list, char *value, size_t size)
 {
 	ssize_t ret = setxattr(path, list, value, size, 0);
 	if (ret < 0)
@@ -71,33 +71,19 @@ xsetxattr(const char *path, char *list, char *value , size_t size)
 	return ret;
 }
 
+char *exclude;      /* strings of excluded xattr names              */
+size_t len_exclude; /* length of the string of excluded xattr names */
+
 static void
 copyxattr(const char *source, const char *target)
 {
-	char *exclude, *portage_xattr_exclude;  /* strings of excluded xattr names              */
-	size_t i, j;                            /* counters to walk through strings             */
-	size_t len;                             /* length of the string of excluded xattr names */
-	ssize_t lsize, xsize;   /* size in bytes of the list of xattrs and the values           */
-	char *lxattr, *value;   /* string of xattr names and the values                         */
+	ssize_t i, j;           /* counters to walk through strings                   */
+	ssize_t lsize, xsize;   /* size in bytes of the list of xattrs and the values */
+	char *lxattr, *value;   /* string of xattr names and the values               */
 
-	lsize = xlistxattr(source, 0, 0);
+	lsize = xlistxattr(source, NULL, 0);
 	lxattr = xmalloc(lsize);
 	xlistxattr(source, lxattr, lsize);
-
-	portage_xattr_exclude = getenv("PORTAGE_XATTR_EXCLUDE");
-	if (portage_xattr_exclude == NULL)
-		exclude = strdup("security.* system.nfs4_acl");
-	else
-		exclude = strdup(portage_xattr_exclude);
-
-	len = strlen(exclude);
-
-	/* We convert exclude[] to an array of concatenated null
-	 * terminated strings.  lxattr[] is already such an array.
-         */
-	for (i = 0; i < len; i++)
-		if (isspace(exclude[i]))
-			exclude[i] = 0;
 
 	i = 0;
 	while (1) {
@@ -110,13 +96,13 @@ copyxattr(const char *source, const char *target)
 		while (1) {
 			while (exclude[j++] == 0)
 				continue;
-			if (j >= len)
+			if (j >= len_exclude)
 				break;
-			if (!fnmatch(&exclude[j-1], &lxattr[i-1], 0))
+			if (!fnmatch(&exclude[j - 1], &lxattr[i - 1], 0))
 				goto skip;
 			while (exclude[j++] != 0)
 				continue;
-			if (j >= len)
+			if (j >= len_exclude)
 				break;
 		}
 
@@ -130,13 +116,13 @@ copyxattr(const char *source, const char *target)
 		}
 
  skip:
-		while (lxattr[i++] != 0);
+		while (lxattr[i++] != 0)
+			continue;
 		if (i >= lsize)
 			break;
 	}
 
 	free(lxattr);
-	free(exclude);
 }
 
 
@@ -151,8 +137,7 @@ which(const char *mydir)
 		size_t len = confstr(_CS_PATH, 0, 0);
 		path = xmalloc(len);
 		confstr(_CS_PATH, path, len);
-	}
-	else
+	} else
 		path = strdup(env_path);
 
 	char *dir;       /* one directory in the $PATH string */
@@ -167,14 +152,14 @@ which(const char *mydir)
 	while (dir) {
 		candir = realpath(dir, NULL);
 
-		/* ignore invalid paths that cannot be cannoicalized */
+		/* ignore invalid paths that cannot be canonicalized */
 		if (!candir)
 			goto skip;
 
 		/* If argv[0]'s canonical dirname == the path's canonical dirname, then we
 		 * skip this path otheriwise we get into an infinite self-invocation.
-                 */
-		if (!fnmatch(mycandir, candir, 0))
+		 */
+		if (!strcmp(mycandir, candir))
 			goto skip;
 
 		file = path_join(candir, "install");
@@ -183,11 +168,11 @@ which(const char *mydir)
 		 * assume we found the system's install.
                  */
 		if (stat(file, &s) == 0)
-			if (S_ISREG(s.st_mode) || S_ISLNK(s.st_mode)) {
+			if (S_ISREG(s.st_mode)) {
 				free(candir);
 				free(mycandir);
 				free(path);
-				return strdup(file);
+				return file;
 			}
 
 		free(file);
@@ -203,7 +188,7 @@ which(const char *mydir)
 
 
 int
-main(int argc, char* argv[], char* envp[])
+main(int argc, char* argv[])
 {
 	int i;
 	int status;                    /* exit status of child "install" process                       */
@@ -219,6 +204,22 @@ main(int argc, char* argv[], char* envp[])
 
 	struct stat s;                 /* test if a file is a regular file or a directory              */
 
+	char *portage_xattr_exclude;  /* strings of excluded xattr names from $PORTAGE_XATTR_EXCLUDE   */
+
+	portage_xattr_exclude = getenv("PORTAGE_XATTR_EXCLUDE");
+	if (portage_xattr_exclude == NULL)
+		exclude = strdup("security.* system.nfs4_acl");
+	else
+		exclude = strdup(portage_xattr_exclude);
+
+	len_exclude = strlen(exclude);
+
+	/* We convert exclude[] to an array of concatenated NUL terminated
+	 * strings.  Also, no need to free(exclude) before we exit().
+	 */
+	char *p = exclude;
+	while ((p = strchr(p, ' ')))
+		*p++ = '\0';
 
 	opterr = 0; /* we skip many legitimate flags, so silence any warning */
 
@@ -265,9 +266,9 @@ main(int argc, char* argv[], char* envp[])
 
 		case 0:
 			install = which(dirname(argv[0]));
-			argv[0] = "install";         /* so coreutils' lib/program.c behaves */
-			execve(install, argv, envp); /* The kernel will free(install).      */
-			err(1, "execve() failed");
+			argv[0] = install;    /* so coreutils' lib/program.c behaves */
+			execv(install, argv); /* The kernel will free(install).      */
+			err(1, "execv() failed");
 
 		default:
 			wait(&status);
