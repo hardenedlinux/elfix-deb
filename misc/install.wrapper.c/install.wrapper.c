@@ -38,6 +38,15 @@ xmalloc(size_t size)
 	return ret;
 }
 
+static void *
+xrealloc(void *p, size_t size)
+{
+	void *ret = realloc(p, size);
+	if (ret == NULL)
+		err(1, "realloc() failed");
+	return ret;
+}
+
 static char *
 path_join(const char *path, const char *file)
 {
@@ -88,7 +97,9 @@ copyxattr(const char *source, const char *target)
 {
 	ssize_t i, j;           /* counters to walk through strings                   */
 	ssize_t lsize, xsize;   /* size in bytes of the list of xattrs and the values */
-	char *lxattr, *value;   /* string of xattr names and the values               */
+	char *lxattr;                  /* string of xattr names                       */
+	static char *value = NULL ;    /* string of an xattr name's value             */
+	static size_t value_size = 0;  /* size of the value string                    */
 
 	lsize = xlistxattr(source, NULL, 0);
 	lxattr = xmalloc(lsize);
@@ -116,12 +127,12 @@ copyxattr(const char *source, const char *target)
 		}
 
 		xsize = xgetxattr(source, &lxattr[i-1], 0, 0);
-		if (xsize > 0) {
-			value = xmalloc(xsize);
-			xgetxattr(source, &lxattr[i-1], value, xsize);
-			xsetxattr(target, &lxattr[i-1], value, xsize);
-			free(value);
+		if (xsize > value_size) {
+			value_size = xsize;
+			value = xrealloc(value, value_size);
 		}
+		xgetxattr(source, &lxattr[i-1], value, xsize);
+		xsetxattr(target, &lxattr[i-1], value, xsize);
 
  skip:
 		while (lxattr[i++] != 0)
@@ -130,6 +141,8 @@ copyxattr(const char *source, const char *target)
 			break;
 	}
 
+	/* No need to free(value) on return because its static and we */
+	/* just keep reusing the same allocated memory on each call.  */
 	free(lxattr);
 }
 
