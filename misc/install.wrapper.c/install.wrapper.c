@@ -20,6 +20,15 @@
 #include <sys/stat.h>
 #include <sys/xattr.h>
 
+static char *
+xstrdup(const char *s)
+{
+	char *ret = strdup(s);
+	if (ret == NULL)
+		err(1, "strdup() failed");
+	return ret;
+}
+
 static void *
 xmalloc(size_t size)
 {
@@ -137,7 +146,7 @@ which(const char *mydir)
 		path = xmalloc(len);
 		confstr(_CS_PATH, path, len);
 	} else
-		path = strdup(env_path);
+		path = xstrdup(env_path);
 
 	char *dir;       /* one directory in the $PATH string */
 	char *candir;    /* canonical value of that directory */
@@ -207,9 +216,9 @@ main(int argc, char* argv[])
 
 	portage_xattr_exclude = getenv("PORTAGE_XATTR_EXCLUDE");
 	if (portage_xattr_exclude == NULL)
-		exclude = strdup("security.* system.nfs4_acl");
+		exclude = xstrdup("security.* system.nfs4_acl");
 	else
-		exclude = strdup(portage_xattr_exclude);
+		exclude = xstrdup(portage_xattr_exclude);
 
 	len_exclude = strlen(exclude);
 
