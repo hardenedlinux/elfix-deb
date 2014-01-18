@@ -190,7 +190,10 @@ which(const char *mydir)
 		dir = strtok_r(NULL, ":", &savedptr);
 	}
 
-	err(1, "failed to find system 'install'");
+	if (env_path == NULL)
+		err(1, "failed to find 'install' in standard utilities path");
+	else
+		err(1, "failed to find 'install' in PATH=%s", env_path);
 }
 
 
