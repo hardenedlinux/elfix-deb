@@ -301,7 +301,7 @@ main(int argc, char* argv[])
 			/* Are there enough files/directories on the cmd line to
 			 * proceed?  This can happen if install is called with no
 			 * arguments or with just --help.  In which case there is
-			 * nothing the parent to do.
+			 * nothing for the parent to do.
                          */
 			if (first >= last)
 				return status;
