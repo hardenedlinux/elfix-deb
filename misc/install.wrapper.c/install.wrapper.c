@@ -109,7 +109,6 @@ copyxattr(const char *source, const char *target)
 		xsize = xgetxattr(source, &lxattr[i-1], 0, 0);
 		if (xsize > 0) {
 			value = xmalloc(xsize);
-			memset(value, 0, xsize);
 			xgetxattr(source, &lxattr[i-1], value, xsize);
 			xsetxattr(target, &lxattr[i-1], value, xsize);
 			free(value);
