@@ -2,6 +2,7 @@
  * Distributed under the terms of the GNU General Public License v2
  *
  * Copyright 2014 Anthony G. Basile - <blueness@gentoo.org>
+ * Copyright 2014 Mike Frysinger    - <vapier@gentoo.org>
  *
  * Wrapper for coreutil's install to preserve extended attributes.
  */
@@ -296,7 +297,6 @@ main(int argc, char* argv[])
 
 		default:
 			wait(&status);
-			status = WEXITSTATUS(status);
 
 			/* Are there enough files/directories on the cmd line to
 			 * proceed?  This can happen if install is called with no
@@ -304,11 +304,11 @@ main(int argc, char* argv[])
 			 * nothing for the parent to do.
                          */
 			if (first >= last)
-				return status;
+				goto done;
 
 			/* If all the targets are directories, do nothing. */
 			if (opts_directory)
-				return status;
+				goto done;
 
 			if (!opts_target_directory) {
 				target = argv[last];
@@ -344,9 +344,18 @@ main(int argc, char* argv[])
 			} else
 				copyxattr(argv[first], target);
 
-			return status;
-	}
 
-	/* We should never get here. */
-	return EXIT_FAILURE;
+ done:
+			/* Do the right thing and pass the signal back up.  See:
+			 * http://www.cons.org/cracauer/sigint.html
+			 */
+			if (WIFSIGNALED(status)) {
+				int signum = WTERMSIG(status);
+				kill(getpid(), signum);
+			} else if (WIFEXITED(status))
+				return WEXITSTATUS(status);
+			else
+				return EXIT_FAILURE; /* We should never get here. */
+
+	}
 }
