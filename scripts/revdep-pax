@@ -240,11 +240,13 @@ def run_forward(verbose):
             try:
                 (elf_str_flags, elf_bin_flags) = pax.getflags(elf)
                 sv = '%s :%s ( %s )' % (elf, abi, elf_str_flags)
-                s = sv
-            except pax.PaxError:
-                sv = '%s :%s ( %s )' % (elf, abi, '****')
-                s = sv
+            except (pax.PaxError, RuntimeError, TypeError, NameError):
+                #because this is a pax error (likely), we need to set elf_str_flags
+                #elf_str_flags and sv are used a few lines down
+                elf_str_flags = '****'
+                sv = '%s :%s ( %s )' % (elf, abi, elf_str_flags)
                 continue
+            s = sv
 
             count = 0
             for soname in object_linkings[abi][elf]:
@@ -291,10 +293,14 @@ def run_reverse(verbose, executable_only):
                     (library_str_flags, library_bin_flags) = pax.getflags(library)
                 except pax.PaxError:
                     library_str_flags = '****'
-                sv = '%s\t%s :%s ( %s )' % (soname, library, abi, library_str_flags)
-                s = sv
             except KeyError:
                 sonames_missing_library.append(soname)
+                library = 'unknown_library'
+                library_str_flags = '****'
+            #always gets set, and dependant variables always get set, no need to
+            #be in a try statement
+            sv = '%s\t%s :%s ( %s )' % (soname, library, abi, library_str_flags)
+            s = sv
 
             count = 0
             for elf in object_reverse_linkings[abi][soname]:
