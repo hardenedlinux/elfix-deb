@@ -19,7 +19,8 @@
 
 # We use portage's NEEDED.ELF.2 file.  The format is in
 # /usr/lib/portage/bin/misc-functions.sh ~line 520
-# echo "${arch:3};${obj};${soname};${rpath};${needed}" >> "${PORTAGE_BUILDDIR}"/build-info/NEEDED.ELF.2
+# echo "${arch:3};${obj};${soname};${rpath};${needed}" \
+# >> "${PORTAGE_BUILDDIR}"/build-info/NEEDED.ELF.2
 
 import os
 import re
@@ -27,6 +28,7 @@ import getopt
 import sys
 import pax
 import portage
+
 
 def get_objects():
 
@@ -36,11 +38,11 @@ def get_objects():
 
     for pkg in vardb.cpv_all():
         needed = vardb.aux_get(pkg, ['NEEDED.ELF.2'])[0].strip()
-        if not needed: # Some packages have no NEEDED.ELF.2
+        if not needed:  # Some packages have no NEEDED.ELF.2
             continue
         for line in re.split('\n', needed):
             link = re.split(';', line)
-            objects.append(link[1]) # link[1] is the ELF object
+            objects.append(link[1])  # link[1] is the ELF object
 
     return objects
 
@@ -69,7 +71,7 @@ def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'vmdh')
     except getopt.GetoptError as err:
-        print(str(err)) # will print something like 'option -a not recognized'
+        print(str(err))  # will print something like 'option -a not recognized'
         run_usage()
         sys.exit(1)
 
@@ -102,7 +104,7 @@ def main():
         run_usage()
         sys.exit(0)
 
-    if opt_count == 0 or opt_count > 2 or ( do_migration and do_deleteall):
+    if opt_count == 0 or opt_count > 2 or (do_migration and do_deleteall):
         run_usage()
         sys.exit(1)
 
@@ -111,7 +113,8 @@ def main():
         try:
             from pax import deletextpax
         except ImportError:
-            print('ERROR: Python module pax.so was compiled without XATTR_PAX support, cannot migrate or delete XATTR_PAX')
+            print('ERROR: Python module pax.so was compiled without XATTR_PAX support, '
+                  'cannot migrate or delete XATTR_PAX')
             sys.exit(1)
 
     objects = get_objects()
@@ -131,8 +134,9 @@ def main():
                     print("NONE: %s" % elf)
 
             if do_migration:
-                flags = re.sub('-','',flags)
-                if flags == 'e': continue # Don't create XATTR_PAX for default
+                flags = re.sub('-', '', flags)
+                if flags == 'e':
+                    continue  # Don't create XATTR_PAX for default
                 pax.setstrflags(elf, flags)
 
             if do_deleteall:
