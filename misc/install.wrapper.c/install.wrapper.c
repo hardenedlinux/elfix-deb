@@ -252,18 +252,31 @@ main(int argc, char* argv[])
 		static struct option long_options[] = {
 			{           "directory",       no_argument, 0, 'd'},
 			{    "target-directory", required_argument, 0, 't'},
+			{               "group", required_argument, 0, 'g'},
+			{                "mode", required_argument, 0, 'm'},
+			{               "owner", required_argument, 0, 'o'},
+			{              "suffix", required_argument, 0, 'S'},
+			{             "context", optional_argument, 0, 'Z'},
+			{              "backup", optional_argument, 0, 'b'},
 			{                "help",       no_argument, 0,  0 },
 			{                     0,                 0, 0,  0 }
 		};
 
 		int option_index;
-		int c = getopt_long(argc, argv, "dt:", long_options, &option_index);
+		int c = getopt_long(argc, argv, "dt:g:m:o:S:Z:", long_options, &option_index);
+
  
 		if (c == -1)
 			break;
 
 		switch (c) {
 			case 0:
+			case 'g':
+			case 'm':
+			case 'o':
+			case 'S':
+			case 'Z':
+			case 'b':
 			case '?':
 				/* We skip the flags we don't care about */
 				break;
