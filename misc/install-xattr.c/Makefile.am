@@ -1,6 +1,6 @@
 CFLAGS=
 noinst_PROGRAMS = install-xattr
-install_xattr_SOURCES = install.wrapper.c
+install_xattr_SOURCES = install-xattr.c
 install_xattr_CFLAGS = -ggdb -Wall -O3
 
 check_SCRIPTS = checkcopyattrs
