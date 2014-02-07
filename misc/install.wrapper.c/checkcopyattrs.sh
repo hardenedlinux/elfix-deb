@@ -39,3 +39,40 @@ setfattr -n user.pax.flags -v "r" c
 [ "$(getfattr --only-values -n user.foo f/a)" == "bar" ]
 [ "$(getfattr --only-values -n user.bas f/a)" == "x" ]
 [ "$(getfattr --only-values -n user.pax.flags f/a)" == "mr" ]
+
+
+# The following are just tests to make sure the raw install
+# options don't get lost in our optargs parsing.
+# See: https://bugs.gentoo.org/show_bug.cgi?id=465000#c57
+# These should all silently succeed.
+
+./install-xattr --backup=off a backup-a
+./install-xattr --backup=numbered a backup-a
+./install-xattr --backup=existing a backup-a
+./install-xattr --backup=simple a backup-a
+./install-xattr --backup a backup-a
+./install-xattr -b a backup-a
+./install-xattr -C a backup-a
+./install-xattr -p a backup-a
+./install-xattr -d g/g/g
+
+./install-xattr -o $(id -u) a mode-a
+./install-xattr -g $(id -g) a mode-a
+./install-xattr -m 666 a mode-a
+
+# Let's abuse ourselves
+./install-xattr -s install-xattr target-install-xattr
+[[ -x /usr/bin/sstrip ]] && ./install-xattr -s --strip-program=/usr/bin/sstrip install-xattr target-install-xattr
+
+./install-xattr -T a target-a
+./install-xattr --help >/dev/null
+./install-xattr --version >/dev/null
+
+#       -S, --suffix=SUFFIX
+#              override the usual backup suffix
+#
+#       --preserve-context
+#              preserve SELinux security context
+#
+#       -Z, --context=CONTEXT
+#              set SELinux security context of files and directories

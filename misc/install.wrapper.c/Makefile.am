@@ -10,7 +10,7 @@ checkcopyattrs:
 	$(srcdir)/checkcopyattrs.sh
 
 EXTRA_DIST = checkcopyattrs.sh
-CLEANFILES = a b c x y z d/* e/* f/*
+CLEANFILES = a b c x y z d/* e/* f/* 
 
 clean-local:
-	-rm -rf d e f
+	-rm -rf d e f g backup* mode* target*
