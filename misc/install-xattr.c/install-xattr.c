@@ -365,6 +365,7 @@ main(int argc, char* argv[])
 			if (WIFSIGNALED(status)) {
 				int signum = WTERMSIG(status);
 				kill(getpid(), signum);
+				return 128 + signum;
 			} else if (WIFEXITED(status))
 				return WEXITSTATUS(status);
 			else
