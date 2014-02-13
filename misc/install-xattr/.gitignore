@@ -12,3 +12,4 @@ install-xattr
 x
 y
 z
+!Makefile

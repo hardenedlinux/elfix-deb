@@ -76,3 +76,6 @@ setfattr -n user.pax.flags -v "r" c
 #
 #       -Z, --context=CONTEXT
 #              set SELinux security context of files and directories
+
+# Okay, let's clean up after ourselves
+rm -rf a b c d e f g x y z backup-a* mode-a target-a target-install-xattr

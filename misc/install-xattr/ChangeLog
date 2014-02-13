@@ -1,0 +1,11 @@
+Okay we'll document changes here.  This is a small project, so we don't
+have to be very formal.  
+
+2014-02-13
+
+	* Release version 0.1.  For discussion leading up to this release,
+	see https://bugs.gentoo.org/show_bug.cgi?id=465000.
+
+THANKS
+	* Mike Frysinger <vapier@gentoo.org> for your relentless attention.
+	* Greg Turner <gmturner007@ameritech.net> for testing and fixing bugs.
