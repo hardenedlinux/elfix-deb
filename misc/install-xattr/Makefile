@@ -9,8 +9,8 @@ install-xattr: install-xattr.c
 
 PREFIX = /usr
 BINDIR = $(PREFIX)/bin
-install: xattr-install
-	install -m 755 -D install-xattr $(DESTDIR)$(BINDIR)/install-xattr
+install: install-xattr
+	install -m 755 -D install-xattr $(DESTDIR)$(BINDIR)/$<
 
 check: checkcopyattrs.sh install-xattr
 	$(PWD)/checkcopyattrs.sh
