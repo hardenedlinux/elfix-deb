@@ -53,15 +53,17 @@ def ldpaths(ld_so_conf='/etc/ld.so.conf'):
 
     paths = []
     include_globs = []
-    for l in lines:
-        if l == '':
+    for i in range(0,len(lines)):
+        if lines[i] == '':
             continue
-        if l == 'include':
-            f = lines[lines.index(l) + 1]
+        if lines[i] == 'include':
+            f = lines[i + 1]
             include_globs.append(f)
             continue
-        if l not in include_globs:
-            paths.append(os.path.realpath(l))
+        if lines[i] not in include_globs:
+            real_path = os.path.realpath(lines[i])
+            if os.path.exists(real_path):
+                paths.append(real_path)
 
     include_files = []
     for g in include_globs:
@@ -69,13 +71,17 @@ def ldpaths(ld_so_conf='/etc/ld.so.conf'):
     for c in include_files:
         paths = paths + ldpaths(os.path.realpath(c))
 
-    return list(set(paths))
+    paths = list(set(paths))
+    paths.sort()
+    return paths
 
 
 def dynamic_dt_needed_paths( dt_needed, eclass, paths):
     for n in dt_needed:
         for p in paths:
-            print('%s' % p + '/' + n)
+            lib = p + os.sep + n
+            if os.path.exists(lib):
+                print('%s' % lib)
     return
 
 SCRIPT_DESCRIPTION = 'Print shared library dependencies'
@@ -98,8 +104,6 @@ def main():
         sys.exit(0)
 
     paths = ldpaths()
-    print(paths)
-    sys.exit(0)
 
     for f in args:
         with open(f, 'rb') as file:
