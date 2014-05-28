@@ -77,6 +77,9 @@ def ldpaths(ld_so_conf='/etc/ld.so.conf'):
 
 
 def dynamic_dt_needed_paths( dt_needed, eclass, paths):
+    """ Search library paths for the library file corresponding
+        to the DT_NEEDED and ELF Class.
+    """
     dt_needed_paths = {}
     for n in dt_needed:
         for p in paths:
@@ -121,6 +124,7 @@ def main():
                 if len(args) > 1:
                     sys.stdout.write('%s : \n' % f)
                 eclass = readelf.elf_class()
+                # This needs to be iterated until we traverse the entire linkage tree
                 dt_needed = readelf.dynamic_dt_needed()
                 dt_needed_paths = dynamic_dt_needed_paths( dt_needed, eclass, paths)
                 for n, lib in dt_needed_paths.items():
