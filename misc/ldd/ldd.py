@@ -96,6 +96,22 @@ def dynamic_dt_needed_paths( dt_needed, eclass, paths):
 
     return dt_needed_paths
 
+
+def all_dt_needed_paths(f, paths):
+    with open(f, 'rb') as file:
+        try:
+            readelf = ReadElf(file)
+            eclass = readelf.elf_class()
+            # This needs to be iterated until we traverse the entire linkage tree
+            dt_needed = readelf.dynamic_dt_needed()
+            dt_needed_paths = dynamic_dt_needed_paths( dt_needed, eclass, paths)
+            for n, lib in dt_needed_paths.items():
+                sys.stdout.write('\t%s => %s\n' % (n, lib))
+        except ELFError as ex:
+            sys.stderr.write('ELF error: %s\n' % ex)
+            sys.exit(1)
+
+
 SCRIPT_DESCRIPTION = 'Print shared library dependencies'
 VERSION_STRING = '%%prog: based on pyelftools %s' % __version__
 
@@ -118,20 +134,9 @@ def main():
     paths = ldpaths()
 
     for f in args:
-        with open(f, 'rb') as file:
-            try:
-                readelf = ReadElf(file)
-                if len(args) > 1:
-                    sys.stdout.write('%s : \n' % f)
-                eclass = readelf.elf_class()
-                # This needs to be iterated until we traverse the entire linkage tree
-                dt_needed = readelf.dynamic_dt_needed()
-                dt_needed_paths = dynamic_dt_needed_paths( dt_needed, eclass, paths)
-                for n, lib in dt_needed_paths.items():
-                    sys.stdout.write('\t%s => %s\n' % (n, lib))
-            except ELFError as ex:
-                sys.stderr.write('ELF error: %s\n' % ex)
-                sys.exit(1)
+        if len(args) > 1:
+            sys.stdout.write('%s : \n' % f)
+        all_dt_needed_paths(f, paths)
 
 if __name__ == '__main__':
     main()
