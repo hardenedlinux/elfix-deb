@@ -77,12 +77,21 @@ def ldpaths(ld_so_conf='/etc/ld.so.conf'):
 
 
 def dynamic_dt_needed_paths( dt_needed, eclass, paths):
+    dt_needed_paths = {}
     for n in dt_needed:
         for p in paths:
             lib = p + os.sep + n
             if os.path.exists(lib):
-                print('%s' % lib)
-    return
+                with open(lib, 'rb') as file:
+                    try:
+                        readlib = ReadElf(file)
+                        if eclass == readlib.elf_class():
+                            dt_needed_paths[n] = lib
+                    except ELFError as ex:
+                        sys.stderr.write('ELF error: %s\n' % ex)
+                        sys.exit(1)
+
+    return dt_needed_paths
 
 SCRIPT_DESCRIPTION = 'Print shared library dependencies'
 VERSION_STRING = '%%prog: based on pyelftools %s' % __version__
@@ -112,11 +121,10 @@ def main():
                 if len(args) > 1:
                     sys.stdout.write('%s : \n' % f)
                 eclass = readelf.elf_class()
-                #sys.stdout.write('\t%s\n' % eclass)
                 dt_needed = readelf.dynamic_dt_needed()
                 dt_needed_paths = dynamic_dt_needed_paths( dt_needed, eclass, paths)
-                for n in dt_needed:
-                    sys.stdout.write('\t%s\n' % n )
+                for n, lib in dt_needed_paths.items():
+                    sys.stdout.write('\t%s => %s\n' % (n, lib))
             except ELFError as ex:
                 sys.stderr.write('ELF error: %s\n' % ex)
                 sys.exit(1)
