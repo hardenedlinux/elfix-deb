@@ -78,7 +78,7 @@ def ldpaths(ld_so_conf='/etc/ld.so.conf'):
 
 def dynamic_dt_needed_paths( dt_needed, eclass, paths):
     """ Search library paths for the library file corresponding
-        to the DT_NEEDED and ELF Class.
+        to the given DT_NEEDED and ELF Class.
     """
     dt_needed_paths = {}
     for n in dt_needed:
@@ -97,19 +97,24 @@ def dynamic_dt_needed_paths( dt_needed, eclass, paths):
     return dt_needed_paths
 
 
-def all_dt_needed_paths(f, paths):
+def all_dynamic_dt_needed_paths(f, paths):
+    """ Return a dictionary of all the DT_NEEDED => Library Paths for
+        a given ELF file obtained by recursively following linkage.
+    """
     with open(f, 'rb') as file:
         try:
             readelf = ReadElf(file)
             eclass = readelf.elf_class()
             # This needs to be iterated until we traverse the entire linkage tree
             dt_needed = readelf.dynamic_dt_needed()
-            dt_needed_paths = dynamic_dt_needed_paths( dt_needed, eclass, paths)
+            dt_needed_paths = dynamic_dt_needed_paths(dt_needed, eclass, paths)
             for n, lib in dt_needed_paths.items():
-                sys.stdout.write('\t%s => %s\n' % (n, lib))
+                dt_needed_paths = dict(all_dynamic_dt_needed_paths(lib, paths), **dt_needed_paths)
         except ELFError as ex:
             sys.stderr.write('ELF error: %s\n' % ex)
             sys.exit(1)
+
+    return dt_needed_paths
 
 
 SCRIPT_DESCRIPTION = 'Print shared library dependencies'
@@ -136,7 +141,9 @@ def main():
     for f in args:
         if len(args) > 1:
             sys.stdout.write('%s : \n' % f)
-        all_dt_needed_paths(f, paths)
+        all_dt_needed_paths = all_dynamic_dt_needed_paths(f, paths)
+        for n, lib in all_dt_needed_paths.items():
+            sys.stdout.write('\t%s => %s\n' % (n, lib))
 
 if __name__ == '__main__':
     main()
