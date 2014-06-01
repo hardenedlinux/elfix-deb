@@ -191,12 +191,6 @@ which(const char *mydir)
 		if (!candir)
 			goto skip;
 
-		/* If argv[0]'s canonical dirname == the path's canonical dirname, then we
-		 * skip this path otheriwise we get into an infinite self-invocation.
-		 */
-		if (!strcmp(mycandir, candir))
-			goto skip;
-
 		file = path_join(candir, "install");
 
 		/* If the file exists and is either a regular file or sym link,
