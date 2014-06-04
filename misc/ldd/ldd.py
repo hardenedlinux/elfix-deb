@@ -76,23 +76,35 @@ def ldpaths(ld_so_conf='/etc/ld.so.conf'):
     return paths
 
 
+# We cache the dependencies for speed.  The structure is
+# { ELFClass : { SONAME : library, ... }, ELFClass : ... }
+cache = {}
+
 def dynamic_dt_needed_paths( dt_needed, eclass, paths):
     """ Search library paths for the library file corresponding
         to the given DT_NEEDED and ELF Class.
     """
+    global cache
+    if not eclass in cache:
+        cache[eclass] = {}
+
     dt_needed_paths = {}
     for n in dt_needed:
-        for p in paths:
-            lib = p + os.sep + n
-            if os.path.exists(lib):
-                with open(lib, 'rb') as file:
-                    try:
-                        readlib = ReadElf(file)
-                        if eclass == readlib.elf_class():
-                            dt_needed_paths[n] = lib
-                    except ELFError as ex:
-                        sys.stderr.write('ELF error: %s\n' % ex)
-                        sys.exit(1)
+        if n in cache[eclass].keys():
+           dt_needed_paths[n] = cache[eclass][n]
+        else:
+            for p in paths:
+                lib = p + os.sep + n
+                if os.path.exists(lib):
+                    with open(lib, 'rb') as file:
+                        try:
+                            readlib = ReadElf(file)
+                            if eclass == readlib.elf_class():
+                                dt_needed_paths[n] = lib
+                                cache[eclass][n] = lib
+                        except ELFError as ex:
+                            sys.stderr.write('ELF error: %s\n' % ex)
+                            sys.exit(1)
 
     return dt_needed_paths
 
