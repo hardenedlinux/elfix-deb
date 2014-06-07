@@ -1,3 +1,17 @@
+2014-06-07
+
+	* Switch from error() to errx() in fix-gnustack.c and paxctl-ng.c to
+	make the code portable to musl (and BSD).
+
+2014-05-31
+
+	* Remove check from install-xattr which is messing up portage's install
+	wrapper.  See https://bugs.gentoo.org/511984
+
+2014-05-27
+
+	* Added ldd.py, a clone of ldd built on top of pyelftools
+
 2014-01-08
 
 	* Added install.wrapper.c for https://bugs.gentoo.org/465000
