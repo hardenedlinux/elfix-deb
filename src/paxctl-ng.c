@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <error.h>
+#include <err.h>
 #include <libgen.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -257,7 +257,7 @@ parse_cmd_args(int argc, char *argv[], uint16_t *pax_flags, int *verbose, int *c
 				break;
 			case '?':
 			default:
-				error(EXIT_FAILURE, 0, "option -%c is invalid: ignored.", optopt ) ;
+				errx(EXIT_FAILURE, "option -%c is invalid: ignored.", optopt ) ;
 		}
 	}
 

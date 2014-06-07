@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <error.h>
+#include <err.h>
 #include <libgen.h>
 
 #include <gelf.h>
@@ -58,7 +58,7 @@ parse_cmd_args( int c, char *v[], int *flagv  )
 	int i, oc;
 
 	if((c != 2)&&(c != 3))
-		error(EXIT_FAILURE, 0, "Usage: %s -f ELF | -h", v[0]);
+		errx(EXIT_FAILURE, "Usage: %s -f ELF | -h", v[0]);
 
 	*flagv = 0 ;
 	while((oc = getopt(c, v,":fh")) != -1)
@@ -72,7 +72,7 @@ parse_cmd_args( int c, char *v[], int *flagv  )
 				break;
 			case '?':
 			default:
-				error(EXIT_FAILURE, 0, "option -%c is invalid: ignored.", optopt ) ;
+				errx(EXIT_FAILURE, "option -%c is invalid: ignored.", optopt ) ;
 		}
 
 	return v[optind] ;
@@ -93,31 +93,31 @@ main( int argc, char *argv[])
 	f_name = parse_cmd_args(argc, argv, &flagv);
 
 	if(elf_version(EV_CURRENT) == EV_NONE)
-		error(EXIT_FAILURE, 0, "Library out of date.");
+		errx(EXIT_FAILURE, "Library out of date.");
 
 	if(flagv)
 	{
 		if((fd = open(f_name, O_RDWR)) < 0)
-			error(EXIT_FAILURE, 0, "open() fail.");
+			errx(EXIT_FAILURE, "open() fail.");
 		if((elf = elf_begin(fd, ELF_C_RDWR_MMAP, NULL)) == NULL)
-			error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
+			errx(EXIT_FAILURE, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
 	}
 	else
 	{
 		if((fd = open(f_name, O_RDONLY)) < 0)
-			error(EXIT_FAILURE, 0, "open() fail.");
+			errx(EXIT_FAILURE, "open() fail.");
 		if((elf = elf_begin(fd, ELF_C_READ, NULL)) == NULL)
-			error(EXIT_FAILURE, 0, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
+			errx(EXIT_FAILURE, "elf_begin() fail: %s", elf_errmsg(elf_errno()));
 	}
 
 	if(elf_kind(elf) != ELF_K_ELF)
-		error(EXIT_FAILURE, 0, "elf_kind() fail: this is not an elf file.");
+		errx(EXIT_FAILURE, "elf_kind() fail: this is not an elf file.");
 
 	elf_getphdrnum(elf, &phnum);
 	for(i=0; i<phnum; ++i)
 	{
 		if(gelf_getphdr(elf, i, &phdr) != &phdr)
-			error(EXIT_FAILURE, 0, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
+			errx(EXIT_FAILURE, "gelf_getphdr(): %s", elf_errmsg(elf_errno()));
 
 		if(phdr.p_type == PT_GNU_STACK)
 		{
@@ -132,7 +132,7 @@ main( int argc, char *argv[])
 				printf("W&X FOUND: X flag removed\n");
 				phdr.p_flags ^= PF_X;
 				if(!gelf_update_phdr(elf, i, &phdr))
-					error(EXIT_FAILURE, 0, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
+					errx(EXIT_FAILURE, "gelf_update_phdr(): %s", elf_errmsg(elf_errno()));
 			}
 		}
 	}
