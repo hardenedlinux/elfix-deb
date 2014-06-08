@@ -162,10 +162,11 @@ copyxattr(const char *source, const char *target)
 
 
 static char *
-which(const char *mydir)
+which(const char *myfile)
 {
-	char *mycandir = realpath(mydir, NULL);  /* canonical value of argv[0]'s dirname */
-	char *path, *env_path = getenv("PATH");  /* full $PATH string                    */
+	char *mypath = realpath(myfile, NULL);               /* argv[0]'s canonical path   */
+	char *path, *env_path = getenv("PATH");              /* full $PATH string          */
+	char *portage_bin_path = getenv("PORTAGE_BIN_PATH"); /* PORTAGE BIN $PATHs to skip */
 
 	/* If we don't have $PATH in our environment, then pick a sane path. */
 	if (env_path == NULL) {
@@ -175,39 +176,44 @@ which(const char *mydir)
 	} else
 		path = xstrdup(env_path);
 
-	char *dir;       /* one directory in the $PATH string */
-	char *candir;    /* canonical value of that directory */
-	char *file;      /* file name = path + "/install"     */
-	char *savedptr;  /* reentrant context for strtok_r()  */
+	char *dir;       /* one directory in the colon delimited $PATH string */
+	char *canfile;   /* candidate install's path = dir + "/install"       */
+	char *canpath;   /* candidate install's canonical path                */
+	char *sdir;      /* one directory in the $INSTALL_EXCLUDE_PATH string */
+	char *savedptr;  /* reentrant context for strtok_r()                  */
 
 	struct stat s;
 
 	dir = strtok_r(path, ":", &savedptr);
 
 	while (dir) {
-		candir = realpath(dir, NULL);
+		canfile = path_join(dir, "install");
+		canpath = realpath(canfile, NULL);
+		free(canfile);
 
 		/* ignore invalid paths that cannot be canonicalized */
-		if (!candir)
+		if (!canpath)
 			goto skip;
 
-		file = path_join(candir, "install");
+		/* If argv[0]'s canonical path == candidates install's canonical path,
+		 * then we skip this path otheriwise we get into an infinite self-invocation.
+		 */
+		if (!strcmp(mypath, canpath))
+			goto skip;
 
-		/* If the file exists and is either a regular file or sym link,
+		/* If the canpath exists and is either a regular file or sym link,
 		 * assume we found the system's install.
                  */
-		if (stat(file, &s) == 0)
+		if (stat(canpath, &s) == 0)
 			if (S_ISREG(s.st_mode)) {
-				free(candir);
-				free(mycandir);
+				free(mypath);
 				free(path);
-				return file;
+				return canpath;
 			}
 
-		free(file);
 
  skip:
-		free(candir);
+		free(canpath);
 		dir = strtok_r(NULL, ":", &savedptr);
 	}
 
@@ -310,7 +316,7 @@ main(int argc, char* argv[])
 			err(1, "fork() failed");
 
 		case 0:
-			install = which(dirname(argv[0]));
+			install = which(argv[0]);
 			argv[0] = install;    /* so coreutils' lib/program.c behaves */
 			execv(install, argv); /* The kernel will free(install).      */
 			err(1, "execv() failed");
