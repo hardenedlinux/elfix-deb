@@ -162,9 +162,8 @@ copyxattr(const char *source, const char *target)
 
 
 static char *
-which(const char *myfile)
+which(char *mypath)
 {
-	char *mypath = realpath(myfile, NULL);               /* argv[0]'s canonical path   */
 	char *path, *env_path = getenv("PATH");              /* full $PATH string          */
 	char *portage_bin_path = getenv("PORTAGE_BIN_PATH"); /* PORTAGE BIN $PATHs to skip */
 
@@ -206,7 +205,6 @@ which(const char *myfile)
                  */
 		if (stat(canpath, &s) == 0)
 			if (S_ISREG(s.st_mode)) {
-				free(mypath);
 				free(path);
 				return canpath;
 			}
@@ -238,11 +236,13 @@ main(int argc, char* argv[])
 	int first, last;               /* argv indices of the first file/directory and last            */
 	char *target;                  /* the target file or directory                                 */
 	char *path;                    /* path to the target file                                      */
-	char *install;                 /* path to the system install                                   */
+
+	char *mypath = realpath("/proc/self/exe", NULL); /* path to argv[0]                            */
+	char *install;                                   /* path to the system install                 */
 
 	struct stat s;                 /* test if a file is a regular file or a directory              */
 
-	char *portage_xattr_exclude;  /* strings of excluded xattr names from $PORTAGE_XATTR_EXCLUDE   */
+	char *portage_xattr_exclude;   /* strings of excluded xattr names from $PORTAGE_XATTR_EXCLUDE  */
 
 	portage_xattr_exclude = getenv("PORTAGE_XATTR_EXCLUDE");
 	if (portage_xattr_exclude == NULL)
@@ -316,9 +316,10 @@ main(int argc, char* argv[])
 			err(1, "fork() failed");
 
 		case 0:
-			install = which(argv[0]);
-			argv[0] = install;    /* so coreutils' lib/program.c behaves */
-			execv(install, argv); /* The kernel will free(install).      */
+			install = which(mypath);  /* find system install avoiding mypath! */
+			free(mypath);
+			argv[0] = install;        /* so coreutils' lib/program.c behaves  */
+			execv(install, argv);     /* The kernel will free(install).       */
 			err(1, "execv() failed");
 
 		default:
