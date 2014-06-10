@@ -164,8 +164,8 @@ copyxattr(const char *source, const char *target)
 static char *
 which(char *mypath)
 {
-	char *path, *env_path = getenv("PATH");              /* full $PATH string          */
-	char *portage_bin_path = getenv("PORTAGE_BIN_PATH"); /* PORTAGE BIN $PATHs to skip */
+	char *path, *env_path = getenv("PATH");                         /* $PATH to search for system install */
+	char *portpath, *portage_bin_path = getenv("PORTAGE_BIN_PATH"); /* We skip $PORTAGE_BIN_PATH/install  */
 
 	/* If we don't have $PATH in our environment, then pick a sane path. */
 	if (env_path == NULL) {
@@ -175,13 +175,31 @@ which(char *mypath)
 	} else
 		path = xstrdup(env_path);
 
+	/* If we have a $PORTAGE_BIN_PATH, then assume portage's install is at
+	 * $PORTAGE_BIN_PATH/install.  See if this file exists, and if it does
+	 * set portpath = $PORTAGE_BIN_PATH/install.  If it doesn't then set
+	 * portpath = NULL.
+	 */
+
+	if (portage_bin_path == NULL)
+		portpath = NULL;
+	else {
+		struct stat s;
+
+		portpath = path_join(portage_bin_path, "install");
+		portpath = realpath(portpath, NULL);
+
+		if (stat(portpath, &s) != 0)      /* If the path doesn't exsist, then portpath = NULL        */
+			portpath = NULL;
+		else
+			if (!S_ISREG(s.st_mode))  /* If it exists and isn't a file/sym link, portpath = NULL */
+				portpath = NULL;
+	}
+
 	char *dir;       /* one directory in the colon delimited $PATH string */
 	char *canfile;   /* candidate install's path = dir + "/install"       */
 	char *canpath;   /* candidate install's canonical path                */
-	char *sdir;      /* one directory in the $INSTALL_EXCLUDE_PATH string */
 	char *savedptr;  /* reentrant context for strtok_r()                  */
-
-	struct stat s;
 
 	dir = strtok_r(path, ":", &savedptr);
 
@@ -194,18 +212,27 @@ which(char *mypath)
 		if (!canpath)
 			goto skip;
 
-		/* If argv[0]'s canonical path == candidates install's canonical path,
+		/* If argv[0]'s canonical path == candidate install's canonical path,
 		 * then we skip this path otheriwise we get into an infinite self-invocation.
 		 */
 		if (!strcmp(mypath, canpath))
 			goto skip;
 
+		/* If portage install's canonical path == candidate install's canonical path,
+		 * then we skip this path otheriwise we get into an infinite self-invocation.
+		 */
+		if (!strcmp(portpath, canpath))
+			goto skip;
+
 		/* If the canpath exists and is either a regular file or sym link,
 		 * assume we found the system's install.
                  */
+		struct stat s;
+
 		if (stat(canpath, &s) == 0)
 			if (S_ISREG(s.st_mode)) {
 				free(path);
+				free(portpath);
 				return canpath;
 			}
 
