@@ -164,8 +164,8 @@ copyxattr(const char *source, const char *target)
 static char *
 which(char *mypath)
 {
-	char *path, *env_path = getenv("PATH");                         /* $PATH to search for system install */
-	char *portpath, *portage_bin_path = getenv("PORTAGE_BIN_PATH"); /* We skip $PORTAGE_BIN_PATH/install  */
+	/* $PATH for system install */
+	char *path = NULL, *env_path = getenv("PATH");
 
 	/* If we don't have $PATH in our environment, then pick a sane path. */
 	if (env_path == NULL) {
@@ -175,24 +175,22 @@ which(char *mypath)
 	} else
 		path = xstrdup(env_path);
 
+	/* $PORTAGE_BIN_PATH for portage install */
+	char *portpath = NULL, *portage_bin_path = getenv("PORTAGE_BIN_PATH");
+
 	/* If we have a $PORTAGE_BIN_PATH, then assume portage's install is at
-	 * $PORTAGE_BIN_PATH/install.  See if this file exists, and if it does
+	 * $PORTAGE_BIN_PATH/install.  Check if this file exists, and if it does
 	 * set portpath = $PORTAGE_BIN_PATH/install.  If it doesn't then set
 	 * portpath = NULL.
 	 */
-
-	if (portage_bin_path == NULL)
-		portpath = NULL;
-	else {
+	if (portage_bin_path != NULL) {
 		struct stat s;
 
 		portpath = path_join(portage_bin_path, "install");
 		portpath = realpath(portpath, NULL);
 
-		if (stat(portpath, &s) != 0)      /* If the path doesn't exsist, then portpath = NULL        */
-			portpath = NULL;
-		else
-			if (!S_ISREG(s.st_mode))  /* If it exists and isn't a file/sym link, portpath = NULL */
+		if (stat(portpath, &s) == 0)      /* If the path exsist but isn't a file/sym link, portpath = NULL */
+			if (!S_ISREG(s.st_mode))
 				portpath = NULL;
 	}
 
@@ -206,7 +204,6 @@ which(char *mypath)
 	while (dir) {
 		canfile = path_join(dir, "install");
 		canpath = realpath(canfile, NULL);
-		free(canfile);
 
 		/* ignore invalid paths that cannot be canonicalized */
 		if (!canpath)
@@ -221,8 +218,9 @@ which(char *mypath)
 		/* If portage install's canonical path == candidate install's canonical path,
 		 * then we skip this path otheriwise we get into an infinite self-invocation.
 		 */
-		if (!strcmp(portpath, canpath))
-			goto skip;
+		if (portpath)
+			if (!strcmp(portpath, canpath))
+				goto skip;
 
 		/* If the canpath exists and is either a regular file or sym link,
 		 * assume we found the system's install.
@@ -241,6 +239,8 @@ which(char *mypath)
 		free(canpath);
 		dir = strtok_r(NULL, ":", &savedptr);
 	}
+
+	free(portpath);
 
 	if (env_path == NULL)
 		err(1, "failed to find 'install' in standard utilities path");
