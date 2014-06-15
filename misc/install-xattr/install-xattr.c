@@ -162,7 +162,7 @@ copyxattr(const char *source, const char *target)
 
 
 static char *
-which(char *mypath)
+which(char *mypath, char *portage_helper_path)
 {
 	/* $PATH for system install */
 	char *path = NULL, *env_path = getenv("PATH");
@@ -175,35 +175,16 @@ which(char *mypath)
 	} else
 		path = xstrdup(env_path);
 
-	/* $PORTAGE_BIN_PATH for portage install */
-	char *portpath = NULL, *portage_bin_path = getenv("PORTAGE_BIN_PATH");
-
-	/* If we have a $PORTAGE_BIN_PATH, then assume portage's install is at
-	 * $PORTAGE_BIN_PATH/install.  Check if this file exists, and if it does
-	 * set portpath = $PORTAGE_BIN_PATH/install.  If it doesn't then set
-	 * portpath = NULL.
-	 */
-	if (portage_bin_path != NULL) {
-		struct stat s;
-
-		portpath = path_join(portage_bin_path, "install");
-		portpath = realpath(portpath, NULL);
-
-		if (stat(portpath, &s) == 0)      /* If the path exsist but isn't a file/sym link, portpath = NULL */
-			if (!S_ISREG(s.st_mode))
-				portpath = NULL;
-	}
-
 	char *dir;       /* one directory in the colon delimited $PATH string */
-	char *canfile;   /* candidate install's path = dir + "/install"       */
 	char *canpath;   /* candidate install's canonical path                */
 	char *savedptr;  /* reentrant context for strtok_r()                  */
 
 	dir = strtok_r(path, ":", &savedptr);
 
 	while (dir) {
-		canfile = path_join(dir, "install");
+		char *canfile = path_join(dir, "install");
 		canpath = realpath(canfile, NULL);
+		free(canfile);
 
 		/* ignore invalid paths that cannot be canonicalized */
 		if (!canpath)
@@ -218,8 +199,8 @@ which(char *mypath)
 		/* If portage install's canonical path == candidate install's canonical path,
 		 * then we skip this path otheriwise we get into an infinite self-invocation.
 		 */
-		if (portpath)
-			if (!strcmp(portpath, canpath))
+		if (portage_helper_path)
+			if (!strcmp(portage_helper_path, canpath))
 				goto skip;
 
 		/* If the canpath exists and is either a regular file or sym link,
@@ -230,7 +211,6 @@ which(char *mypath)
 		if (stat(canpath, &s) == 0)
 			if (S_ISREG(s.st_mode)) {
 				free(path);
-				free(portpath);
 				return canpath;
 			}
 
@@ -239,8 +219,6 @@ which(char *mypath)
 		free(canpath);
 		dir = strtok_r(NULL, ":", &savedptr);
 	}
-
-	free(portpath);
 
 	if (env_path == NULL)
 		err(1, "failed to find 'install' in standard utilities path");
@@ -338,12 +316,25 @@ main(int argc, char* argv[])
 	first = optind;
 	last = argc - 1;
 
+	/* Do we need to chdir to OLDPWD?  This is required when we are called my a
+	 * wrapper like ${__PORTAGE_HELPER_PATH} which then passes its directory as
+	 * $PWD and the source directory from which it was called as $OLDPWD.  But
+	 * we want the system install to run in the source directory, ie $OLDPWD,
+	 * so we chdir to it.  Currently we assume that if __PORTAGE_HELPER_PATH
+	 * is set, then we chdir to oldpwd.
+	 */
+	char *oldpwd = getenv("OLDPWD");
+	char *portage_helper_path = getenv("__PORTAGE_HELPER_PATH");
+	if (portage_helper_path)
+		chdir(oldpwd);
+
 	switch (fork()) {
 		case -1:
 			err(1, "fork() failed");
 
 		case 0:
-			install = which(mypath);  /* find system install avoiding mypath! */
+			/* find system install avoiding mypath and portage_helper_path! */
+			install = which(mypath, portage_helper_path);
 			free(mypath);
 			argv[0] = install;        /* so coreutils' lib/program.c behaves  */
 			execv(install, argv);     /* The kernel will free(install).       */
