@@ -382,7 +382,7 @@ main(int argc, char* argv[])
 					if (S_ISDIR(s.st_mode))
 						continue;
 
-					path = path_join(target, argv[i]);
+					path = path_join(target, basename(argv[i]));
 					copyxattr(argv[i], path);
 					free(path);
 				}

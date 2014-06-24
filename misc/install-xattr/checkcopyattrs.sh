@@ -2,7 +2,7 @@
 set -e
 
 touch a b c
-mkdir -p d e
+mkdir -p d e f
 setfattr -n user.foo -v "bar" a
 setfattr -n user.bas -v "x" a
 setfattr -n user.pax.flags -v "mr" a
@@ -26,6 +26,15 @@ setfattr -n user.pax.flags -v "r" c
 [ "$(getfattr --only-values -n user.pax.flags d/a)" == "mr" ]
 [ "$(getfattr --only-values -n user.pax.flags d/b)" == "p" ]
 [ "$(getfattr --only-values -n user.pax.flags d/c)" == "r" ]
+
+# This tests if the src file was inside a directory
+# the correct dst location should be f/a. NOT f/d/a.
+./install-xattr d/a f
+
+[ -x f/a ]
+[ ! -x f/d/a ]
+[ "$(getfattr --only-values -n user.foo f/a)" == "bar" ]
+[ "$(getfattr --only-values -n user.bas f/a)" == "x" ]
 
 ./install-xattr -t e a b c
 
