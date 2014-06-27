@@ -2,7 +2,7 @@
 set -e
 
 touch a b c
-mkdir -p d e f
+mkdir -p d e h
 setfattr -n user.foo -v "bar" a
 setfattr -n user.bas -v "x" a
 setfattr -n user.pax.flags -v "mr" a
@@ -29,12 +29,12 @@ setfattr -n user.pax.flags -v "r" c
 
 # This tests if the src file was inside a directory
 # the correct dst location should be f/a. NOT f/d/a.
-./install-xattr d/a f
+./install-xattr d/a h
 
-[ -x f/a ]
-[ ! -x f/d/a ]
-[ "$(getfattr --only-values -n user.foo f/a)" == "bar" ]
-[ "$(getfattr --only-values -n user.bas f/a)" == "x" ]
+[ -x h/a ]
+[ ! -x h/d/a ]
+[ "$(getfattr --only-values -n user.foo h/a)" == "bar" ]
+[ "$(getfattr --only-values -n user.bas h/a)" == "x" ]
 
 ./install-xattr -t e a b c
 
@@ -87,4 +87,4 @@ setfattr -n user.pax.flags -v "r" c
 #              set SELinux security context of files and directories
 
 # Okay, let's clean up after ourselves
-rm -rf a b c d e f g x y z backup-a* mode-a target-a target-install-xattr
+rm -rf a b c d e f g h x y z backup-a* mode-a target-a target-install-xattr

@@ -14,7 +14,7 @@ install: install-xattr
 
 check: checkcopyattrs.sh install-xattr
 	$(PWD)/checkcopyattrs.sh
-	rm -rf a b c d e f g x y z backup-a* mode-a target-a target-install-xattr
+	rm -rf a b c d e f g h x y z backup-a* mode-a target-a target-install-xattr
 
 clean:
 	rm -f *.o *~ install-xattr
