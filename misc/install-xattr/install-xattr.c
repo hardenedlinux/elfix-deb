@@ -251,7 +251,7 @@ main(int argc, char* argv[])
 
 	portage_xattr_exclude = getenv("PORTAGE_XATTR_EXCLUDE");
 	if (portage_xattr_exclude == NULL)
-		exclude = xstrdup("security.* system.nfs4_acl");
+		exclude = xstrdup("security.* trusted.* system.nfs4_acl");
 	else
 		exclude = xstrdup(portage_xattr_exclude);
 
