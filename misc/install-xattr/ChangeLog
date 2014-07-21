@@ -1,6 +1,19 @@
 Okay we'll document changes here.  This is a small project, so we don't
 have to be very formal.  
 
+2014-07-21
+
+	* Release 0.3
+	* Correctly determine dst path if src is in a dir.
+	* Exclude trusted.* extended attribute namespace.
+
+2014-06-15
+
+	* Release 0.2
+	* Correct the behavior of install-xattr for when it is executed in a portage
+	environment.  We must chdir to OLDPWD rather than using PWD else we wind up
+	installing into /usr/lib/portage.
+
 2014-02-13
 
 	* Release version 0.1.  For discussion leading up to this release,
@@ -9,3 +22,4 @@ have to be very formal.
 THANKS
 	* Mike Frysinger <vapier@gentoo.org> for your relentless attention.
 	* Greg Turner <gmturner007@ameritech.net> for testing and fixing bugs.
+	* Jason Zaman <jason@perfinion.com> for testing and fixing bugs.
