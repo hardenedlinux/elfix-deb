@@ -1,3 +1,10 @@
+2014-07-30
+
+	* Build fix-gnustack conditionally on --enable-ptpax to avoid dependancy
+	on elfutils or libelf when it needed for fix-gnustack but not paxctl-ng.
+	The future solution will be break out fix-gnustack.
+	See: https://bugs.gentoo.org/518524
+
 2014-06-07
 
 	* Switch from error() to errx() in fix-gnustack.c and paxctl-ng.c to

@@ -1,4 +1,5 @@
 
 	* src/paxctl-ng.c, scripts/paxmodule.c: reduce the shared code to a convenience library
 	* misc/revdep-pax-np: (non-gentoo) use $PATH to find all exe's and ldd for libraries
+	* Break out fix-gnustack into its own package.  See: https://bugs.gentoo.org/518524
 
