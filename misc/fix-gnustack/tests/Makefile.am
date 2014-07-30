@@ -14,7 +14,7 @@ bad-gnustack$(EXEEXT): bad-gnustack.s
 check_SCRIPTS = gnustacktest
 TEST = $(check_SCRIPTS)
 
-gnustacktest:
-	./gnustacktest.sh 0
+gnustacktest: bad-gnustack
+	$(top_srcdir)/tests/gnustacktest.sh
 
 CLEANFILES = *.o *.s

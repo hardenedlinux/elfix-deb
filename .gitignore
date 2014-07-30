@@ -25,7 +25,6 @@ stamp-h1
 *.la
 *.lo
 #
-fix-gnustack
 paxctl-ng
 bad-gnustack
 daemon*
@@ -33,11 +32,11 @@ dummy
 revdepbin
 #
 scripts/build
-misc/__pycache__
 #
-misc/change-interp/bash
-misc/change-interp/change-interp
-misc/elf-manipulate/clear-dt-path
-misc/elf-manipulate/parse-elf
-misc/elf-manipulate/print-sections
-misc/elf-manipulate/remove-ptpax
+misc/fix-gnustack/fix-gnustack
+#
+poc/change-interp/change-interp
+poc/elf-manipulate/clear-dt-path
+poc/elf-manipulate/parse-elf
+poc/elf-manipulate/print-sections
+poc/elf-manipulate/remove-ptpax

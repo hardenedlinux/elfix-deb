@@ -26,14 +26,6 @@ pod2man \
  --official \
  --section="1" \
  --release="$PKG $VERSION" \
- --center="Documentation for elfix" \
+ --center="Documentation for fix-gnustack" \
  --date=$(date +%Y-%m-%d) \
- paxctl-ng.pod > paxctl-ng.1
-
-pod2man \
- --official \
- --section="1" \
- --release="$PKG $VERSION" \
- --center="Documentation for elfix" \
- --date=$(date +%Y-%m-%d) \
- revdep-pax.pod > revdep-pax.1
+ fix-gnustack.pod > fix-gnustack.1
