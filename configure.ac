@@ -52,7 +52,6 @@ AC_CHECK_HEADERS(
 
 # Checks for DECLs.
 AC_CHECK_DECL([ELF_C_RDWR_MMAP],[],[],[[#include <libelf.h>]])
-AM_CONDITIONAL([BUILD_ELF],[test "x$ac_cv_have_decl_ELF_C_RDWR_MMAP" = "xyes"])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_PID_T
@@ -106,6 +105,8 @@ AS_IF(
 		CFLAGS+=" -UPTPAX -DNEED_PAX_DECLS"
 	]
 )
+
+AM_CONDITIONAL([BUILD_ELF],[test "x$enable_ptpax" = "xyes" && test "x$ac_cv_have_decl_ELF_C_RDWR_MMAP" = "xyes"])
 
 AC_ARG_ENABLE(
 	[xtpax],
