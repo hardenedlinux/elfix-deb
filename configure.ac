@@ -16,7 +16,7 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-AC_PREREQ([2.68])
+AC_PREREQ([2.69])
 AC_INIT([elfix], [0.9], [http://bugs.gentoo.org/])
 AC_CONFIG_SRCDIR([src/paxctl-ng.c])
 AC_CONFIG_HEADERS([config.h])
@@ -26,16 +26,6 @@ AM_SILENT_RULES([no])
 LT_PREREQ([2.4])
 LT_INIT([dlopen])
 AC_CONFIG_MACRO_DIR([m4])
-
-AC_ARG_ENABLE(
-    [tests],
-    AS_HELP_STRING(
-        [--enable-tests],
-        [perform tests]
-    ),
-    [test "x$enable_tests" = "xyes"]
-)
-AM_CONDITIONAL([TEST],[test "x$enable_tests" = "xyes"])
 
 # Checks for programs.
 AC_PROG_AWK
@@ -50,9 +40,6 @@ AC_CHECK_HEADERS(
     [AC_MSG_ERROR(["Missing necessary header"])]
 )
 
-# Checks for DECLs.
-AC_CHECK_DECL([ELF_C_RDWR_MMAP],[],[],[[#include <libelf.h>]])
-
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
@@ -65,14 +52,15 @@ AC_FUNC_FORK
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([memset strerror])
 
-# Note: this is always needed for fix-gnustack
-# and for paxctl-ng only with --enable-ptpax
-AC_CHECK_LIB(
-    [elf],
-    [elf_begin],
-    [],
-    [AC_MSG_ERROR(["Missing necessary function elf_begin in libelf"])]
+AC_ARG_ENABLE(
+    [tests],
+    AS_HELP_STRING(
+        [--enable-tests],
+        [perform tests]
+    ),
+    [test "x$enable_tests" = "xyes"]
 )
+AM_CONDITIONAL([TEST],[test "x$enable_tests" = "xyes"])
 
 AC_ARG_ENABLE(
     [ptpax],
@@ -85,28 +73,30 @@ AC_ARG_ENABLE(
 AS_IF(
     [test "x$enable_ptpax" != "xno"],
     [
-        AS_IF(
-            [test "x$ac_cv_have_decl_ELF_C_RDWR_MMAP" = "xyes"],
-            [
-                AC_CHECK_DECLS(
-                    [PT_PAX_FLAGS, PF_PAGEEXEC, PF_MPROTECT, PF_RANDMMAP],
-                    [],
-                    [
-                        CFLAGS+=" -DNEED_PAX_DECLS"
-                    ],
-                    [[#include <gelf.h>]]
-                )
-                CFLAGS+=" -DPTPAX"
-            ],
-            [AC_MSG_ERROR(["Missing necessary DECL ELF_C_RDWR_MMAP in libelf"])]
+        AC_CHECK_LIB(
+            [elf],
+            [elf_begin],
+            [],
+            [AC_MSG_ERROR(["Missing necessary function elf_begin in libelf"])]
         )
+        AC_CHECK_DECL(
+            [ELF_C_RDWR_MMAP],
+            [],
+            [AC_MSG_ERROR(["Missing necessary DECL ELF_C_RDWR_MMAP in libelf.h"])],
+            [[#include <libelf.h>]]
+        )
+        AC_CHECK_DECLS(
+            [PT_PAX_FLAGS, PF_PAGEEXEC, PF_MPROTECT, PF_RANDMMAP],
+            [],
+            [CFLAGS+=" -DNEED_PAX_DECLS"],
+            [[#include <gelf.h>]]
+        )
+        CFLAGS+=" -DPTPAX"
     ],
     [
         CFLAGS+=" -UPTPAX -DNEED_PAX_DECLS"
     ]
 )
-
-AM_CONDITIONAL([BUILD_ELF],[test "x$enable_ptpax" = "xyes" && test "x$ac_cv_have_decl_ELF_C_RDWR_MMAP" = "xyes"])
 
 AC_ARG_ENABLE(
     [xtpax],
@@ -137,7 +127,7 @@ AS_IF(
     ]
 )
 
-if [test "x$enable_ptpax" = "xno" -a  "x$enable_xtpax" = "xno" ]; then
+if [test "x$enable_ptpax" = "xno" -a "x$enable_xtpax" = "xno" ]; then
     AC_MSG_ERROR(["You must enable either ptpax or xtpax"])
 fi
 
