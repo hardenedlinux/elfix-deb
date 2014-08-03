@@ -43,7 +43,7 @@ def get_input(prompt):
         return raw_input(prompt)
 
 
-class LinkMap:
+class LinkGraph:
 
     def __init__(self):
         """ Put all the NEEDED.ELF.2 files for all installed packages
@@ -203,7 +203,7 @@ class LinkMap:
 
         return object_reverse_linkings
 
-    def get_maps(self):
+    def get_graph(self):
         """ Generate the full forward and reverse links using the above functions """
 
         # After get_object_needed() and get_soname_needed(), both object_linkings and
@@ -231,7 +231,7 @@ def print_problems(sonames_missing_library):
 
 def run_forward(verbose):
     (object_linkings, object_reverse_linkings,
-     library2soname, soname2library) = LinkMap().get_maps()
+     library2soname, soname2library) = LinkGraph().get_graph()
 
     sonames_missing_library = []
 
@@ -279,7 +279,7 @@ def run_forward(verbose):
 
 def run_reverse(verbose, executable_only):
     (object_linkings, object_reverse_linkings,
-     library2soname, soname2library) = LinkMap().get_maps()
+     library2soname, soname2library) = LinkGraph().get_graph()
 
     shell_path = os.getenv('PATH').split(':')
 
@@ -402,7 +402,7 @@ def run_elf(elf, verbose, mark, allyes):
         return
 
     (object_linkings, object_reverse_linkings,
-     library2soname, soname2library) = LinkMap().get_maps()
+     library2soname, soname2library) = LinkGraph().get_graph()
 
     mismatched_libraries = []
 
@@ -465,7 +465,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
     shell_path = os.getenv('PATH').split(':')
 
     (object_linkings, object_reverse_linkings,
-     library2soname, soname2library) = LinkMap().get_maps()
+     library2soname, soname2library) = LinkGraph().get_maps()
 
     if use_soname:
         soname = name
