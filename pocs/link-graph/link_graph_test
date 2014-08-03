@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#    link_map_test: this file is part of the elfix package
+#    link_graph_test: this file is part of the elfix package
 #    Copyright (C) 2011  Anthony G. Basile
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 
 import os
 import sys
-from link_map import LinkMap
+from link_graph import LinkGraph
 
 def main():
 
@@ -28,8 +28,8 @@ def main():
         print('RUN AS ROOT: cannot read all flags')
         sys.exit(0)
 
-    link_map = LinkMap()
-    ( object_linkings, object_reverse_linkings, library2soname, soname2library ) = link_map.get_maps()
+    link_graph = LinkGraph()
+    ( object_linkings, object_reverse_linkings, library2soname, soname2library ) = link_graph.get_graph()
 
     layout = "{0:<30} => {1:<30}"
 

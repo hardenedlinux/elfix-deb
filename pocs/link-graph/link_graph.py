@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#    LinkMap.py: this file is part of the elfix package
+#    LinkGraph.py: this file is part of the elfix package
 #    Copyright (C) 2011  Anthony G. Basile
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 import re
 import portage
 
-class LinkMap:
+class LinkGraph:
 
     def __init__(self):
         """ Put all the NEEDED.ELF.2 files for all installed packages
@@ -178,7 +178,7 @@ class LinkMap:
         return object_reverse_linkings
 
 
-    def get_maps(self):
+    def get_graph(self):
         """ Generate the full forward and reverse links using the above functions """
 
         # After get_object_needed() and get_soname_needed(), both object_linkings and
