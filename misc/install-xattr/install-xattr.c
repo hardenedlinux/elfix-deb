@@ -325,6 +325,7 @@ main(int argc, char* argv[])
 	 */
 	char *oldpwd = getenv("OLDPWD");
 	char *portage_helper_path = getenv("__PORTAGE_HELPER_PATH");
+	char *portage_helper_canpath = NULL;
 	if (portage_helper_path)
 		chdir(oldpwd);
 
@@ -334,8 +335,11 @@ main(int argc, char* argv[])
 
 		case 0:
 			/* find system install avoiding mypath and portage_helper_path! */
-			install = which(mypath, portage_helper_path);
+			if (portage_helper_path)
+				portage_helper_canpath = realpath(portage_helper_path, NULL);
+			install = which(mypath, portage_helper_canpath);
 			free(mypath);
+			free(portage_helper_canpath);
 			argv[0] = install;        /* so coreutils' lib/program.c behaves  */
 			execv(install, argv);     /* The kernel will free(install).       */
 			err(1, "execv() failed");
