@@ -88,13 +88,13 @@ AS_IF(
         AC_CHECK_DECLS(
             [PT_PAX_FLAGS, PF_PAGEEXEC, PF_MPROTECT, PF_RANDMMAP],
             [],
-            [CFLAGS+=" -DNEED_PAX_DECLS"],
+            [CFLAGS="${CFLAGS} -DNEED_PAX_DECLS"],
             [[#include <gelf.h>]]
         )
-        CFLAGS+=" -DPTPAX"
+        CFLAGS="${CFLAGS} -DPTPAX"
     ],
     [
-        CFLAGS+=" -UPTPAX -DNEED_PAX_DECLS"
+        CFLAGS="${CFLAGS} -UPTPAX -DNEED_PAX_DECLS"
     ]
 )
 
@@ -120,10 +120,10 @@ AS_IF(
             [],
             [AC_MSG_ERROR(["Missing necessary function fgetxattr in libattr"])]
         )
-        CFLAGS+=" -DXTPAX"
+        CFLAGS="${CFLAGS} -DXTPAX"
     ],
     [
-        CFLAGS+=" -UXTPAX"
+        CFLAGS="${CFLAGS} -UXTPAX"
     ]
 )
 
