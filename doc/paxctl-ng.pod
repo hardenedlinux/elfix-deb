@@ -68,10 +68,7 @@ B<paxctl-ng> with the B<-d> flag.
 
 =item B<-X> or B<-x>   Enable or disable RANDEXEC
 
-=item
-
-If both enabling and disabling flags are set for one item, 
-eg. -Pp for PAGEEXEC, then the default setting '-' is used.
+If both enabling and disabling flags are set for one item, eg. -Pp for PAGEEXEC, then the default setting '-' is used.
 
 =item B<-Z> Set most secure settings (PSMeRx).
 
