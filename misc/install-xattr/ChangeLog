@@ -1,6 +1,10 @@
 Okay we'll document changes here.  This is a small project, so we don't
 have to be very formal.  
 
+2014-10-12
+	* Release 0.4
+	* Correct a fork bomb.  See https://bugs.gentoo.org/show_bug.cgi?id=523994.
+
 2014-07-21
 
 	* Release 0.3
@@ -23,3 +27,4 @@ THANKS
 	* Mike Frysinger <vapier@gentoo.org> for your relentless attention.
 	* Greg Turner <gmturner007@ameritech.net> for testing and fixing bugs.
 	* Jason Zaman <jason@perfinion.com> for testing and fixing bugs.
+	* Zac Medico <zmedico@gentoo.org> for fixing a fork bomb.
