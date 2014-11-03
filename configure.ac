@@ -17,7 +17,7 @@
 #
 
 AC_PREREQ([2.69])
-AC_INIT([elfix], [0.9], [http://bugs.gentoo.org/])
+AC_INIT([elfix], [0.9.0], [http://bugs.gentoo.org/])
 AC_CONFIG_SRCDIR([src/paxctl-ng.c])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.12 foreign])
