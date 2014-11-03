@@ -1,3 +1,10 @@
+
+2014-10-03
+
+	* scripts/paxmark.sh: backport improvements from pax-utils.eclass
+	* configure.ac: remove bash-isms
+	See: https://bugs.gentoo.org/525240
+
 2014-07-30
 
 	* Build fix-gnustack conditionally on --enable-ptpax to avoid dependancy
