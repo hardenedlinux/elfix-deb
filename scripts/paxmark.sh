@@ -53,7 +53,6 @@ paxmarksh() {
 				scanelf -Xxz ${flags} "$f" >/dev/null 2>&1
 			#We failed to set PT_PAX flags
 			elif [[ ${PAX_MARKINGS} != "none" ]]; then
-				elog "Failed to set PT_PAX markings -${flags} ${f}."
 				ret=1
 			fi
 		done
@@ -79,7 +78,6 @@ paxmarksh() {
 
 			#We failed to set XATTR_PAX flags
 			if [[ ${PAX_MARKINGS} != "none" ]]; then
-				elog "Failed to set XATTR_PAX markings -${flags} ${f}."
 				ret=1
 			fi
 		done
@@ -88,5 +86,7 @@ paxmarksh() {
 	return ${ret}
 }
 
-PAX_MARKINGS=${PAX_MARKINGS:="PT XT"}
+MAKE_CONF="/etc/portage/make.conf"
+[[ -e $MAKE_CONF ]] && source $MAKE_CONF
+PAX_MARKINGS=${PAX_MARKINGS:="PT"}
 paxmarksh "$@"

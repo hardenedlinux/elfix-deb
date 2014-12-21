@@ -1,3 +1,9 @@
+2014-12-22
+
+	* scripts/paxmark.sh: remove erroneous elog functions
+	* scripts/paxmark.sh: source /etc/portage/make.conf for PAX_MARKINGS
+	and correct logic to default to PT only if no PAX_MARKINGS are set.
+	Reported by Karl-Johan Karlsson <creideiki+gentoo-hardened@ferretporn.se>
 
 2014-10-03
 
