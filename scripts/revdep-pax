@@ -465,7 +465,7 @@ def run_soname(name, verbose, use_soname, mark, allyes, executable_only):
     shell_path = os.getenv('PATH').split(':')
 
     (object_linkings, object_reverse_linkings,
-     library2soname, soname2library) = LinkGraph().get_maps()
+     library2soname, soname2library) = LinkGraph().get_graph()
 
     if use_soname:
         soname = name
