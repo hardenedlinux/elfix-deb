@@ -101,7 +101,11 @@ initpax(void)
 #endif
 
 	if (m == NULL)
+#if PY_MAJOR_VERSION >= 3
+		return NULL;
+#else
 		return;
+#endif
 
 	PaxError = PyErr_NewException("pax.PaxError", NULL, NULL);
 	Py_INCREF(PaxError);
