@@ -261,8 +261,12 @@ main(int argc, char* argv[])
 	 * strings.  Also, no need to free(exclude) before we exit().
 	 */
 	char *p = exclude;
-	while ((p = strchr(p, ' ')))
-		*p++ = '\0';
+	char *pend = p + len_exclude;
+	while (p != pend) {
+		if (isspace(*p))
+			*p = '\0';
+		p++;
+	}
 
 	opterr = 0; /* we skip many legitimate flags, so silence any warning */
 
