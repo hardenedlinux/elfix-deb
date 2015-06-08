@@ -1,6 +1,12 @@
 Okay we'll document changes here.  This is a small project, so we don't
 have to be very formal.  
 
+2015-06-08
+
+	* Release 0.5
+	* Correct whitespace in PORTAGE_XATTR_EXCLUDE.
+	https://bugs.gentoo.org/show_bug.cgi?id=550654.
+
 2014-10-12
 
 	* Release 0.4
