@@ -87,6 +87,14 @@ paxmarksh() {
 }
 
 MAKE_CONF="/etc/portage/make.conf"
-[[ -e $MAKE_CONF ]] && source $MAKE_CONF
+
+if [[ -d $MAKE_CONF ]]; then
+	for MC in $MAKE_CONF/*; do
+		source $MC
+	done
+elif [[ -e $MAKE_CONF ]]; then
+	source $MAKE_CONF
+fi
+
 PAX_MARKINGS=${PAX_MARKINGS:="PT"}
 paxmarksh "$@"

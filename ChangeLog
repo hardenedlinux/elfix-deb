@@ -1,3 +1,7 @@
+2015-09-03
+
+	* scripts/paxmark.sh: make.conf can be a directory
+
 2014-12-22
 
 	* scripts/paxmark.sh: remove erroneous elog functions
