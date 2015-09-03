@@ -1,5 +1,6 @@
 2015-09-03
 
+	* Prepare release 0.9.1
 	* scripts/paxmark.sh: make.conf can be a directory
 	* scripts/paxmark.sh: default to both PT and XT if
 	no PAX_MARKINGS are set in make.conf.
@@ -14,6 +15,7 @@
 
 2014-10-03
 
+	* Prepare release 0.9.0
 	* scripts/paxmark.sh: backport improvements from pax-utils.eclass
 	* configure.ac: remove bash-isms
 	See: https://bugs.gentoo.org/525240
