@@ -34,7 +34,7 @@ AC_PROG_SED
 
 # Checks for header files.
 AC_CHECK_HEADERS(
-    [errno.h err.h fcntl.h gelf.h libgen.h stdio.h stdlib.h string.h \
+    [errno.h err.h fcntl.h libgen.h stdio.h stdlib.h string.h \
     sys/mman.h sys/stat.h sys/types.h unistd.h],
     [],
     [AC_MSG_ERROR(["Missing necessary header"])]
@@ -73,6 +73,11 @@ AC_ARG_ENABLE(
 AS_IF(
     [test "x$enable_ptpax" != "xno"],
     [
+        AC_CHECK_HEADERS(
+            [gelf.h],
+            [],
+            [AC_MSG_ERROR(["Missing necessary gelf.h"])]
+        )
         AC_CHECK_LIB(
             [elf],
             [elf_begin],
