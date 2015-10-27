@@ -1,3 +1,11 @@
+2015-10-27
+
+	* scripts/paxmark.sh: do not do a bash -l so we get /usr/sbin
+	in our path.  Fixes bug #564142.  Thanks Alexander Tsoy
+	<alexander@tsoy.me>.
+	* configure.ac: check for <gelf.h> only if ptpax is enabled.
+	Thanks Jory Pratt <anarchy@gentoo.org>.
+
 2015-09-03
 
 	* Prepare release 0.9.1
