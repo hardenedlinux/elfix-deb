@@ -1,0 +1,22 @@
+Source: elfix
+Maintainer: Robin Lee <cheeselee@fedoraproject.org>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 9), libelf-dev, libattr1-dev, dh-autoreconf, python-all, python-setuptools, python-all-dev, dh-python
+
+Package: elfix
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, python, ${python:Depends}
+Description: tools to work with ELF binaries and libraries on Hardened Gentoo
+ Elfix is a suite of tools to work with ELF binaries and libraries on Hardened
+ Gentoo. The latest version has the following utilities:
+ - paxctl-ng - Swiss army knife for working with PT_PAX and/or XATTR_PAX flags
+ - pypaxctl - Simple tool to get or set PT_PAX and/or XATTR_PAX flags
+ - revdep-pax - Find mismatching PaX markings between ELF objects and their
+   libraries
+ - migrate-pax - Migrate PaX flags from PT_PAX to XATTR_PAX for all ELF objects
+   on a system
+ - pypax.so - Python module to get or set PT_PAX and/or XATTR_PAX flags
+ - paxmark.sh - A bash script wrapper to paxctl-ng/paxctl/scanelf/setfattr to
+   find any available utility to set PT_PAX and/or XATTR_PAX flags

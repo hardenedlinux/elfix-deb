@@ -1,0 +1,19 @@
+#!/usr/bin/make -f
+%:
+	dh $@ --with autoreconf --with python2
+
+override_dh_auto_configure:
+	dh_auto_configure -- --enable-ptpax --enable-xtpax
+
+override_dh_auto_build:
+	set -ex; \
+	cd scripts; \
+	PTPAX=yes XTPAX=yes python setup.py build; \
+	cd -;
+
+override_dh_auto_install:
+	dh_auto_install
+	set -ex; \
+	cd scripts; \
+	PTPAX=yes XTPAX=yes python setup.py install --root $$PWD/../debian/elfix --install-layout=deb; \
+	cd -;
