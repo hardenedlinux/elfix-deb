@@ -16,28 +16,45 @@ currently have three branches:
 # Build procedure
 
 1. Install essential building environment:
-
+<pre>
     aptitude install build-essential git-buildpackage
+</pre>
 
 2. Install other elfix build requirements: 
-
+<pre>
     aptitude install libelf-dev libattr1-dev dh-autoreconf python-all python-setuptools python-all-dev
+</pre>
 
 3. clone git repo and get all branches to local repo
-
+<pre>
     git clone https://github.com/hardenedlinux/elfix-deb.git
     git checkout pristine-tar
     git checkout upstream/0.9.x
     git checkout master
+</pre>
 
 4. Build binary package
-
+<pre>
     gbp buildpackage
+</pre>
 
 Multiple produced files are then available in the parent directory including
 the binary package. Error maybe occurs during the debsign step if you haven't
 properly configured GPG. You can simply ignore this error if you just install
 the binary package locally.
+
+## Compile from souce code
+
+Install the dependency packages:
+<pre>
+sudo apt-get install -y vim libc6-dev libelf-dev libattr1-dev
+</pre>
+
+We follow the [Gentoo build options](https://gitweb.gentoo.org/repo/gentoo.git/tree/sys-apps/elfix/elfix-0.9.2.ebuild):
+<pre>
+./configure --enable-ptpax --enable-xtpax --disable-tests
+make && sudo make install
+</pre>
 
 # TODO
 
