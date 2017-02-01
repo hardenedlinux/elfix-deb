@@ -1,3 +1,10 @@
+elfix (0.9.2-harden2) jessie; urgency=medium
+
+  * Release the package for Debian Jessie.
+  * Maintain by Tom Li.
+
+ -- Yifeng Li (Tom Li) <biergaizi@member.fsf.org>  Wed, 1 Feb 2017 21:29:16 +0800
+
 elfix (0.9.2-1) UNRELEASED; urgency=medium
 
   * Initial release.
